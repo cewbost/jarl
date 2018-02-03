@@ -61,8 +61,7 @@ enum class LexemeType: unsigned {
   Print
 };
 
-class Lexeme {
-public:
+struct Lexeme {
   
   LexemeType type;
   std::pair<unsigned, unsigned> pos;
@@ -80,6 +79,10 @@ public:
   Lexeme(bool);
   Lexeme(LexemeType, String*);
   Lexeme(String*);
+  
+  #ifndef NDEBUG
+  std::string toStr()const;
+  #endif
 };
 
 #endif

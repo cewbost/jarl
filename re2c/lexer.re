@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <iostream>
+
 namespace{
   
   constexpr uint64_t utf8Mask_(int bytes){
@@ -301,6 +303,12 @@ std::vector<Lexeme> Lexer::lex(){
   }
   
   #undef NEW_LEXEME
+  
+  lexemes.emplace_back(LexemeType::End);
+  
+  for(auto lex: lexemes){
+    std::cout << lex.toStr() << std::endl;
+  }
   
   return lexemes;
 }
