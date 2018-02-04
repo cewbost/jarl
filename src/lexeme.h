@@ -13,7 +13,7 @@ using jarl::Float;
 enum class LexemeType: unsigned {
   End = 0,
   
-  L10 = 0x10,
+  StopSymbolClass = 0x10,
   Newline,
   Semicolon,
   RParen,
@@ -23,13 +23,13 @@ enum class LexemeType: unsigned {
   Else,
   Print,
   
-  L20 = 0x20,
+  RightAssocClass = 0x20,
   Comma,
   
   L30 = 0x30,
   Assign,
-  PlusAssign,
-  MinusAssign,
+  AddAssign,
+  SubAssign,
   MulAssign,
   DivAssign,
   ModAssign,
@@ -38,8 +38,7 @@ enum class LexemeType: unsigned {
   L40 = 0x40,
   Colon,
   
-  L50 = 0x50,
-  Not,
+  LeftAssocClass = 0x50,
   And,
   Or,
   
@@ -64,12 +63,13 @@ enum class LexemeType: unsigned {
   Div,
   Mod,
   
-  LA0 = 0xa0,
+  ExprClass = 0xa0,
   LParen,
   LBrace,
   LBracket,
   
   LB0 = 0xb0,
+  Not,
   Int,
   Float,
   Bool,

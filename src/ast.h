@@ -22,7 +22,37 @@ enum class ASTNodeType: unsigned {
   
   Neg,
   Not,
+  And,
+  Or,
   
+  Assign,
+  AddAssign,
+  SubAssign,
+  MulAssign,
+  DivAssign,
+  ModAssign,
+  AppendAssign,
+  
+  Add,
+  Sub,
+  Mul,
+  Div,
+  Mod,
+  Append,
+  
+  Cmp,
+  Eq,
+  Neq,
+  Gt,
+  Lt,
+  Geq,
+  Leq,
+  
+  Apply,
+  
+  Index,
+  
+  ExprList,
   Array,
   Range
 };

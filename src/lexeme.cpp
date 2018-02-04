@@ -78,8 +78,8 @@ std::string Lexeme::toStr() const {
   case LexemeType::Mod: return "%"s;
   case LexemeType::Append: return "++"s;
   case LexemeType::Assign: return "="s;
-  case LexemeType::PlusAssign: return "+="s;
-  case LexemeType::MinusAssign: return "-="s;
+  case LexemeType::AddAssign: return "+="s;
+  case LexemeType::SubAssign: return "-="s;
   case LexemeType::MulAssign: return "*="s;
   case LexemeType::DivAssign: return "/="s;
   case LexemeType::ModAssign: return "%="s;

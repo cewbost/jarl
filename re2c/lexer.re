@@ -161,8 +161,8 @@ std::vector<Lexeme> Lexer::lex(){
       "%"   {NEW_LEXEME(LexemeType::Mod)}
       "++"  {NEW_LEXEME(LexemeType::Append)}
       "="   {NEW_LEXEME(LexemeType::Assign)}
-      "+="  {NEW_LEXEME(LexemeType::PlusAssign)}
-      "-="  {NEW_LEXEME(LexemeType::MinusAssign)}
+      "+="  {NEW_LEXEME(LexemeType::AddAssign)}
+      "-="  {NEW_LEXEME(LexemeType::SubAssign)}
       "*="  {NEW_LEXEME(LexemeType::MulAssign)}
       "/="  {NEW_LEXEME(LexemeType::DivAssign)}
       "%="  {NEW_LEXEME(LexemeType::ModAssign)}

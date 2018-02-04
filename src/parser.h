@@ -28,6 +28,7 @@ class Parser{
   static int bindp_(const Lexeme&);
   
   ASTNode* nud_(const Lexeme&);
+  ASTNode* led_(const Lexeme&, ASTNode*);
   
   ASTNode* new_statement_(int);
   ASTNode* new_expression_(int);

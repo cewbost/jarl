@@ -168,6 +168,89 @@ ASTNode* Parser::nud_(const Lexeme& lex){
   }
 }
 
+ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
+  auto typen = this->bindp_(lex.type);
+  if(typen >= static_cast<unsigned>(LexemeType::ExprClass)){
+    if(lex.type == LexemeType::LBracket){
+      auto right = this->new_expression_(def_expr_bindp);
+      if(!this->checkNext_(LexemeType::RBracket)){
+        assert(false);
+      }
+      return new ASTNode(ASTNodeType::Index, left, right);
+    }else{
+      return new ASTNode(ASTNodeType::Apply, left, this->nud_(lex));
+    }
+  }else if(typen >= static_cast<unsigned>(LexemeType::LeftAssocClass)){
+    auto right = this->new_expression_(typen);
+    switch(lex.type){
+    case LexemeType::Plus:
+      return new ASTNode(ASTNodeType::Add, left, right);
+    case LexemeType::Minus:
+      return new ASTNode(ASTNodeType::Sub, left, right);
+    case LexemeType::Mul:
+      return new ASTNode(ASTNodeType::Mul, left, right);
+    case LexemeType::Div:
+      return new ASTNode(ASTNodeType::Div, left, right);
+    case LexemeType::Mod:
+      return new ASTNode(ASTNodeType::Mod, left, right);
+    case LexemeType::Append:
+      return new ASTNode(ASTNodeType::Append, left, right);
+    
+    case LexemeType::Cmp:
+      return new ASTNode(ASTNodeType::Cmp, left, right);
+    case LexemeType::Eq:
+      return new ASTNode(ASTNodeType::Eq, left, right);
+    case LexemeType::Neq:
+      return new ASTNode(ASTNodeType::Neq, left, right);
+    case LexemeType::Gt:
+      return new ASTNode(ASTNodeType::Gt, left, right);
+    case LexemeType::Lt:
+      return new ASTNode(ASTNodeType::Lt, left, right);
+    case LexemeType::Geq:
+      return new ASTNode(ASTNodeType::Geq, left, right);
+    case LexemeType::Leq:
+      return new ASTNode(ASTNodeType::Leq, left, right);
+    
+    case LexemeType::And:
+      return new ASTNode(ASTNodeType::And, left, right);
+    case LexemeType::Or:
+      return new ASTNode(ASTNodeType::Or, left, right);
+    
+    default:
+      assert(false);
+    }
+  }else if(typen >= static_cast<unsigned>(LexemeType::RightAssocClass)){
+    auto right = this->new_expression_(typen - 1);
+    
+    switch(lex.type){
+    case LexemeType::Assign:
+      return new ASTNode(ASTNodeType::Assign, left, right);
+    case LexemeType::AddAssign:
+      return new ASTNode(ASTNodeType::AddAssign, left, right);
+    case LexemeType::SubAssign:
+      return new ASTNode(ASTNodeType::SubAssign, left, right);
+    case LexemeType::MulAssign:
+      return new ASTNode(ASTNodeType::MulAssign, left, right);
+    case LexemeType::DivAssign:
+      return new ASTNode(ASTNodeType::DivAssign, left, right);
+    case LexemeType::ModAssign:
+      return new ASTNode(ASTNodeType::ModAssign, left, right);
+    case LexemeType::AppendAssign:
+      return new ASTNode(ASTNodeType::AppendAssign, left, right);
+    
+    case LexemeType::Colon:
+      return new ASTNode(ASTNodeType::Range, left, right);
+    case LexemeType::Comma:
+      return new ASTNode(ASTNodeType::ExprList, left, right);
+    
+    default:
+      assert(false);
+    }
+  }else assert(false);
+  
+  return nullptr;
+}
+
 ASTNode* Parser::new_statement_(int i){
   (void)i;
   return nullptr;
