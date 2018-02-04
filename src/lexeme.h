@@ -12,19 +12,21 @@ using jarl::Float;
 
 enum class LexemeType: unsigned {
   End = 0,
-  Newline,
-  Int,
-  Float,
-  Bool,
-  Identifier,
-  String,
   
-  Plus,
-  Minus,
-  Mul,
-  Div,
-  Mod,
-  Append,
+  L10 = 0x10,
+  Newline,
+  Semicolon,
+  RParen,
+  RBrace,
+  RBracket,
+  Var,
+  Else,
+  Print,
+  
+  L20 = 0x20,
+  Comma,
+  
+  L30 = 0x30,
   Assign,
   PlusAssign,
   MinusAssign,
@@ -32,6 +34,16 @@ enum class LexemeType: unsigned {
   DivAssign,
   ModAssign,
   AppendAssign,
+  
+  L40 = 0x40,
+  Colon,
+  
+  L50 = 0x50,
+  Not,
+  And,
+  Or,
+  
+  L60 = 0x60,
   Eq,
   Neq,
   Gt,
@@ -39,26 +51,34 @@ enum class LexemeType: unsigned {
   Geq,
   Leq,
   Cmp,
-  LParen,
-  RParen,
-  LBrace,
-  RBrace,
-  LBracket,
-  RBracket,
-  Comma,
-  Semicolon,
-  Colon,
   
-  Var,
+  L70 = 0x70,
+  Append,
+  
+  L80 = 0x80,
+  Plus,
+  Minus,
+  
+  L90 = 0x90,
+  Mul,
+  Div,
+  Mod,
+  
+  LA0 = 0xa0,
+  LParen,
+  LBrace,
+  LBracket,
+  
+  LB0 = 0xb0,
+  Int,
+  Float,
+  Bool,
+  Identifier,
+  String,
   Null,
-  Not,
-  And,
-  Or,
   If,
-  Else,
   While,
-  Func,
-  Print
+  Func
 };
 
 struct Lexeme {

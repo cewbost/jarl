@@ -4,14 +4,37 @@
 #include "lexer.h"
 #include "token.h"
 #include "procedure.h"
+#include "ast.h"
 
 #include <memory>
 
 class Parser{
   
+  using Lexit_ = std::vector<Lexeme>::const_iterator;
+  
+  const Lexit_ lbegin_;
+  const Lexit_ lend_;
+  Lexit_ lcurrent_;
+  
   Lexer lexer_;
   
   Token* current_;
+  
+  const Lexeme& next_();
+  const Lexeme& nextNoNewline_();
+  bool checkNext_(LexemeType);
+  void skipNextNewlines_();
+  
+  static int bindp_(const Lexeme&);
+  
+  ASTNode* nud_(const Lexeme&);
+  
+  ASTNode* new_statement_(int);
+  ASTNode* new_expression_(int);
+  ASTNode* new_ifExpr_();
+  ASTNode* whileExpr_();
+  ASTNode* new_funcExpr_();
+  ASTNode* new_codeBlock_();
   
   Token* advanceToken_();
   Token* advanceTokenNoNewline_();
@@ -35,6 +58,7 @@ class Parser{
 public:
   
   Parser(const char*);
+  Parser(const std::vector<Lexeme>&);
   ~Parser();
   
   Procedure* parse();

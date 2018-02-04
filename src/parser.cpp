@@ -8,6 +8,37 @@
 #include <iostream>
 #endif
 
+const Lexeme& Parser::next_(){
+  const Lexeme& next = *this->lcurrent_;
+  ++this->lcurrent_;
+  return next;
+}
+const Lexeme& Parser::nextNoNewline_(){
+  while(this->lcurrent_->type == LexemeType::Newline){
+    ++this->lcurrent_;
+  }
+  const Lexeme& next = *this->lcurrent_;
+  ++this->lcurrent_;
+  return next;
+}
+bool Parser::checkNext_(LexemeType type){
+  if(this->lcurrent_->type == type){
+    ++this->lcurrent_;
+    return true;
+  }else{
+    return false;
+  }
+}
+void Parser::skipNextNewlines_(){
+  while(this->lcurrent_->type == LexemeType::Newline){
+    ++this->lcurrent_;
+  }
+}
+
+int Parser::bindp_(const Lexeme& lex){
+  return static_cast<unsigned>(lex.type) & ~0xf;
+}
+
 constexpr int def_expr_bindp  = 15;
 constexpr int func_bindp      = 45;
 
@@ -70,6 +101,95 @@ int Parser::bindp_(TokenType type){
   //NOTE: bind power is 200 for unary operators
 }
 
+ASTNode* Parser::nud_(const Lexeme& lex){
+  switch(lex.type){
+  case LexemeType::Plus:
+    return this->new_expression_(0x81);
+  case LexemeType::Minus:
+    return new ASTNode(ASTNodeType::Neg, this->new_expression_(0x81));
+  case LexemeType::Not:
+    return new ASTNode(ASTNodeType::Not, this->new_statement_(0x51));
+  case LexemeType::Colon:
+    return new ASTNode(
+      ASTNodeType::Range,
+      new ASTNode(ASTNodeType::Nop),
+      this->new_expression_(0x31)
+    );
+  
+  case LexemeType::If:
+    return this->new_ifExpr_();
+  case LexemeType::While:
+    return this->whileExpr_();
+  
+  case LexemeType::Func:
+    return this->new_funcExpr_();
+  
+  case LexemeType::LParen:
+    {
+      auto tok = this->new_expression_(def_expr_bindp);
+      if(!this->checkNext_(LexemeType::RParen)){
+        assert(false);
+      }
+      return tok;
+    }
+  case LexemeType::LBrace:
+    {
+      auto tok = this->new_codeBlock_();
+      if(!this->checkNext_(LexemeType::RBrace)){
+        assert(false);
+      }
+      return tok;
+    }
+  case LexemeType::LBracket:
+    {
+      auto tok = this->new_expression_(0x11);
+      tok = new ASTNode(ASTNodeType::Array, tok);
+      if(!this->checkNext_(LexemeType::RBracket)){
+        assert(false);
+      }
+      return tok;
+    }
+  
+  case LexemeType::Int:
+    return new ASTNode(ASTNodeType::Int, lex.value.i);
+  case LexemeType::Float:
+    return new ASTNode(ASTNodeType::Float, lex.value.f);
+  case LexemeType::Bool:
+    return new ASTNode(ASTNodeType::Bool, lex.value.b);
+  case LexemeType::Null:
+    return new ASTNode(ASTNodeType::Null);
+  case LexemeType::String:
+    return new ASTNode(ASTNodeType::String, lex.value.s);
+  case LexemeType::Identifier:
+    return new ASTNode(ASTNodeType::Identifier, lex.value.s);
+  
+  default:
+    assert(false);
+  }
+}
+
+ASTNode* Parser::new_statement_(int i){
+  (void)i;
+  return nullptr;
+}
+ASTNode* Parser::new_expression_(int i){
+  (void)i;
+  return nullptr;
+}
+ASTNode* Parser::new_ifExpr_(){
+  return nullptr;
+}
+ASTNode* Parser::whileExpr_(){
+  return nullptr;
+}
+ASTNode* Parser::new_funcExpr_(){
+  return nullptr;
+}
+ASTNode* Parser::new_codeBlock_(){
+  return nullptr;
+}
+
+//old api
 Token* Parser::advanceToken_(){
   auto current = this->current_;
   this->current_ = this->lexer_.next();
@@ -441,6 +561,11 @@ Token* Parser::led_(Token* tok, Token* left){
 
 Parser::Parser(const char* code)
 : lexer_(code), current_(nullptr){}
+
+Parser::Parser(const std::vector<Lexeme>& lexes)
+: lexer_(nullptr), lbegin_(lexes.cbegin()), lend_(lexes.cend()) {
+  this->lcurrent_ = this->lbegin_;
+}
 
 Procedure* Parser::parse(){
   delete this->advanceToken_();
