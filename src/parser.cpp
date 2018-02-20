@@ -251,14 +251,29 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
   return nullptr;
 }
 
-ASTNode* Parser::new_statement_(int i){
-  (void)i;
-  return nullptr;
+ASTNode* Parser::new_statement_(int bindp){
+  if(bindp >= this->bindp_(this->lcurrent_)){
+    return new ASTNode(ASTNodeType::Nop);
+  }
+  auto left = this->nud_(this->next_());
+  while(bindp < this->bindp_(this->lcurrent_)){
+    left = this->led_(this->next_(), left);
+  }
+  return left;
 }
+
 ASTNode* Parser::new_expression_(int i){
-  (void)i;
-  return nullptr;
+  this->skipNextNewlines_();
+  if(bindp > this->bindp_(this->lcurrent_)){
+    return new ASTNode(ASTNodeType::Nop);
+  }
+  auto left = this->nud_(this->nextNoNewline_());
+  while(bindp < this->bindp_(this->lcurrent_)){
+    left = this->led_(this->nextNoNewline_(), left);
+  }
+  return left;
 }
+
 ASTNode* Parser::new_ifExpr_(){
   return nullptr;
 }
