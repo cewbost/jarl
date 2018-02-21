@@ -34,8 +34,10 @@ class Parser{
   ASTNode* new_expression_(int);
   ASTNode* new_ifExpr_();
   ASTNode* whileExpr_();
-  Token* identifierList_();
+  ASTNode* identifierList_();
   ASTNode* new_funcExpr_();
+  ASTNode* new_varDecl_();
+  ASTNode* new_printExpr_();
   ASTNode* new_codeBlock_();
   
   Token* advanceToken_();

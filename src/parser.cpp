@@ -286,12 +286,12 @@ ASTNode* Parser::new_ifExpr_(){
   auto checkpoint = this->lcurrent_;
   this->skipNextNewlines_();
   if(this->lcurrent_->type == LexemeType::Else){
-    this->next_();
+    ++this->lcurrent_;
     this->skipNextNewlines_();
     else_stmt = this->new_statement_(func_bindp);
   }else{
     this->lcurrent_ = checkpoint;
-    this->next_();
+    ++this->lcurrent_;
     else_stmt = nullptr;
   }
   
@@ -329,7 +329,7 @@ ASTNode* Parser::new_identifierList_(){
     ASTNode** next_node = &node->string_list.next;
     
     while(this->lcurrent_->type == LexemeType::Comma){
-      this->next_();
+      ++this->lcurrent_;
       assert(this->lcurrent_->type == LexemeType::Identifier);
       
       *next_node = new ASTNode(
@@ -355,7 +355,62 @@ ASTNode* Parser::functionExpr_(){
   return new ASTNode(ASTNodeType::Function, arg_list, code);
 }
 
+ASTNode* Parser::new_varDecl_(){
+  return nullptr;
+}
+
+ASTNode* Parser::new_printExpr_(){
+  return nullptr;
+}
+
 ASTNode* Parser::new_codeBlock_(){
+  ASTNode* ret = new ASTNode(ASTNodeType::Nop);
+  ASTNode** node = &ret;
+  
+  for(;;){
+    switch(this->lcurrent_->type){
+    case LexemeType::End:
+    case LexemeType::RBrace:
+      if(ret->type == ASTNodeType::Seq){
+        ASTNode* temp = ret;
+        ret = ret->children[1];
+        delete temp->children[0];
+        temp->children[0] = nullptr;
+        temp->children[1] = nullptr;
+        delete temp;
+      }
+      return new ASTNode(ASTNodeType::CodeBlack, ret);
+    case LexemeType::Newline:
+    case LexemeType::Semicolon:
+      ++this->lcurrent_;
+      break;
+    case LexemeType::Var:
+      {
+        ++this->lcurrent_;
+        auto stmt = this->new_varDecl_();
+        ASTNode* seq = new ASTNode(ASTNodeType::Seq, *tok, stmt);
+        *node = seq;
+        node = &seq->children[1];
+      }
+      break;
+    case LexemeType::Print:
+      {
+        ++this->lcurrent_;
+        auto stmt = this->new_printExpr_();
+        ASTNode* seq = new ASTNode(ASTNodeType::Seq, *node, stmt);
+        *node = seq;
+        node = &seq->children[1];
+      }
+      break;
+    default:
+      {
+        auto stmt = this->new_statement_(def_expr_bindp);
+        ASTNode* seq = new ASTNode(ASTNodeType::Seq, *node, stmt);
+        *node = seq;
+        node = &seq->children[1];
+      }
+    }
+  }
   return nullptr;
 }
 
