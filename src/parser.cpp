@@ -275,8 +275,37 @@ ASTNode* Parser::new_expression_(int i){
 }
 
 ASTNode* Parser::new_ifExpr_(){
-  return nullptr;
+  ASTNode* condition = this->new_statement_(func_bindp)
+  if(!this->checkNext_(LexemeType::Colon)){
+    assert(false);
+  }
+  this->skipNextNewlines_();
+  ASTNode* stmt = this->new_statement_(func_bindp);
+  ASTNode* else_stmt;
+  
+  auto checkpoint = this->lcurrent_;
+  this->skipNextNewlines_();
+  if(this->lcurrent->type == LexemeType::Else){
+    this->next_();
+    this->skipNextNewlines_();
+    else_stmt = this->new_statement_(func_bindp);
+  }else{
+    this->lcurrent_ = checkpoint;
+    this->next_();
+    else_stmt = nullptr;
+  }
+  
+  return new ASTNode(
+    ASTNodeType::Conditional,
+    condition,
+    new ASTNode(
+      ASTNodeType::Branch,
+      stmt,
+      else_stmt? else_stmt : new ASTNode(ASTNodeType::Nop)
+    )
+  );
 }
+
 ASTNode* Parser::whileExpr_(){
   return nullptr;
 }
