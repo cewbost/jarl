@@ -11,18 +11,27 @@ using jarl::Int;
 using jarl::Float;
 
 enum class ASTNodeType: unsigned {
-  Nop,
+  Leaf = 0x0,
   
+  Nop,
   Null,
+  
   Int,
   Float,
   Bool,
   String,
   Identifier,
-  IdentifierList,
+  
+  OneChild = 0x100,
   
   Neg,
   Not,
+  
+  CodeBlock,
+  Array,
+  
+  TwoChildren = 0x200,
+  
   And,
   Or,
   
@@ -55,14 +64,16 @@ enum class ASTNodeType: unsigned {
   Conditional,
   Branch,
   While,
-  CodeBlock,
   
   Index,
   
   ExprList,
-  Array,
   Range,
-  Function
+  Function,
+  
+  StringList = 0x300,
+  
+  IdentifierList
 };
 
 struct ASTNode {
@@ -94,6 +105,11 @@ struct ASTNode {
   
   ASTNode(const ASTNode&) = delete;
   ASTNode& operator=(const ASTNode&) = delete;
+  
+  #ifndef NDEBUG
+  std::string toStr() const;
+  std::string toStr(int) const;
+  #endif
 };
 
 #endif
