@@ -19,11 +19,12 @@ void jarl::destroy_vm(vm v){
 void jarl::execute(vm v, const char* code){
   
   Lexer lex(code);
-  lex.lex();
+  auto lexemes = lex.lex();
   
-  //Parser parser(code);
+  Parser parser(lexemes);
   
-  //Procedure* proc = parser.parse();
+  Procedure* proc = parser.parse();
+  //std::cout << proc.toStr() << std::endl;
   //v->execute(*proc);
 }
 

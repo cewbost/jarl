@@ -16,54 +16,29 @@ class Parser{
   const Lexit_ lend_;
   Lexit_ lcurrent_;
   
-  Lexer lexer_;
-  
-  Token* current_;
-  
   const Lexeme& next_();
   const Lexeme& nextNoNewline_();
   bool checkNext_(LexemeType);
-  void skipNextNewlines_();
+  void skipNewlines_();
   
   static int bindp_(LexemeType);
   
   ASTNode* nud_(const Lexeme&);
   ASTNode* led_(const Lexeme&, ASTNode*);
   
-  ASTNode* new_statement_(int);
-  ASTNode* new_expression_(int);
-  ASTNode* new_ifExpr_();
+  ASTNode* statement_(int);
+  ASTNode* expression_(int);
+  ASTNode* ifExpr_();
   ASTNode* whileExpr_();
-  ASTNode* new_identifierList_();
+  ASTNode* identifierList_();
   ASTNode* functionExpr_();
-  ASTNode* new_varDecl_();
-  ASTNode* new_printExpr_();
-  ASTNode* new_codeBlock_();
-  
-  Token* advanceToken_();
-  Token* advanceTokenNoNewline_();
-  bool checkNextToken_(TokenType);
-  void skipNewlines_();
-  
-  Token* identifierList_();
-  Token* statement_(int);
-  Token* expression_(int);
-  Token* codeBlock_();
-  Token* varDecl_();
-  Token* printExpr_();
-  Token* ifExpr_();
-  Token* forExpr_();
-  Token* funcExpr_();
-  
-  static int bindp_(TokenType);
-  Token* nud_(Token*);
-  Token* led_(Token*, Token*);
+  ASTNode* varDecl_();
+  ASTNode* printExpr_();
+  ASTNode* codeBlock_();
   
 public:
   
-  Parser(const char*);
   Parser(const std::vector<Lexeme>&);
-  ~Parser();
   
   Procedure* parse();
 };
