@@ -51,11 +51,18 @@ enum class ASTNodeType: unsigned {
   
   Apply,
   
+  Seq,
+  Conditional,
+  Branch,
+  While,
+  CodeBlock,
+  
   Index,
   
   ExprList,
   Array,
-  Range
+  Range,
+  Function
 };
 
 struct ASTNode {

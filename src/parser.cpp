@@ -35,8 +35,8 @@ void Parser::skipNextNewlines_(){
   }
 }
 
-int Parser::bindp_(const Lexeme& lex){
-  return static_cast<unsigned>(lex.type) & ~0xf;
+int Parser::bindp_(LexemeType type){
+  return static_cast<unsigned>(type) & ~0xf;
 }
 
 constexpr int def_expr_bindp  = 15;
@@ -122,7 +122,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
     return this->whileExpr_();
   
   case LexemeType::Func:
-    return this->new_funcExpr_();
+    return this->functionExpr_();
   
   case LexemeType::LParen:
     {
@@ -252,30 +252,30 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
 }
 
 ASTNode* Parser::new_statement_(int bindp){
-  if(bindp >= this->bindp_(this->lcurrent_)){
+  if(bindp >= this->bindp_(this->lcurrent_->type)){
     return new ASTNode(ASTNodeType::Nop);
   }
   auto left = this->nud_(this->next_());
-  while(bindp < this->bindp_(this->lcurrent_)){
+  while(bindp < this->bindp_(this->lcurrent_->type)){
     left = this->led_(this->next_(), left);
   }
   return left;
 }
 
-ASTNode* Parser::new_expression_(int i){
+ASTNode* Parser::new_expression_(int bindp){
   this->skipNextNewlines_();
-  if(bindp > this->bindp_(this->lcurrent_)){
+  if(bindp > this->bindp_(this->lcurrent_->type)){
     return new ASTNode(ASTNodeType::Nop);
   }
   auto left = this->nud_(this->nextNoNewline_());
-  while(bindp < this->bindp_(this->lcurrent_)){
+  while(bindp < this->bindp_(this->lcurrent_->type)){
     left = this->led_(this->nextNoNewline_(), left);
   }
   return left;
 }
 
 ASTNode* Parser::new_ifExpr_(){
-  ASTNode* condition = this->new_statement_(func_bindp)
+  ASTNode* condition = this->new_statement_(func_bindp);
   if(!this->checkNext_(LexemeType::Colon)){
     assert(false);
   }
@@ -350,7 +350,7 @@ ASTNode* Parser::functionExpr_(){
     assert(false);
   }
   this->skipNextNewlines_();
-  ASTNode* code = this->statement_(func_bindp);
+  ASTNode* code = this->new_statement_(func_bindp);
   
   return new ASTNode(ASTNodeType::Function, arg_list, code);
 }
@@ -379,7 +379,7 @@ ASTNode* Parser::new_codeBlock_(){
         temp->children[1] = nullptr;
         delete temp;
       }
-      return new ASTNode(ASTNodeType::CodeBlack, ret);
+      return new ASTNode(ASTNodeType::CodeBlock, ret);
     case LexemeType::Newline:
     case LexemeType::Semicolon:
       ++this->lcurrent_;
@@ -388,7 +388,7 @@ ASTNode* Parser::new_codeBlock_(){
       {
         ++this->lcurrent_;
         auto stmt = this->new_varDecl_();
-        ASTNode* seq = new ASTNode(ASTNodeType::Seq, *tok, stmt);
+        ASTNode* seq = new ASTNode(ASTNodeType::Seq, *node, stmt);
         *node = seq;
         node = &seq->children[1];
       }

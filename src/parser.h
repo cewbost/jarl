@@ -25,7 +25,7 @@ class Parser{
   bool checkNext_(LexemeType);
   void skipNextNewlines_();
   
-  static int bindp_(const Lexeme&);
+  static int bindp_(LexemeType);
   
   ASTNode* nud_(const Lexeme&);
   ASTNode* led_(const Lexeme&, ASTNode*);
@@ -34,8 +34,8 @@ class Parser{
   ASTNode* new_expression_(int);
   ASTNode* new_ifExpr_();
   ASTNode* whileExpr_();
-  ASTNode* identifierList_();
-  ASTNode* new_funcExpr_();
+  ASTNode* new_identifierList_();
+  ASTNode* functionExpr_();
   ASTNode* new_varDecl_();
   ASTNode* new_printExpr_();
   ASTNode* new_codeBlock_();
