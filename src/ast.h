@@ -19,6 +19,7 @@ enum class ASTNodeType: unsigned {
   Bool,
   String,
   Identifier,
+  IdentifierList,
   
   Neg,
   Not,
@@ -66,11 +67,16 @@ struct ASTNode {
     Float float_value;
     String* string_value;
     bool bool_value;
+    struct {
+      ASTNode* next;
+      String* value;
+    } string_list;
   };
   
   ASTNode(ASTNodeType);
   ASTNode(ASTNodeType, ASTNode*);
   ASTNode(ASTNodeType, ASTNode*, ASTNode*);
+  ASTNode(ASTNodeType, String*, ASTNode*);
   
   ASTNode(ASTNodeType, Int);
   ASTNode(ASTNodeType, Float);

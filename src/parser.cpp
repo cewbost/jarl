@@ -285,7 +285,7 @@ ASTNode* Parser::new_ifExpr_(){
   
   auto checkpoint = this->lcurrent_;
   this->skipNextNewlines_();
-  if(this->lcurrent->type == LexemeType::Else){
+  if(this->lcurrent_->type == LexemeType::Else){
     this->next_();
     this->skipNextNewlines_();
     else_stmt = this->new_statement_(func_bindp);
@@ -307,11 +307,54 @@ ASTNode* Parser::new_ifExpr_(){
 }
 
 ASTNode* Parser::whileExpr_(){
-  return nullptr;
+  ASTNode* condition = this->new_statement_(func_bindp);
+  if(!this->checkNext_(LexemeType::Colon)){
+    assert(false);
+  }
+  this->skipNextNewlines_();
+  ASTNode* stmt = this->new_statement_(func_bindp);
+  
+  return new ASTNode(ASTNodeType::While, condition, stmt);
 }
-ASTNode* Parser::new_funcExpr_(){
-  return nullptr;
+
+ASTNode* Parser::new_identifierList_(){
+  ASTNode* node = new ASTNode(ASTNodeType::Nop);
+  
+  if(this->lcurrent_->type == LexemeType::Identifier){
+    node = new ASTNode(
+      ASTNodeType::IdentifierList,
+      this->next_().value.s,
+      node
+    );
+    ASTNode** next_node = &node->string_list.next;
+    
+    while(this->lcurrent_->type == LexemeType::Comma){
+      this->next_();
+      assert(this->lcurrent_->type == LexemeType::Identifier);
+      
+      *next_node = new ASTNode(
+        ASTNodeType::IdentifierList,
+        this->next_().value.s,
+        *next_node
+      );
+      next_node = &((*next_node)->string_list.next);
+    }
+  }
+  return node;
 }
+
+ASTNode* Parser::functionExpr_(){
+  ASTNode* arg_list = this->new_identifierList_();
+  
+  if(!this->checkNext_(LexemeType::Colon)){
+    assert(false);
+  }
+  this->skipNextNewlines_();
+  ASTNode* code = this->statement_(func_bindp);
+  
+  return new ASTNode(ASTNodeType::Function, arg_list, code);
+}
+
 ASTNode* Parser::new_codeBlock_(){
   return nullptr;
 }

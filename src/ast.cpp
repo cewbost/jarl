@@ -11,6 +11,10 @@ ASTNode::ASTNode(ASTNodeType type, ASTNode* child1, ASTNode* child2): type(type)
   this->children[0] = child1;
   this->children[1] = child2;
 }
+ASTNode::ASTNode(ASTNodeType type, String* str, ASTNode* nex): type(type){
+  this->string_list.value = str;
+  this->string_list.next = nex;
+}
 
 ASTNode::ASTNode(ASTNodeType type, Int i): type(type){
   this->int_value = i;
@@ -32,7 +36,12 @@ ASTNode::~ASTNode(){
   case ASTNodeType::Bool:
     break;
   case ASTNodeType::String:
+  case ASTNodeType::Identifier:
     this->string_value->decRefCount();
+    break;
+  case ASTNodeType::IdentifierList:
+    this->string_list.value->decRefCount();
+    delete this->string_list.next;
     break;
   default:
     delete this->children[0];
