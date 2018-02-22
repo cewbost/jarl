@@ -2,7 +2,6 @@
 #define PARSER_H_INCLUDED
 
 #include "lexer.h"
-#include "token.h"
 #include "procedure.h"
 #include "ast.h"
 

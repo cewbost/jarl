@@ -173,6 +173,9 @@ std::string ASTNode::toStr(int indent) const {
       ret += this->bool_value? "true" : "false";
       break;
     case ASTNodeType::String:
+      ret += ": ";
+      ret += unlexString(this->string_value->str());
+      break;
     case ASTNodeType::Identifier:
       ret += ": ";
       ret += this->string_value->str();
