@@ -2,20 +2,17 @@
 
 #include <cassert>
 
-ASTNode::ASTNode(ASTNodeType type): type(type){
-  this->children[0] = this->children[1] = nullptr;
-}
+ASTNode::ASTNode(ASTNodeType type): type(type){}
 ASTNode::ASTNode(ASTNodeType type, ASTNode* child): type(type){
-  this->children[0] = child;
-  this->children[1] = nullptr;
+  this->child = child;
 }
 ASTNode::ASTNode(ASTNodeType type, ASTNode* child1, ASTNode* child2): type(type){
   this->children[0] = child1;
   this->children[1] = child2;
 }
 ASTNode::ASTNode(ASTNodeType type, String* str, ASTNode* nex): type(type){
-  this->string_list.value = str;
-  this->string_list.next = nex;
+  this->string_branch.value = str;
+  this->string_branch.next = nex;
 }
 
 ASTNode::ASTNode(ASTNodeType type, Int i): type(type){
@@ -32,22 +29,25 @@ ASTNode::ASTNode(ASTNodeType type, bool b): type(type){
 }
 
 ASTNode::~ASTNode(){
-  switch(this->type){
-  case ASTNodeType::Int:
-  case ASTNodeType::Float:
-  case ASTNodeType::Bool:
+  switch(
+    static_cast<ASTNodeType>(
+      static_cast<unsigned>(this->type) & ~0xff
+    )
+  ){
+  case ASTNodeType::Leaf:
     break;
-  case ASTNodeType::String:
-  case ASTNodeType::Identifier:
-    this->string_value->decRefCount();
+  case ASTNodeType::OneChild:
+    delete this->child;
     break;
-  case ASTNodeType::IdentifierList:
-    this->string_list.value->decRefCount();
-    delete this->string_list.next;
-    break;
-  default:
+  case ASTNodeType::TwoChildren:
     delete this->children[0];
     delete this->children[1];
+    break;
+  case ASTNodeType::StringBranch:
+    delete this->string_branch.next;
+    break;
+  default:
+    assert(false);
   }
 }
 
@@ -147,6 +147,10 @@ std::string ASTNode::toStr(int indent) const {
     ret += "range"; break;
   case ASTNodeType::Function:
     ret += "function"; break;
+  case ASTNodeType::VarDecl:
+    ret += "var"; break;
+  case ASTNodeType::Print:
+    ret += "print"; break;
   }
   
   switch(
@@ -180,18 +184,18 @@ std::string ASTNode::toStr(int indent) const {
     break;
   case ASTNodeType::OneChild:
     ret += "\n";
-    ret += this->children[0]->toStr(indent + 1);
+    ret += this->child->toStr(indent + 1);
     break;
   case ASTNodeType::TwoChildren:
     ret += "\n";
-    if(this->children[0]) ret += this->children[0]->toStr(indent + 1);
-    if(this->children[1]) ret += this->children[1]->toStr(indent + 1);
+    ret += this->children[0]->toStr(indent + 1);
+    ret += this->children[1]->toStr(indent + 1);
     break;
-  case ASTNodeType::StringList:
+  case ASTNodeType::StringBranch:
     ret += ": ";
-    ret += this->string_list.value->str();
+    ret += this->string_branch.value->str();
     ret += "\n";
-    ret += this->string_list.next->toStr(indent + 1);
+    ret += this->string_branch.next->toStr(indent + 1);
     break;
   default:
     assert(false);

@@ -29,6 +29,7 @@ enum class ASTNodeType: unsigned {
   
   CodeBlock,
   Array,
+  Print,
   
   TwoChildren = 0x200,
   
@@ -71,15 +72,17 @@ enum class ASTNodeType: unsigned {
   Range,
   Function,
   
-  StringList = 0x300,
+  StringBranch = 0x300,
   
-  IdentifierList
+  IdentifierList,
+  VarDecl
 };
 
 struct ASTNode {
   
   ASTNodeType type;
   union{
+    ASTNode* child;
     ASTNode* children[2];
     Int int_value;
     Float float_value;
@@ -88,7 +91,7 @@ struct ASTNode {
     struct {
       ASTNode* next;
       String* value;
-    } string_list;
+    } string_branch;
   };
   
   ASTNode(ASTNodeType);

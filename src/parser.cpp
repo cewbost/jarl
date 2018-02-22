@@ -267,7 +267,7 @@ ASTNode* Parser::identifierList_(){
       this->next_().value.s,
       node
     );
-    ASTNode** next_node = &node->string_list.next;
+    ASTNode** next_node = &node->string_branch.next;
     
     while(this->lcurrent_->type == LexemeType::Comma){
       ++this->lcurrent_;
@@ -278,7 +278,7 @@ ASTNode* Parser::identifierList_(){
         this->next_().value.s,
         *next_node
       );
-      next_node = &((*next_node)->string_list.next);
+      next_node = &((*next_node)->string_branch.next);
     }
   }
   return node;
@@ -297,11 +297,23 @@ ASTNode* Parser::functionExpr_(){
 }
 
 ASTNode* Parser::varDecl_(){
-  return nullptr;
+  auto ret = new ASTNode(ASTNodeType::VarDecl);
+  auto iden = this->next_();
+  assert(iden.type == LexemeType::Identifier);
+  ret->string_branch.value = iden.value.s;
+  
+  auto next = this->next_();
+  if(next.type == LexemeType::Assign){
+    ret->string_branch.next = this->statement_(def_expr_bindp);
+  }else assert(false);
+  
+  return ret;
 }
 
 ASTNode* Parser::printExpr_(){
-  return nullptr;
+  auto ret = new ASTNode(ASTNodeType::Print);
+  ret->child = this->statement_(def_expr_bindp);
+  return ret;
 }
 
 ASTNode* Parser::codeBlock_(){
