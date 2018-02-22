@@ -306,10 +306,6 @@ std::vector<Lexeme> Lexer::lex(){
   
   lexemes.emplace_back(LexemeType::End);
   
-  for(auto lex: lexemes){
-    std::cout << lex.toStr() << std::endl;
-  }
-  
   return lexemes;
 }
 

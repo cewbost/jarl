@@ -56,8 +56,9 @@ std::string ASTNode::toStr() const {
   return this->toStr(0);
 }
 std::string ASTNode::toStr(int indent) const {
+  
   std::string ret = "";
-  for(int i = 0; i < indent; ++i) ret += "  ";
+  for(int i = 0; i < indent; ++i) ret += "| ";
   
   switch(this->type){
   case ASTNodeType::Nop:
@@ -175,6 +176,7 @@ std::string ASTNode::toStr(int indent) const {
     default:
       break;
     }
+    ret += "\n";
     break;
   case ASTNodeType::OneChild:
     ret += "\n";
@@ -182,8 +184,8 @@ std::string ASTNode::toStr(int indent) const {
     break;
   case ASTNodeType::TwoChildren:
     ret += "\n";
-    ret += this->children[0]->toStr(indent + 1);
-    ret += this->children[1]->toStr(indent + 1);
+    if(this->children[0]) ret += this->children[0]->toStr(indent + 1);
+    if(this->children[1]) ret += this->children[1]->toStr(indent + 1);
     break;
   case ASTNodeType::StringList:
     ret += ": ";
@@ -194,8 +196,6 @@ std::string ASTNode::toStr(int indent) const {
   default:
     assert(false);
   }
-  
-  ret += "\n";
   return ret;
 }
 #endif

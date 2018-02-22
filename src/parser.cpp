@@ -8,8 +8,8 @@
 #include <iostream>
 #endif
 
-constexpr int def_expr_bindp  = 15;
-constexpr int func_bindp      = 45;
+constexpr int def_expr_bindp  = static_cast<int>(LexemeType::RightAssocClass);
+constexpr int func_bindp      = static_cast<int>(LexemeType::LeftAssocClass);
 
 const Lexeme& Parser::next_(){
   const Lexeme& next = *this->lcurrent_;
@@ -364,9 +364,9 @@ Procedure* Parser::parse(){
   auto parse_tree = this->codeBlock_();
   
   #ifndef NDEBUG
-  //std::cout << "::AST::\n";
+  std::cout << "::AST::\n";
   
-  //std::cout << tok->toStr() << std::endl;
+  std::cout << parse_tree->toStr() << std::endl;
   
   //std::cout << "::proc::\n";
   #endif
