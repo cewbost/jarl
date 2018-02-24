@@ -377,14 +377,10 @@ Procedure* Parser::parse(){
   
   #ifndef NDEBUG
   std::cout << "::AST::\n";
-  
   std::cout << parse_tree->toStr() << std::endl;
-  
-  //std::cout << "::proc::\n";
   #endif
   
-  //Procedure* proc = new Procedure(parse_tree);
+  Procedure* proc = new Procedure(parse_tree);
   
-  //return proc;
-  return nullptr;
+  return proc;
 }

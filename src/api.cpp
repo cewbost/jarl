@@ -24,8 +24,7 @@ void jarl::execute(vm v, const char* code){
   Parser parser(lexemes);
   
   Procedure* proc = parser.parse();
-  //std::cout << proc.toStr() << std::endl;
-  //v->execute(*proc);
+  v->execute(*proc);
 }
 
 void jarl::set_print_func(vm v, void(*func)(const char*)){
