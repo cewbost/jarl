@@ -26,8 +26,6 @@ public:
   void revert();
   
   std::vector<Lexeme> lex();
-  
-  Token* next();
 };
 
 #endif

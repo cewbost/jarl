@@ -375,10 +375,12 @@ Parser::Parser(const std::vector<Lexeme>& lexes)
 Procedure* Parser::parse(){
   auto parse_tree = this->codeBlock_();
   
+  /*
   #ifndef NDEBUG
   std::cout << "::AST::\n";
   std::cout << parse_tree->toStr() << std::endl;
   #endif
+  */
   
   Procedure* proc = new Procedure(parse_tree);
   

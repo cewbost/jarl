@@ -309,9 +309,6 @@ std::vector<Lexeme> Lexer::lex(){
   return lexemes;
 }
 
-Token* Lexer::next(){
-  return nullptr;
-}
 
 void Lexer::setCheckpoint(){
   this->_checkpoints.push_back(this->old_reader_);
