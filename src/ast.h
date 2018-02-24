@@ -11,9 +11,12 @@ using jarl::Int;
 using jarl::Float;
 
 enum class ASTNodeType: unsigned {
-  Leaf = 0x0,
+  Leaf = 0x0000,
   
   Nop,
+  
+  Value = 0x0100,
+  
   Null,
   
   Int,
@@ -22,27 +25,30 @@ enum class ASTNodeType: unsigned {
   String,
   Identifier,
   
-  OneChild = 0x100,
-  
-  Neg,
-  Not,
+  OneChild = 0x1000,
   
   CodeBlock,
   Array,
   Print,
   
-  TwoChildren = 0x200,
+  UnaryExpr = 0x1100,
   
-  And,
-  Or,
+  Neg,
+  Not,
   
-  Assign,
-  AddAssign,
-  SubAssign,
-  MulAssign,
-  DivAssign,
-  ModAssign,
-  AppendAssign,
+  TwoChildren = 0x2000,
+  
+  Seq,
+  Branch,
+  While,
+  
+  Index,
+  
+  ExprList,
+  Range,
+  Function,
+  
+  BinaryExpr = 0x2100,
   
   Add,
   Sub,
@@ -61,18 +67,24 @@ enum class ASTNodeType: unsigned {
   
   Apply,
   
-  Seq,
+  BranchExpr = 0x2200,
+  
+  And,
+  Or,
+  
   Conditional,
-  Branch,
-  While,
   
-  Index,
+  AssignExpr = 0x2300,
   
-  ExprList,
-  Range,
-  Function,
+  Assign,
+  AddAssign,
+  SubAssign,
+  MulAssign,
+  DivAssign,
+  ModAssign,
+  AppendAssign,
   
-  StringBranch = 0x300,
+  StringBranch = 0x3000,
   
   IdentifierList,
   VarDecl
@@ -83,7 +95,9 @@ struct ASTNode {
   ASTNodeType type;
   union{
     ASTNode* child;
-    ASTNode* children[2];
+    struct {
+      ASTNode *first, *second;
+    } children;
     Int int_value;
     Float float_value;
     String* string_value;

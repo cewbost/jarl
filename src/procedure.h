@@ -4,6 +4,7 @@
 #include "rc_trait.h"
 #include "value.h"
 #include "token.h"
+#include "ast.h"
 #include "vector_map.h"
 #include "vector_set.h"
 #include "delegate_map.h"
@@ -101,6 +102,14 @@ class Procedure: public RcTraitDirect<Procedure>{
     int*,
     bool = true
   );
+  void threadAST_(
+    ASTNode*,
+    VarAllocMap*,
+    VarAllocMap*,
+    VectorSet<TypedValue>*,
+    int*,
+    bool = true
+  );
   
   std::vector<OpCodeType> code_;
   std::vector<TypedValue> values_;
@@ -110,6 +119,7 @@ public:
   int arguments;
   
   Procedure(Token*, VarAllocMap* = nullptr, VarAllocMap* = nullptr);
+  Procedure(ASTNode*, VarAllocMap* = nullptr, VarAllocMap* = nullptr);
   
   Procedure(const Procedure&) = delete;
   Procedure(Procedure&&) = delete;

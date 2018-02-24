@@ -326,10 +326,10 @@ ASTNode* Parser::codeBlock_(){
     case LexemeType::RBrace:
       if(ret->type == ASTNodeType::Seq){
         ASTNode* temp = ret;
-        ret = ret->children[1];
-        delete temp->children[0];
-        temp->children[0] = nullptr;
-        temp->children[1] = nullptr;
+        ret = ret->children.second;
+        delete temp->children.first;
+        temp->children.first = nullptr;
+        temp->children.second = nullptr;
         delete temp;
       }
       return new ASTNode(ASTNodeType::CodeBlock, ret);
@@ -343,7 +343,7 @@ ASTNode* Parser::codeBlock_(){
         auto stmt = this->varDecl_();
         ASTNode* seq = new ASTNode(ASTNodeType::Seq, *node, stmt);
         *node = seq;
-        node = &seq->children[1];
+        node = &seq->children.second;
       }
       break;
     case LexemeType::Print:
@@ -352,7 +352,7 @@ ASTNode* Parser::codeBlock_(){
         auto stmt = this->printExpr_();
         ASTNode* seq = new ASTNode(ASTNodeType::Seq, *node, stmt);
         *node = seq;
-        node = &seq->children[1];
+        node = &seq->children.second;
       }
       break;
     default:
@@ -360,7 +360,7 @@ ASTNode* Parser::codeBlock_(){
         auto stmt = this->statement_(def_expr_bindp);
         ASTNode* seq = new ASTNode(ASTNodeType::Seq, *node, stmt);
         *node = seq;
-        node = &seq->children[1];
+        node = &seq->children.second;
       }
     }
   }

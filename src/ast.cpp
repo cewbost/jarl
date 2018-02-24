@@ -7,8 +7,8 @@ ASTNode::ASTNode(ASTNodeType type, ASTNode* child): type(type){
   this->child = child;
 }
 ASTNode::ASTNode(ASTNodeType type, ASTNode* child1, ASTNode* child2): type(type){
-  this->children[0] = child1;
-  this->children[1] = child2;
+  this->children.first = child1;
+  this->children.second = child2;
 }
 ASTNode::ASTNode(ASTNodeType type, String* str, ASTNode* nex): type(type){
   this->string_branch.value = str;
@@ -31,7 +31,7 @@ ASTNode::ASTNode(ASTNodeType type, bool b): type(type){
 ASTNode::~ASTNode(){
   switch(
     static_cast<ASTNodeType>(
-      static_cast<unsigned>(this->type) & ~0xff
+      static_cast<unsigned>(this->type) & ~0xfff
     )
   ){
   case ASTNodeType::Leaf:
@@ -40,8 +40,8 @@ ASTNode::~ASTNode(){
     delete this->child;
     break;
   case ASTNodeType::TwoChildren:
-    delete this->children[0];
-    delete this->children[1];
+    delete this->children.first;
+    delete this->children.second;
     break;
   case ASTNodeType::StringBranch:
     delete this->string_branch.next;
@@ -155,7 +155,7 @@ std::string ASTNode::toStr(int indent) const {
   
   switch(
     static_cast<ASTNodeType>(
-      static_cast<unsigned>(this->type) & ~0xff
+      static_cast<unsigned>(this->type) & ~0xfff
     )
   ){
   case ASTNodeType::Leaf:
@@ -191,8 +191,8 @@ std::string ASTNode::toStr(int indent) const {
     break;
   case ASTNodeType::TwoChildren:
     ret += "\n";
-    ret += this->children[0]->toStr(indent + 1);
-    ret += this->children[1]->toStr(indent + 1);
+    ret += this->children.first->toStr(indent + 1);
+    ret += this->children.second->toStr(indent + 1);
     break;
   case ASTNodeType::StringBranch:
     ret += ": ";
