@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <iostream>
+
 namespace{
   
   constexpr uint64_t utf8Mask_(int bytes){
@@ -89,7 +91,7 @@ Lexer::Lexer(const char* mem){
   this->reader_ = mem;
 }
 
-Token* Lexer::next(){
+std::vector<Lexeme> Lexer::lex(){
   const char* marker;
   const char* token;
   
@@ -98,6 +100,12 @@ Token* Lexer::next(){
   this->old_reader_ = this->reader_;
   
   #define YYDEBUG(state, current)
+  
+  std::vector<Lexeme> lexemes;
+  
+  #define NEW_LEXEME(params) \
+    lexemes.emplace_back(params); \
+    continue;
   
   for(;;){
     token = this->reader_;
@@ -116,26 +124,18 @@ Token* Lexer::next(){
       *       {break;}
       
       //whitespace
-      [ \t\r\v\f] {continue;}
-      "\n"        {return new Token(TokenType::NewlineToken);}
+      [ \t\r\v\f]         {continue;}
+      "\n"                {NEW_LEXEME(LexemeType::Newline)}
       
       //comments
-      "//" [^\x00\n]* {continue;}
-      "/""*"          {counter = 1; goto lex_block_comment;}
+      "//" [^\x00\n]*     {continue;}
+      "/""*"              {counter = 1; goto lex_block_comment;}
       
       //integer litterals
-      [0-9]+ {
-        return new Token(strtoull(token, nullptr, 10));
-      }
-      '0'[bB][0-1]+ {
-        return new Token(strtoull(token + 2, nullptr, 2));
-      }
-      '0'[oO][0-7]+ {
-        return new Token(strtoull(token + 2, nullptr, 8));
-      }
-      '0'[xX][0-9a-fA-F]+ {
-        return new Token(strtoull(token + 2, nullptr, 16));
-      }
+      [0-9]+              {NEW_LEXEME(strtoull(token, nullptr, 10))}
+      '0'[bB][0-1]+       {NEW_LEXEME(strtoull(token + 2, nullptr, 2))}
+      '0'[oO][0-7]+       {NEW_LEXEME(strtoull(token + 2, nullptr, 8))}
+      '0'[xX][0-9a-fA-F]+ {NEW_LEXEME(strtoull(token + 2, nullptr, 16))}
       
       //float litterals
       dfrc = [0-9]* "." [0-9]+ | [0-9]+ ".";
@@ -145,9 +145,7 @@ Token* Lexer::next(){
       dflt = (dfrc dexp? | [0-9]+ dexp);
       bflt = '0' [xX] (bfrc bexp? | [0-9a-fA-F]+ bexp);
       flt  = bflt | dflt;
-      flt {
-        return new Token(atof(token));
-      }
+      flt                 {NEW_LEXEME(atof(token))}
       
       //string litterals
       "\"" {
@@ -155,51 +153,51 @@ Token* Lexer::next(){
       }
       
       //operators
-      "<-"  {return new Token(TokenType::InsertToken);}
-      "+"   {return new Token(TokenType::PlusToken);}
-      "-"   {return new Token(TokenType::MinusToken);}
-      "*"   {return new Token(TokenType::MulToken);}
-      "/"   {return new Token(TokenType::DivToken);}
-      "%"   {return new Token(TokenType::ModToken);}
-      "++"  {return new Token(TokenType::AppendToken);}
-      "="   {return new Token(TokenType::AssignToken);}
-      "+="  {return new Token(TokenType::PlusAssignToken);}
-      "-="  {return new Token(TokenType::MinusAssignToken);}
-      "*="  {return new Token(TokenType::MulAssignToken);}
-      "/="  {return new Token(TokenType::DivAssignToken);}
-      "%="  {return new Token(TokenType::ModAssignToken);}
-      "++=" {return new Token(TokenType::AppendAssignToken);}
-      "=="  {return new Token(TokenType::EqToken);}
-      "!="  {return new Token(TokenType::NeqToken);}
-      ">"   {return new Token(TokenType::GtToken);}
-      "<"   {return new Token(TokenType::LtToken);}
-      ">="  {return new Token(TokenType::GeqToken);}
-      "<="  {return new Token(TokenType::LeqToken);}
-      "<=>" {return new Token(TokenType::CmpToken);}
-      "("   {return new Token(TokenType::LParenToken);}
-      ")"   {return new Token(TokenType::RParenToken);}
-      "{"   {return new Token(TokenType::LBraceToken);}
-      "}"   {return new Token(TokenType::RBraceToken);}
-      "["   {return new Token(TokenType::LBracketToken);}
-      "]"   {return new Token(TokenType::RBracketToken);}
-      ","   {return new Token(TokenType::CommaToken);}
-      //"@"   {return new Token(TokenType::ApplyToken);}
-      ";"   {return new Token(TokenType::SemicolonToken);}
-      ":"   {return new Token(TokenType::ColonToken);}
+      //"<-"  {NEW_LEXEME(LexemeType::Insert)}
+      "+"   {NEW_LEXEME(LexemeType::Plus)}
+      "-"   {NEW_LEXEME(LexemeType::Minus)}
+      "*"   {NEW_LEXEME(LexemeType::Mul)}
+      "/"   {NEW_LEXEME(LexemeType::Div)}
+      "%"   {NEW_LEXEME(LexemeType::Mod)}
+      "++"  {NEW_LEXEME(LexemeType::Append)}
+      "="   {NEW_LEXEME(LexemeType::Assign)}
+      "+="  {NEW_LEXEME(LexemeType::AddAssign)}
+      "-="  {NEW_LEXEME(LexemeType::SubAssign)}
+      "*="  {NEW_LEXEME(LexemeType::MulAssign)}
+      "/="  {NEW_LEXEME(LexemeType::DivAssign)}
+      "%="  {NEW_LEXEME(LexemeType::ModAssign)}
+      "++=" {NEW_LEXEME(LexemeType::AppendAssign)}
+      "=="  {NEW_LEXEME(LexemeType::Eq)}
+      "!="  {NEW_LEXEME(LexemeType::Neq)}
+      ">"   {NEW_LEXEME(LexemeType::Gt)}
+      "<"   {NEW_LEXEME(LexemeType::Lt)}
+      ">="  {NEW_LEXEME(LexemeType::Geq)}
+      "<="  {NEW_LEXEME(LexemeType::Leq)}
+      "<=>" {NEW_LEXEME(LexemeType::Cmp)}
+      "("   {NEW_LEXEME(LexemeType::LParen)}
+      ")"   {NEW_LEXEME(LexemeType::RParen)}
+      "{"   {NEW_LEXEME(LexemeType::LBrace)}
+      "}"   {NEW_LEXEME(LexemeType::RBrace)}
+      "["   {NEW_LEXEME(LexemeType::LBracket)}
+      "]"   {NEW_LEXEME(LexemeType::RBracket)}
+      ","   {NEW_LEXEME(LexemeType::Comma)}
+      //"@"   {NEW_LEXEME(LexemeType::Apply)}
+      ";"   {NEW_LEXEME(LexemeType::Semicolon)}
+      ":"   {NEW_LEXEME(LexemeType::Colon)}
       
       //keywords
-      "var"   {return new Token(TokenType::VarToken);}
-      "null"  {return new Token(TokenType::NullToken);}
-      "true"  {return new Token(true);}
-      "false" {return new Token(false);}
-      "not"   {return new Token(TokenType::NotToken);}
-      "and"   {return new Token(TokenType::AndToken);}
-      "or"    {return new Token(TokenType::OrToken);}
-      "if"    {return new Token(TokenType::IfToken);}
-      "else"  {return new Token(TokenType::ElseToken);}
-      "while" {return new Token(TokenType::WhileToken);}
-      "func"  {return new Token(TokenType::FuncToken);}
-      "print" {return new Token(TokenType::PrintToken);}
+      "var"   {NEW_LEXEME(LexemeType::Var)}
+      "null"  {NEW_LEXEME(LexemeType::Null)}
+      "true"  {NEW_LEXEME(true)}
+      "false" {NEW_LEXEME(false)}
+      "not"   {NEW_LEXEME(LexemeType::Not)}
+      "and"   {NEW_LEXEME(LexemeType::And)}
+      "or"    {NEW_LEXEME(LexemeType::Or)}
+      "if"    {NEW_LEXEME(LexemeType::If)}
+      "else"  {NEW_LEXEME(LexemeType::Else)}
+      "while" {NEW_LEXEME(LexemeType::While)}
+      "func"  {NEW_LEXEME(LexemeType::Func)}
+      "print" {NEW_LEXEME(LexemeType::Print)}
       
       //identifiers
       [a-zA-Z_\x80-\xff][0-9a-zA-Z_\x80-\xff]* {
@@ -216,13 +214,14 @@ Token* Lexer::next(){
         }else{
           str = it->second.get();
         }
-        return new Token(TokenType::IdentifierToken, str);
+        lexemes.emplace_back(LexemeType::Identifier, str);
+        continue;
       }
       
       //parameters
-      "$" [1-9][0-9]* {
-        return new Token(TokenType::ParamToken, strtoull(token + 1, nullptr, 10));
-      }
+      //"$" [1-9][0-9]* {
+      //  return new Token(TokenType::ParamToken, strtoull(token + 1, nullptr, 10));
+      //}
     */
   
   lex_string: {
@@ -252,7 +251,8 @@ Token* Lexer::next(){
           }else{
             str = it->second.get();
           }
-          return new Token(str);
+          lexemes.emplace_back(str);
+          continue;
         }
         
         "\\a"   {str.push_back('\a'); goto lex_string_L1;}
@@ -302,10 +302,13 @@ Token* Lexer::next(){
     */
   }
   
-  return new Token(TokenType::EndToken);
+  #undef NEW_LEXEME
   
-  #undef YYDEBUG
+  lexemes.emplace_back(LexemeType::End);
+  
+  return lexemes;
 }
+
 
 void Lexer::setCheckpoint(){
   this->_checkpoints.push_back(this->old_reader_);

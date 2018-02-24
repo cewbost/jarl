@@ -1,5 +1,6 @@
 #include <jarl.h>
 
+#include "lexer.h"
 #include "parser.h"
 #include "vm.h"
 
@@ -16,7 +17,11 @@ void jarl::destroy_vm(vm v){
 }
 
 void jarl::execute(vm v, const char* code){
-  Parser parser(code);
+  
+  Lexer lex(code);
+  auto lexemes = lex.lex();
+  
+  Parser parser(lexemes);
   
   Procedure* proc = parser.parse();
   v->execute(*proc);

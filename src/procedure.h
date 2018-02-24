@@ -3,7 +3,7 @@
 
 #include "rc_trait.h"
 #include "value.h"
-#include "token.h"
+#include "ast.h"
 #include "vector_map.h"
 #include "vector_set.h"
 #include "delegate_map.h"
@@ -24,7 +24,6 @@
 */
 
 class TypedValue;
-class Token;
 
 using OpCodeType        = uint16_t;
 using OpCodeSignedType  = int16_t;
@@ -94,7 +93,7 @@ using VectorMapBase = std::vector<std::pair<String* const, OpCodeType>>;
 class Procedure: public RcTraitDirect<Procedure>{
   
   void threadAST_(
-    Token*,
+    ASTNode*,
     VarAllocMap*,
     VarAllocMap*,
     VectorSet<TypedValue>*,
@@ -109,7 +108,7 @@ public:
   
   int arguments;
   
-  Procedure(Token*, VarAllocMap* = nullptr, VarAllocMap* = nullptr);
+  Procedure(ASTNode*, VarAllocMap* = nullptr, VarAllocMap* = nullptr);
   
   Procedure(const Procedure&) = delete;
   Procedure(Procedure&&) = delete;

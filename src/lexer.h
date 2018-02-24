@@ -4,7 +4,7 @@
 #include "value.h"
 #include "string_view.h"
 #include "rc_trait.h"
-#include "token.h"
+#include "lexeme.h"
 
 #include <unordered_map>
 #include <vector>
@@ -25,7 +25,7 @@ public:
   void removeCheckpoint();
   void revert();
   
-  Token* next();
+  std::vector<Lexeme> lex();
 };
 
 #endif

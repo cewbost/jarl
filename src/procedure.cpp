@@ -1,13 +1,12 @@
 #include "procedure.h"
 
-#include "token.h"
 #include "delegate_map.h"
 
 #include <limits>
 #include <cassert>
 
-constexpr OpCodeType _stack_pos_local = 0x8000;
-constexpr OpCodeType _stack_pos_const = 0x4000;
+constexpr OpCodeType stack_pos_local_ = 0x8000;
+constexpr OpCodeType stack_pos_const_ = 0x4000;
 
 namespace std{
   template<>
@@ -17,25 +16,25 @@ namespace std{
 }
 
 void Procedure::threadAST_(
-  Token* tok,
+  ASTNode* tok,
   VarAllocMap* va,
   VarAllocMap* cva,
   VectorSet<TypedValue>* vc,
   int* ss,
   bool ret
 ){
-  switch(tokenMajorType(tok->type)){
-  case TokenType::ValueToken:
+  switch(static_cast<ASTNodeType>(static_cast<unsigned>(tok->type) & ~0xff)){
+  case ASTNodeType::Value:
     if(!ret) break;
     switch(tok->type){
-    case TokenType::BoolToken:
+    case ASTNodeType::Bool:
       if(tok->bool_value){
         this->code_.push_back(Op::PushTrue);
       }else{
         this->code_.push_back(Op::PushFalse);
       }
       break;
-    case TokenType::IntToken:
+    case ASTNodeType::Int:
       if(tok->int_value <= std::numeric_limits<OpCodeSignedType>::max()
       && tok->int_value >= std::numeric_limits<OpCodeSignedType>::min()){
         this->code_.push_back(Op::Push | Op::Extended | Op::Int);
@@ -43,25 +42,25 @@ void Procedure::threadAST_(
       }else{
         this->code_.push_back(Op::Push | Op::Extended);
         this->code_.push_back(
-          (OpCodeType)(vc->emplace(tok->int_value) | _stack_pos_const)
+          (OpCodeType)(vc->emplace(tok->int_value) | stack_pos_const_)
         );
       }
       break;
-    case TokenType::FloatToken:
+    case ASTNodeType::Float:
       this->code_.push_back(Op::Push | Op::Extended);
       this->code_.push_back(
-        (OpCodeType)(vc->emplace(tok->float_value) | _stack_pos_const)
+        (OpCodeType)(vc->emplace(tok->float_value) | stack_pos_const_)
       );
       break;
-    case TokenType::StringToken:
+    case ASTNodeType::String:
       this->code_.push_back(Op::Push | Op::Extended);
       this->code_.push_back(
-        (OpCodeType)(vc->emplace(tok->string_value) | _stack_pos_const)
+        (OpCodeType)(vc->emplace(tok->string_value) | stack_pos_const_)
       );
       break;
-    case TokenType::IdentifierToken: {
+    case ASTNodeType::Identifier:
+      {
         this->code_.push_back(Op::Push | Op::Extended);
-        //this->code_.push_back((OpCodeType)(*va)[tok->string_value]);
         auto it = va->find(tok->string_value);
         if(it == va->end()){
           assert((bool)cva);
@@ -74,105 +73,104 @@ void Procedure::threadAST_(
         }else{
           this->code_.push_back(it->second);
         }
-      }break;
-    case TokenType::NullToken:
+      }
+      break;
+    case ASTNodeType::Null:
       this->code_.push_back(Op::Push);
       break;
     default:
       assert(false);
-      break;
     }
     ++(*ss);
     break;
-  
-  case TokenType::UnaryExprNode:
+    
+  case ASTNodeType::UnaryExpr:
     this->threadAST_(tok->child, va, cva, vc, ss);
     switch(tok->type){
-    case TokenType::NegExpr:
+    case ASTNodeType::Neg:
       this->code_.push_back(Op::Neg);
       break;
-    case TokenType::NotExpr:
+    case ASTNodeType::Not:
       this->code_.push_back(Op::Not);
       break;
     default:
       assert(false);
-      break;
     }
     if(!ret){
       this->code_.push_back(Op::Pop);
       --(*ss);
     }
     break;
-  
-  case TokenType::BinaryExprNode:
-    this->threadAST_(tok->childs.first, va, cva, vc, ss);
-    this->threadAST_(tok->childs.second, va, cva, vc, ss);
+    
+  case ASTNodeType::BinaryExpr:
+    this->threadAST_(tok->children.first, va, cva, vc, ss);
+    this->threadAST_(tok->children.second, va, cva, vc, ss);
     switch(tok->type){
-    case TokenType::ApplyExpr:
+    case ASTNodeType::Apply:
       this->code_.push_back(Op::Apply);
       break;
-    
-    case TokenType::AddExpr:
+      
+    case ASTNodeType::Add:
       this->code_.push_back(Op::Add);
       break;
-    case TokenType::SubExpr:
+    case ASTNodeType::Sub:
       this->code_.push_back(Op::Sub);
       break;
-    case TokenType::MulExpr:
+    case ASTNodeType::Mul:
       this->code_.push_back(Op::Mul);
       break;
-    case TokenType::DivExpr:
+    case ASTNodeType::Div:
       this->code_.push_back(Op::Div);
       break;
-    case TokenType::ModExpr:
+    case ASTNodeType::Mod:
       this->code_.push_back(Op::Mod);
       break;
-    case TokenType::AppendExpr:
+    case ASTNodeType::Append:
       this->code_.push_back(Op::Append);
       break;
-    
-    case TokenType::CmpExpr:
+      
+    case ASTNodeType::Cmp:
       this->code_.push_back(Op::Cmp);
       break;
-    case TokenType::EqExpr:
+    case ASTNodeType::Eq:
       this->code_.push_back(Op::Eq);
       break;
-    case TokenType::NeqExpr:
+    case ASTNodeType::Neq:
       this->code_.push_back(Op::Neq);
       break;
-    case TokenType::GtExpr:
+    case ASTNodeType::Gt:
       this->code_.push_back(Op::Gt);
       break;
-    case TokenType::LtExpr:
+    case ASTNodeType::Lt:
       this->code_.push_back(Op::Lt);
       break;
-    case TokenType::GeqExpr:
+    case ASTNodeType::Geq:
       this->code_.push_back(Op::Geq);
       break;
-    case TokenType::LeqExpr:
+    case ASTNodeType::Leq:
       this->code_.push_back(Op::Leq);
       break;
-    
+      
     default:
       assert(false);
-      break;
     }
     if(!ret){
       this->code_.push_back(Op::Pop);
       *ss -= 2;
     }else --(*ss);
     break;
-  
-  case TokenType::BooleanExprNode: {
+    
+  case ASTNodeType::BranchExpr:
+    {
       unsigned jmp_addr;
-      this->threadAST_(tok->childs.first, va, cva, vc, ss);
+      this->threadAST_(tok->children.first, va, cva, vc, ss);
       
       switch(tok->type){
-      case TokenType::AndExpr:
+      case ASTNodeType::And:
         this->code_.push_back(Op::Jfsc | Op::Extended);
         jmp_addr = this->code_.size();
         this->code_.push_back((OpCodeType)0);
-        this->threadAST_(tok->childs.second, va, cva, vc, ss);
+        this->threadAST_(tok->children.second, va, cva, vc, ss);
         this->code_[jmp_addr] = (OpCodeType)this->code_.size() - 1;
         
         if(!ret){
@@ -180,11 +178,11 @@ void Procedure::threadAST_(
           --(*ss);
         }
         break;
-      case TokenType::OrExpr:
+      case ASTNodeType::Or:
         this->code_.push_back(Op::Jtsc | Op::Extended);
         jmp_addr = this->code_.size();
         this->code_.push_back((OpCodeType)0);
-        this->threadAST_(tok->childs.second, va, cva, vc, ss);
+        this->threadAST_(tok->children.second, va, cva, vc, ss);
         this->code_[jmp_addr] = (OpCodeType)this->code_.size() - 1;
         
         if(!ret){
@@ -192,16 +190,16 @@ void Procedure::threadAST_(
           --(*ss);
         }
         break;
-      
-      case TokenType::ConditionalExpr:
-        assert(tok->childs.second->type == TokenType::ConditionalNode);
+        
+      case ASTNodeType::Conditional:
+        assert(tok->children.second->type == ASTNodeType::Branch);
         
         this->code_.push_back(Op::Jf | Op::Extended);
         jmp_addr = this->code_.size();
         this->code_.push_back((OpCodeType)0);
         --(*ss);
         
-        this->threadAST_(tok->childs.second->childs.first, va, cva, vc, ss, ret);
+        this->threadAST_(tok->children.second->children.first, va, cva, vc, ss, ret);
         --(*ss);
         
         this->code_[jmp_addr] = (OpCodeType)this->code_.size() + 1;
@@ -210,64 +208,60 @@ void Procedure::threadAST_(
           this->code_.push_back(Op::Jmp | Op::Extended);
           jmp_addr = this->code_.size();
           this->code_.push_back((OpCodeType)0);
-          if(tok->childs.second->childs.second->type == TokenType::NopNode){
+          if(tok->children.second->children.second->type == ASTNodeType::Nop){
             this->code_.push_back(Op::Push);
             ++(*ss);
           }else{
-            this->threadAST_(tok->childs.second->childs.second, va, cva, vc, ss);
+            this->threadAST_(tok->children.second->children.second, va, cva, vc, ss);
           }
           this->code_[jmp_addr] = (OpCodeType)this->code_.size() + 1;
-        }else if(tok->childs.second->childs.second->type != TokenType::NopNode){
+        }else if(tok->children.second->children.second->type != ASTNodeType::Nop){
           this->code_.push_back(Op::Jmp | Op::Extended);
           jmp_addr = this->code_.size();
           this->code_.push_back((OpCodeType)0);
           
-          this->threadAST_(tok->childs.second->childs.second, va, cva, vc, ss, false);
+          this->threadAST_(tok->children.second->children.second, va, cva, vc, ss, false);
           
           this->code_[jmp_addr] = (OpCodeType)this->code_.size() + 1;
         }
         break;
         
-      case TokenType::ConditionalNode:
-        assert(false);
-        break;
-      
       default:
         assert(false);
-        break;
       }
     }
     break;
-  
-  case TokenType::AssignExprNode: {
-      assert(tok->childs.first->type == TokenType::IdentifierToken);
-      auto stack_pos = (OpCodeType)(*va)[tok->childs.first->string_value];
-      this->threadAST_(tok->childs.second, va, cva, vc, ss);
+    
+  case ASTNodeType::AssignExpr:
+    {
+      assert(tok->children.first->type == ASTNodeType::Identifier);
+      auto stack_pos = (OpCodeType)(*va)[tok->children.first->string_value];
+      this->threadAST_(tok->children.second, va, cva, vc, ss);
       switch(tok->type){
-      case TokenType::AssignExpr:
+      case ASTNodeType::Assign:
         this->code_.push_back(Op::Write | Op::Extended | Op::Dest);
         break;
-      case TokenType::AddAssignExpr:
+      case ASTNodeType::AddAssign:
         this->code_.push_back(Op::Add | Op::Extended | Op::Dest);
         break;
-      case TokenType::SubAssignExpr:
+      case ASTNodeType::SubAssign:
         this->code_.push_back(Op::Sub | Op::Extended | Op::Dest);
         break;
-      case TokenType::MulAssignExpr:
+      case ASTNodeType::MulAssign:
         this->code_.push_back(Op::Mul | Op::Extended | Op::Dest);
         break;
-      case TokenType::DivAssignExpr:
+      case ASTNodeType::DivAssign:
         this->code_.push_back(Op::Div | Op::Extended | Op::Dest);
         break;
-      case TokenType::ModAssignExpr:
+      case ASTNodeType::ModAssign:
         this->code_.push_back(Op::Mod | Op::Extended | Op::Dest);
         break;
-      case TokenType::AppendAssignExpr:
+      case ASTNodeType::AppendAssign:
         this->code_.push_back(Op::Append | Op::Extended | Op::Dest);
         break;
+        
       default:
         assert(false);
-        break;
       }
       
       this->code_.push_back(stack_pos);
@@ -279,12 +273,13 @@ void Procedure::threadAST_(
       }
     }
     break;
-  
-  case TokenType::MiscUnaryExprNode:
+    
+  default:
     switch(tok->type){
-    case TokenType::CodeBlock: {
+    case ASTNodeType::CodeBlock:
+      {
         VarAllocMap* var_allocs = new VarAllocMap(va);
-        this->threadAST_(tok->childs.first, var_allocs, cva, vc, ss);
+        this->threadAST_(tok->children.first, var_allocs, cva, vc, ss);
         var_allocs->set_delegate(nullptr);
         if(ret){
           if(var_allocs->size() > 0){
@@ -305,22 +300,25 @@ void Procedure::threadAST_(
           }
         }
         delete var_allocs;
-      }break;
-    case TokenType::ArrayExpr: {
+      }
+      break;
+      
+    case ASTNodeType::Array:
+      {
         if(!ret) break;
         
-        if(tok->child->type != TokenType::NopNode){
-          if(tok->child->type == TokenType::ExprList){
-            Token* t = tok->child;
+        if(tok->child->type != ASTNodeType::Nop){
+          if(tok->child->type == ASTNodeType::ExprList){
+            ASTNode* t = tok->child;
             OpCodeType elems = 0;
             
             for(;;){
-              this->threadAST_(t->childs.first, va, cva, vc, ss);
+              this->threadAST_(t->children.first, va, cva, vc, ss);
               ++elems;
-              if(t->childs.second->type == TokenType::ExprList){
-                t = t->childs.second;
+              if(t->children.second->type == ASTNodeType::ExprList){
+                t = t->children.second;
               }else{
-                this->threadAST_(t->childs.second, va, cva, vc, ss);
+                this->threadAST_(t->children.second, va, cva, vc, ss);
                 ++elems;
                 break;
               }
@@ -329,9 +327,9 @@ void Procedure::threadAST_(
             this->code_.push_back(Op::CreateArray | Op::Extended | Op::Int);
             this->code_.push_back(elems);
             *ss -= elems - 1;
-          }else if(tok->child->type == TokenType::RangeExpr){
-            this->threadAST_(tok->child->childs.first, va, cva, vc, ss);
-            this->threadAST_(tok->child->childs.second, va, cva, vc, ss);
+          }else if(tok->child->type == ASTNodeType::Range){
+            this->threadAST_(tok->child->children.first, va, cva, vc, ss);
+            this->threadAST_(tok->child->children.second, va, cva, vc, ss);
             this->code_.push_back(Op::CreateRange);
             --(*ss);
           }else{
@@ -343,29 +341,25 @@ void Procedure::threadAST_(
           this->code_.push_back(Op::CreateArray);
           ++(*ss);
         }
-      }break;
-    default:
-      assert(false);
-    }
-    break;
-    
-  case TokenType::MiscBinaryExprNode:
-    switch(tok->type){
-    case TokenType::LoopNode: {
+      }
+      break;
+      
+    case ASTNodeType::While:
+      {
         if(ret){
           this->code_.push_back(Op::Push);
           ++(*ss);
         }
         unsigned begin_addr = this->code_.size() - 1;
         
-        this->threadAST_(tok->childs.first, va, cva, vc, ss);
+        this->threadAST_(tok->children.first, va, cva, vc, ss);
         
         this->code_.push_back(Op::Jf | Op::Extended);
         --(*ss);
         unsigned end_jmp_addr = this->code_.size();
         this->code_.push_back((OpCodeType)0);
         
-        this->threadAST_(tok->childs.second, va, cva, vc, ss, ret);
+        this->threadAST_(tok->children.second, va, cva, vc, ss, ret);
         if(ret){
           this->code_.push_back(Op::Reduce);
           --(*ss);
@@ -373,9 +367,11 @@ void Procedure::threadAST_(
         this->code_.push_back(Op::Jmp | Op::Extended);
         this->code_[end_jmp_addr] = (OpCodeType)this->code_.size();
         this->code_.push_back((OpCodeType)begin_addr);
-      }break;
-    
-    case TokenType::FuncNode: {
+      }
+      break;
+      
+    case ASTNodeType::Function:
+      {
         //some checking might be nessecary for the procedure being well formed
         
         if(!ret) break;
@@ -383,29 +379,26 @@ void Procedure::threadAST_(
         VarAllocMap* var_alloc = new VarAllocMap(nullptr);
         
         OpCodeType std_args = 0;
-        if(tok->childs.first->type != TokenType::NopNode){
-          Token* t = tok->childs.first;
+        if(tok->children.first->type != ASTNodeType::Nop){
+          ASTNode* t = tok->children.first;
           do{
-            assert(t->childs.first->type == TokenType::IdentifierToken);
-            
-            (*var_alloc)[t->childs.first->string_value] = std_args;
+            (*var_alloc)[t->string_branch.value] = std_args;
             ++std_args;
-            t = t->childs.second;
-          }while(t->type != TokenType::NopNode);
+            t = t->string_branch.next;
+          }while(t->type != ASTNodeType::Nop);
         }
         
-        delete tok->childs.first;
-        tok->childs.first = nullptr;
+        delete tok->children.first;
+        tok->children.first = nullptr;
         
-        auto* proc = new Procedure(tok->childs.second, var_alloc, va);
+        auto* proc = new Procedure(tok->children.second, var_alloc, va);
         
-        tok->childs.second = nullptr;
+        tok->children.second = nullptr;
         this->code_.push_back(Op::Push | Op::Extended);
-        this->code_.push_back((OpCodeType)vc->emplace(proc) | _stack_pos_const);
+        this->code_.push_back((OpCodeType)vc->emplace(proc) | stack_pos_const_);
         ++(*ss);
         
         if(proc->arguments > std_args){
-          //auto& base = *((VectorMapBase*)(&var_alloc->base()));
           VectorMapBase& base = var_alloc->base();
           for(int i = std_args; i < proc->arguments; ++i){
             this->code_.push_back(Op::Push | Op::Extended);
@@ -415,31 +408,40 @@ void Procedure::threadAST_(
           }
         }
         delete var_alloc;
-      }break;
-    case TokenType::SeqNode:
-      threadAST_(tok->childs.first, va, cva, vc, ss, false);
-      threadAST_(tok->childs.second, va, cva, vc, ss);
+      }
       break;
-    case TokenType::VarDecl: {
-        assert(tok->childs.first->type == TokenType::IdentifierToken);
+      
+    case ASTNodeType::Seq:
+      this->threadAST_(tok->children.first, va, cva, vc, ss, false);
+      this->threadAST_(tok->children.second, va, cva, vc, ss);
+      break;
+      
+    case ASTNodeType::VarDecl:
+      {
         auto stack_size = *ss;
-        threadAST_(tok->childs.second, va, cva, vc, ss);
-        va->direct()[tok->childs.first->string_value]
-          = stack_size | _stack_pos_local;
-      }break;
-    case TokenType::PrintExpr: {
+        this->threadAST_(tok->string_branch.next, va, cva, vc, ss);
+        va->direct()[tok->string_branch.value]
+          = stack_size | stack_pos_local_;
+      }
+      break;
+      
+    case ASTNodeType::Print:
+      {
         this->threadAST_(tok->child, va, cva, vc, ss);
         this->code_.push_back(Op::Print);
-      }break;
-    case TokenType::IndexExpr: {
-        this->threadAST_(tok->childs.first, va, cva, vc, ss);
+      }
+      break;
+      
+    case ASTNodeType::Index:
+      {
+        this->threadAST_(tok->children.first, va, cva, vc, ss);
         
-        if(tok->childs.second->type == TokenType::RangeExpr){
-          this->threadAST_(tok->childs.second->childs.first, va, cva, vc, ss);
-          this->threadAST_(tok->childs.second->childs.second, va, cva, vc, ss);
+        if(tok->children.second->type == ASTNodeType::Range){
+          this->threadAST_(tok->children.second->children.first, va, cva, vc, ss);
+          this->threadAST_(tok->children.second->children.second, va, cva, vc, ss);
           this->code_.push_back(Op::Slice);
         }else{
-          this->threadAST_(tok->childs.second, va, cva, vc, ss);
+          this->threadAST_(tok->children.second, va, cva, vc, ss);
           this->code_.push_back(Op::Get);
         }
         
@@ -447,22 +449,24 @@ void Procedure::threadAST_(
           this->code_.push_back(Op::Pop);
           *ss -= 2;
         }else --(*ss);
-      }break;
+      }
+      break;
+      
+    case ASTNodeType::Nop:
+      this->code_.push_back(Op::Push);
+      break;
+      
     default:
       assert(false);
     }
-    break;
-    
-  case TokenType::MiscEndNode:
-    //NopNode
-    this->code_.push_back(Op::Push);
-    break;
-  default:
-    assert(false);
   }
 }
 
-Procedure::Procedure(Token* tree, VarAllocMap* var_alloc, VarAllocMap* context_vars){
+Procedure::Procedure(
+  ASTNode* tree,
+  VarAllocMap* var_alloc,
+  VarAllocMap* context_vars
+){
   //thread AST
   
   bool var_allocs = false;
@@ -498,19 +502,22 @@ Procedure::Procedure(Token* tree, VarAllocMap* var_alloc, VarAllocMap* context_v
       extended = 0;
     }else{
       extended = 0;
-      if(op & _stack_pos_local){
-        op = (op & ~_stack_pos_local) + constants.size() + this->arguments;
-      }else if(op & _stack_pos_const){
-        op = (op & ~_stack_pos_const) + this->arguments;
+      if(op & stack_pos_local_){
+        op = (op & ~stack_pos_local_) + constants.size() + this->arguments;
+      }else if(op & stack_pos_const_){
+        op = (op & ~stack_pos_const_) + this->arguments;
       }
     }
   }
   
   this->values_ = std::move(constants);
   
+  /*
   #ifndef NDEBUG
-  //std::cout << this->opcodesToStr() << std::endl;
+  std::cout << "::proc::\n";
+  std::cout << this->opcodesToStr() << std::endl;
   #endif
+  */
 }
 
 PartiallyApplied::PartiallyApplied(const Procedure* proc)
@@ -546,12 +553,16 @@ std::string Procedure::opcodesToStr()const{
   using namespace std::string_literals;
   
   std::string ret = "";
+  char buffer[7] = "\0";
   
   auto vit = this->values_.begin();
   
   bool extended = false;
+  int counter = 0;
   for(auto op: this->code_){
     if(!extended){
+      snprintf(buffer, sizeof(buffer), "%4d: ", counter);
+      ret += buffer;
       ret += opCodeToStr(op);
       if(op & Op::Extended) extended = true;
       else ret += "\n"s;
@@ -559,6 +570,7 @@ std::string Procedure::opcodesToStr()const{
       ret += " "s + std::to_string(op) + "\n"s;
       extended = false;
     }
+    ++counter;
   }
   
   return ret;
@@ -668,6 +680,9 @@ std::string opCodeToStr(OpCodeType op){
     break;
   case Op::Jfsc:
     ret += "jfsc"s;
+    break;
+  case Op::Print:
+    ret += "print"s;
     break;
   default:
     ret += "[unknown op code]"s;

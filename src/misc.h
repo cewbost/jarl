@@ -28,4 +28,27 @@ struct ptr_equal_to{
   }
 };
 
+#ifndef NDEBUG
+inline std::string unlexString(const char* str){
+  std::string ret = "\"";
+  ret += str;
+  ret += "\"";
+  
+  std::string::size_type pos = 0;
+  for(;;){
+    pos = ret.find('\n', pos);
+    if(pos == std::string::npos) break;
+    ret.replace(pos, 1, "\\n");
+  }
+  pos = 0;
+  for(;;){
+    pos = ret.find('\t', pos);
+    if(pos == std::string::npos) break;
+    ret.replace(pos, 1, "\\t");
+  }
+  
+  return ret;
+}
+#endif
+
 #endif

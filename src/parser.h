@@ -2,40 +2,42 @@
 #define PARSER_H_INCLUDED
 
 #include "lexer.h"
-#include "token.h"
 #include "procedure.h"
+#include "ast.h"
 
 #include <memory>
 
 class Parser{
   
-  Lexer lexer_;
+  using Lexit_ = std::vector<Lexeme>::const_iterator;
   
-  Token* current_;
+  const Lexit_ lbegin_;
+  const Lexit_ lend_;
+  Lexit_ lcurrent_;
   
-  Token* advanceToken_();
-  Token* advanceTokenNoNewline_();
-  bool checkNextToken_(TokenType);
+  const Lexeme& next_();
+  const Lexeme& nextNoNewline_();
+  bool checkNext_(LexemeType);
   void skipNewlines_();
   
-  Token* identifierList_();
-  Token* statement_(int);
-  Token* expression_(int);
-  Token* codeBlock_();
-  Token* varDecl_();
-  Token* printExpr_();
-  Token* ifExpr_();
-  Token* forExpr_();
-  Token* funcExpr_();
+  static int bindp_(LexemeType);
   
-  static int bindp_(TokenType);
-  Token* nud_(Token*);
-  Token* led_(Token*, Token*);
+  ASTNode* nud_(const Lexeme&);
+  ASTNode* led_(const Lexeme&, ASTNode*);
+  
+  ASTNode* statement_(int);
+  ASTNode* expression_(int);
+  ASTNode* ifExpr_();
+  ASTNode* whileExpr_();
+  ASTNode* identifierList_();
+  ASTNode* functionExpr_();
+  ASTNode* varDecl_();
+  ASTNode* printExpr_();
+  ASTNode* codeBlock_();
   
 public:
   
-  Parser(const char*);
-  ~Parser();
+  Parser(const std::vector<Lexeme>&);
   
   Procedure* parse();
 };
