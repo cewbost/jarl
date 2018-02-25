@@ -7,7 +7,7 @@
 #include <iostream>
 
 #ifndef NDEBUG
-#define PRINT_LEXEMES
+//#define PRINT_LEXEMES
 //#define PRINT_AST
 //#define PRINT_CODE
 #endif
@@ -33,7 +33,6 @@ void jarl::execute(vm v, const char* code){
     std::cout << lex.toStrDebug() << std::endl;
   }
   #endif
-  return;
   Parser parser(lexemes);
   
   #ifdef PRINT_AST
@@ -43,7 +42,7 @@ void jarl::execute(vm v, const char* code){
   
   Procedure* proc = parser.parse();
   
-  #ifndef PRINT_CODE
+  #ifdef PRINT_CODE
   std::cout << "::proc::\n";
   std::cout << proc->opcodesToStrDebug() << std::endl;
   #endif

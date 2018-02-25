@@ -2,29 +2,45 @@
 
 #include <cassert>
 
-ASTNode::ASTNode(ASTNodeType type): type(type){}
-ASTNode::ASTNode(ASTNodeType type, ASTNode* child): type(type){
+ASTNode::ASTNode(ASTNodeType type, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){}
+ASTNode::ASTNode(ASTNodeType type, ASTNode* child, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
   this->child = child;
 }
-ASTNode::ASTNode(ASTNodeType type, ASTNode* child1, ASTNode* child2): type(type){
+ASTNode::ASTNode(
+  ASTNodeType type,
+  ASTNode* child1,
+  ASTNode* child2,
+  std::pair<uint16_t, uint16_t> pos
+): type(type), pos(pos){
   this->children.first = child1;
   this->children.second = child2;
 }
-ASTNode::ASTNode(ASTNodeType type, String* str, ASTNode* nex): type(type){
+ASTNode::ASTNode(
+  ASTNodeType type,
+  String* str,
+  ASTNode* nex,
+  std::pair<uint16_t, uint16_t> pos
+): type(type), pos(pos){
   this->string_branch.value = str;
   this->string_branch.next = nex;
 }
 
-ASTNode::ASTNode(ASTNodeType type, Int i): type(type){
+ASTNode::ASTNode(ASTNodeType type, Int i, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
   this->int_value = i;
 }
-ASTNode::ASTNode(ASTNodeType type, Float f): type(type){
+ASTNode::ASTNode(ASTNodeType type, Float f, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
   this->float_value = f;
 }
-ASTNode::ASTNode(ASTNodeType type, String* s): type(type){
+ASTNode::ASTNode(ASTNodeType type, String* s, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
   this->string_value = s;
 }
-ASTNode::ASTNode(ASTNodeType type, bool b): type(type){
+ASTNode::ASTNode(ASTNodeType type, bool b, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
   this->bool_value = b;
 }
 
