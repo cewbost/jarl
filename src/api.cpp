@@ -33,14 +33,16 @@ void jarl::execute(vm v, const char* code){
     std::cout << lex.toStrDebug() << std::endl;
   }
   #endif
+  
   Parser parser(lexemes);
+  auto parse_tree = parser.parse();
   
   #ifdef PRINT_AST
   std::cout << "::AST::" << std::endl;
   std::cout << parse_tree->toStrDebug() << std::endl;
   #endif
   
-  Procedure* proc = parser.parse();
+  Procedure* proc = new Procedure(parse_tree);
   
   #ifdef PRINT_CODE
   std::cout << "::proc::\n";

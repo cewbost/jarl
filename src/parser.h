@@ -39,7 +39,7 @@ public:
   
   Parser(const std::vector<Lexeme>&);
   
-  Procedure* parse();
+  ASTNode* parse();
 };
 
 #endif

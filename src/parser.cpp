@@ -1,7 +1,5 @@
 #include "parser.h"
 
-#include "procedure.h"
-
 #include <cassert>
 
 #ifndef NDEBUG
@@ -405,17 +403,6 @@ Parser::Parser(const std::vector<Lexeme>& lexes)
   this->lcurrent_ = this->lbegin_;
 }
 
-Procedure* Parser::parse(){
-  auto parse_tree = this->codeBlock_();
-  
-  /*
-  #ifndef NDEBUG
-  std::cout << "::AST::\n";
-  std::cout << parse_tree->toStr() << std::endl;
-  #endif
-  */
-  
-  Procedure* proc = new Procedure(parse_tree);
-  
-  return proc;
+ASTNode* Parser::parse(){
+  return this->codeBlock_();
 }
