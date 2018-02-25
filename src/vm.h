@@ -9,8 +9,11 @@
 #include "fixed_vector.h"
 
 #include <unordered_map>
+#include <memory>
 
 class VM{
+  
+  std::vector<std::unique_ptr<char[]>> errors_;
   
   struct StackFrame{
     rc_ptr<const Procedure> proc;
@@ -51,6 +54,8 @@ public:
   void execute(const Procedure&);
   
   void setPrintFunc(void(*)(const char*));
+  
+  std::unique_ptr<char[]> getError();
 };
 
 #endif

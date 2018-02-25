@@ -40,7 +40,7 @@ public:
   }
   
   #ifndef NDEBUG
-  std::string toStr()const;
+  std::string toStrDebug()const;
   #endif
 };
 

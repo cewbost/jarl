@@ -78,13 +78,17 @@ enum class LexemeType: unsigned {
   Null,
   If,
   While,
-  Func
+  Func,
+  
+  LC0 = 0xc0,
+  
+  Error
 };
 
 struct Lexeme {
   
   LexemeType type;
-  std::pair<unsigned, unsigned> pos;
+  std::pair<uint16_t, uint16_t> pos;
   union {
     Int i;
     Float f;
@@ -92,16 +96,18 @@ struct Lexeme {
     String* s;
   } value;
   
-  Lexeme(LexemeType);
-  Lexeme(Int);
-  Lexeme(unsigned long long);
-  Lexeme(Float);
-  Lexeme(bool);
-  Lexeme(LexemeType, String*);
-  Lexeme(String*);
+  
+  
+  Lexeme(LexemeType, std::pair<uint16_t, uint16_t>);
+  Lexeme(Int, std::pair<uint16_t, uint16_t>);
+  Lexeme(unsigned long long, std::pair<uint16_t, uint16_t>);
+  Lexeme(Float, std::pair<uint16_t, uint16_t>);
+  Lexeme(bool, std::pair<uint16_t, uint16_t>);
+  Lexeme(LexemeType, String*, std::pair<uint16_t, uint16_t>);
+  Lexeme(String*, std::pair<uint16_t, uint16_t>);
   
   #ifndef NDEBUG
-  std::string toStr()const;
+  std::string toStrDebug() const;
   #endif
 };
 

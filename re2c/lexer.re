@@ -87,33 +87,35 @@ namespace{
 
 Lexer::Lexer(const char* mem){
   this->mem_ = mem;
-  this->old_reader_ = nullptr;
-  this->reader_ = mem;
 }
 
 std::vector<Lexeme> Lexer::lex(){
   const char* marker;
   const char* token;
   
+  const char* reader = this->mem_;
   int counter = 0;
-  
-  this->old_reader_ = this->reader_;
   
   #define YYDEBUG(state, current)
   
   std::vector<Lexeme> lexemes;
   
-  #define NEW_LEXEME(params) \
-    lexemes.emplace_back(params); \
+  uint16_t line = 1;
+  const char* line_start = reader;
+  
+  #define PLACE_LEXEME(params) \
+    lexemes.emplace_back(params, std::make_pair(line, token - line_start));
+  #define PUT_LEXEME(params) \
+    lexemes.emplace_back(params, std::make_pair(line, token - line_start)); \
     continue;
   
   for(;;){
-    token = this->reader_;
+    token = reader;
     
     /*!re2c
       re2c:yyfill:enable = 0;
       re2c:define:YYCTYPE = char;
-      re2c:define:YYCURSOR = this->reader_;
+      re2c:define:YYCURSOR = reader;
       re2c:define:YYMARKER = marker;
       re2c:define:YYCTXMARKER = ctxmarker;
     */
@@ -121,21 +123,31 @@ std::vector<Lexeme> Lexer::lex(){
     /*!re2c
       "\x00"  {break;}
       
-      *       {break;}
+      * {
+        if(lexemes.back().type != LexemeType::Error){
+          PUT_LEXEME(LexemeType::Error);
+        } else continue;
+      }
       
       //whitespace
       [ \t\r\v\f]         {continue;}
-      "\n"                {NEW_LEXEME(LexemeType::Newline)}
+      
+      "\n" {
+        PLACE_LEXEME(LexemeType::Newline)
+        ++line;
+        line_start = reader;
+        continue;
+      }
       
       //comments
       "//" [^\x00\n]*     {continue;}
       "/""*"              {counter = 1; goto lex_block_comment;}
       
       //integer litterals
-      [0-9]+              {NEW_LEXEME(strtoull(token, nullptr, 10))}
-      '0'[bB][0-1]+       {NEW_LEXEME(strtoull(token + 2, nullptr, 2))}
-      '0'[oO][0-7]+       {NEW_LEXEME(strtoull(token + 2, nullptr, 8))}
-      '0'[xX][0-9a-fA-F]+ {NEW_LEXEME(strtoull(token + 2, nullptr, 16))}
+      [0-9]+              {PUT_LEXEME(strtoull(token, nullptr, 10))}
+      '0'[bB][0-1]+       {PUT_LEXEME(strtoull(token + 2, nullptr, 2))}
+      '0'[oO][0-7]+       {PUT_LEXEME(strtoull(token + 2, nullptr, 8))}
+      '0'[xX][0-9a-fA-F]+ {PUT_LEXEME(strtoull(token + 2, nullptr, 16))}
       
       //float litterals
       dfrc = [0-9]* "." [0-9]+ | [0-9]+ ".";
@@ -145,7 +157,7 @@ std::vector<Lexeme> Lexer::lex(){
       dflt = (dfrc dexp? | [0-9]+ dexp);
       bflt = '0' [xX] (bfrc bexp? | [0-9a-fA-F]+ bexp);
       flt  = bflt | dflt;
-      flt                 {NEW_LEXEME(atof(token))}
+      flt                 {PUT_LEXEME(atof(token))}
       
       //string litterals
       "\"" {
@@ -153,55 +165,55 @@ std::vector<Lexeme> Lexer::lex(){
       }
       
       //operators
-      //"<-"  {NEW_LEXEME(LexemeType::Insert)}
-      "+"   {NEW_LEXEME(LexemeType::Plus)}
-      "-"   {NEW_LEXEME(LexemeType::Minus)}
-      "*"   {NEW_LEXEME(LexemeType::Mul)}
-      "/"   {NEW_LEXEME(LexemeType::Div)}
-      "%"   {NEW_LEXEME(LexemeType::Mod)}
-      "++"  {NEW_LEXEME(LexemeType::Append)}
-      "="   {NEW_LEXEME(LexemeType::Assign)}
-      "+="  {NEW_LEXEME(LexemeType::AddAssign)}
-      "-="  {NEW_LEXEME(LexemeType::SubAssign)}
-      "*="  {NEW_LEXEME(LexemeType::MulAssign)}
-      "/="  {NEW_LEXEME(LexemeType::DivAssign)}
-      "%="  {NEW_LEXEME(LexemeType::ModAssign)}
-      "++=" {NEW_LEXEME(LexemeType::AppendAssign)}
-      "=="  {NEW_LEXEME(LexemeType::Eq)}
-      "!="  {NEW_LEXEME(LexemeType::Neq)}
-      ">"   {NEW_LEXEME(LexemeType::Gt)}
-      "<"   {NEW_LEXEME(LexemeType::Lt)}
-      ">="  {NEW_LEXEME(LexemeType::Geq)}
-      "<="  {NEW_LEXEME(LexemeType::Leq)}
-      "<=>" {NEW_LEXEME(LexemeType::Cmp)}
-      "("   {NEW_LEXEME(LexemeType::LParen)}
-      ")"   {NEW_LEXEME(LexemeType::RParen)}
-      "{"   {NEW_LEXEME(LexemeType::LBrace)}
-      "}"   {NEW_LEXEME(LexemeType::RBrace)}
-      "["   {NEW_LEXEME(LexemeType::LBracket)}
-      "]"   {NEW_LEXEME(LexemeType::RBracket)}
-      ","   {NEW_LEXEME(LexemeType::Comma)}
-      //"@"   {NEW_LEXEME(LexemeType::Apply)}
-      ";"   {NEW_LEXEME(LexemeType::Semicolon)}
-      ":"   {NEW_LEXEME(LexemeType::Colon)}
+      //"<-"  {PUT_LEXEME(LexemeType::Insert)}
+      "+"   {PUT_LEXEME(LexemeType::Plus)}
+      "-"   {PUT_LEXEME(LexemeType::Minus)}
+      "*"   {PUT_LEXEME(LexemeType::Mul)}
+      "/"   {PUT_LEXEME(LexemeType::Div)}
+      "%"   {PUT_LEXEME(LexemeType::Mod)}
+      "++"  {PUT_LEXEME(LexemeType::Append)}
+      "="   {PUT_LEXEME(LexemeType::Assign)}
+      "+="  {PUT_LEXEME(LexemeType::AddAssign)}
+      "-="  {PUT_LEXEME(LexemeType::SubAssign)}
+      "*="  {PUT_LEXEME(LexemeType::MulAssign)}
+      "/="  {PUT_LEXEME(LexemeType::DivAssign)}
+      "%="  {PUT_LEXEME(LexemeType::ModAssign)}
+      "++=" {PUT_LEXEME(LexemeType::AppendAssign)}
+      "=="  {PUT_LEXEME(LexemeType::Eq)}
+      "!="  {PUT_LEXEME(LexemeType::Neq)}
+      ">"   {PUT_LEXEME(LexemeType::Gt)}
+      "<"   {PUT_LEXEME(LexemeType::Lt)}
+      ">="  {PUT_LEXEME(LexemeType::Geq)}
+      "<="  {PUT_LEXEME(LexemeType::Leq)}
+      "<=>" {PUT_LEXEME(LexemeType::Cmp)}
+      "("   {PUT_LEXEME(LexemeType::LParen)}
+      ")"   {PUT_LEXEME(LexemeType::RParen)}
+      "{"   {PUT_LEXEME(LexemeType::LBrace)}
+      "}"   {PUT_LEXEME(LexemeType::RBrace)}
+      "["   {PUT_LEXEME(LexemeType::LBracket)}
+      "]"   {PUT_LEXEME(LexemeType::RBracket)}
+      ","   {PUT_LEXEME(LexemeType::Comma)}
+      //"@"   {PUT_LEXEME(LexemeType::Apply)}
+      ";"   {PUT_LEXEME(LexemeType::Semicolon)}
+      ":"   {PUT_LEXEME(LexemeType::Colon)}
       
       //keywords
-      "var"   {NEW_LEXEME(LexemeType::Var)}
-      "null"  {NEW_LEXEME(LexemeType::Null)}
-      "true"  {NEW_LEXEME(true)}
-      "false" {NEW_LEXEME(false)}
-      "not"   {NEW_LEXEME(LexemeType::Not)}
-      "and"   {NEW_LEXEME(LexemeType::And)}
-      "or"    {NEW_LEXEME(LexemeType::Or)}
-      "if"    {NEW_LEXEME(LexemeType::If)}
-      "else"  {NEW_LEXEME(LexemeType::Else)}
-      "while" {NEW_LEXEME(LexemeType::While)}
-      "func"  {NEW_LEXEME(LexemeType::Func)}
-      "print" {NEW_LEXEME(LexemeType::Print)}
+      "var"   {PUT_LEXEME(LexemeType::Var)}
+      "null"  {PUT_LEXEME(LexemeType::Null)}
+      "true"  {PUT_LEXEME(true)}
+      "false" {PUT_LEXEME(false)}
+      "not"   {PUT_LEXEME(LexemeType::Not)}
+      "and"   {PUT_LEXEME(LexemeType::And)}
+      "or"    {PUT_LEXEME(LexemeType::Or)}
+      "if"    {PUT_LEXEME(LexemeType::If)}
+      "else"  {PUT_LEXEME(LexemeType::Else)}
+      "while" {PUT_LEXEME(LexemeType::While)}
+      "func"  {PUT_LEXEME(LexemeType::Func)}
+      "print" {PUT_LEXEME(LexemeType::Print)}
       
       //identifiers
       [a-zA-Z_\x80-\xff][0-9a-zA-Z_\x80-\xff]* {
-        StringView view(token, this->reader_);
+        StringView view(token, reader);
         String* str;
         auto it = this->string_table.find(view);
         if(it == this->string_table.end()){
@@ -214,7 +226,12 @@ std::vector<Lexeme> Lexer::lex(){
         }else{
           str = it->second.get();
         }
-        lexemes.emplace_back(LexemeType::Identifier, str);
+        lexemes.emplace_back(
+          LexemeType::Identifier,
+          str,
+          std::make_pair(line, token - line_start)
+        );
+        
         continue;
       }
       
@@ -251,7 +268,7 @@ std::vector<Lexeme> Lexer::lex(){
           }else{
             str = it->second.get();
           }
-          lexemes.emplace_back(str);
+          PLACE_LEXEME(str);
           continue;
         }
         
@@ -268,26 +285,26 @@ std::vector<Lexeme> Lexer::lex(){
         "\\\""  {str.push_back('\"'); goto lex_string_L1;}
         "\\\n"  {goto lex_string_L1;}
         
-        "\\" [0-7] {str.push_back(*(this->reader_ - 1)); goto lex_string_L1;}
+        "\\" [0-7] {str.push_back(*(reader - 1)); goto lex_string_L1;}
         
         "\\" [0-3] [0-7]{2} {
           str.push_back(
-            (*(this->reader_ - 3) * 0x40) |
-            (*(this->reader_ - 2) * 0x8) |
-            (*this->reader_ - 1)
+            (*(reader - 3) * 0x40) |
+            (*(reader - 2) * 0x8) |
+            (*reader - 1)
           );
           goto lex_string_L1;
         }
         "\\x" [0-9a-fA-F]{2} {
-          str.push_back((*(this->reader_ - 2) * 0x10) | (*this->reader_ - 1));
+          str.push_back((*(reader - 2) * 0x10) | (*reader - 1));
           goto lex_string_L1;
         }
         "\\u" [0-9a-fA-F]{4} {
-          enterUtf8CodePoint_<4>(&str, this->reader_);
+          enterUtf8CodePoint_<4>(&str, reader);
           goto lex_string_L1;
         }
         "\\U" [0-9a-fA-F]{8} {
-          enterUtf8CodePoint_<8>(&str, this->reader_);
+          enterUtf8CodePoint_<8>(&str, reader);
           goto lex_string_L1;
         }
       */
@@ -299,26 +316,17 @@ std::vector<Lexeme> Lexer::lex(){
       *       {goto lex_block_comment;}
       "/""*"  {++counter; goto lex_block_comment;}
       "*""/"  {if(--counter) goto lex_block_comment; else continue;}
+      "\n" "\n" {
+        ++line;
+        line_start = reader;
+      }
     */
   }
   
-  #undef NEW_LEXEME
+  lexemes.emplace_back(LexemeType::End, std::make_pair(line, reader - line_start));
   
-  lexemes.emplace_back(LexemeType::End);
+  #undef PLACE_LEXEME
+  #undef PUT_LEXEME
   
   return lexemes;
-}
-
-
-void Lexer::setCheckpoint(){
-  this->_checkpoints.push_back(this->old_reader_);
-}
-
-void Lexer::removeCheckpoint(){
-  this->_checkpoints.pop_back();
-}
-
-void Lexer::revert(){
-  this->reader_ = this->_checkpoints.back();
-  this->_checkpoints.pop_back();
 }

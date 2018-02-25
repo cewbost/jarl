@@ -468,7 +468,6 @@ Procedure::Procedure(
   VarAllocMap* context_vars
 ){
   //thread AST
-  
   bool var_allocs = false;
   if(var_alloc){
     this->arguments = var_alloc->size();
@@ -511,13 +510,6 @@ Procedure::Procedure(
   }
   
   this->values_ = std::move(constants);
-  
-  /*
-  #ifndef NDEBUG
-  std::cout << "::proc::\n";
-  std::cout << this->opcodesToStr() << std::endl;
-  #endif
-  */
 }
 
 PartiallyApplied::PartiallyApplied(const Procedure* proc)
@@ -549,7 +541,7 @@ bool PartiallyApplied::apply(TypedValue&& val, int bind_pos){
 }
 
 #ifndef NDEBUG
-std::string Procedure::opcodesToStr()const{
+std::string Procedure::opcodesToStrDebug()const{
   using namespace std::string_literals;
   
   std::string ret = "";
@@ -563,7 +555,7 @@ std::string Procedure::opcodesToStr()const{
     if(!extended){
       snprintf(buffer, sizeof(buffer), "%4d: ", counter);
       ret += buffer;
-      ret += opCodeToStr(op);
+      ret += opCodeToStrDebug(op);
       if(op & Op::Extended) extended = true;
       else ret += "\n"s;
     }else{
@@ -576,7 +568,7 @@ std::string Procedure::opcodesToStr()const{
   return ret;
 }
 
-std::string opCodeToStr(OpCodeType op){
+std::string opCodeToStrDebug(OpCodeType op){
   using namespace std::string_literals;
   
   std::string ret = "";
@@ -695,13 +687,13 @@ std::string opCodeToStr(OpCodeType op){
   return ret;
 }
 
-std::string Procedure::toStr()const{
+std::string Procedure::toStrDebug()const{
   char buffer[20] = "";
   std::sprintf(buffer, "%p", (const void*)this);
   return buffer;
 }
 
-std::string PartiallyApplied::toStr()const{
+std::string PartiallyApplied::toStrDebug()const{
   char buffer[20] = "";
   std::sprintf(buffer, "%p", (const void*)this);
   return buffer;

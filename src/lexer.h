@@ -12,9 +12,6 @@
 class Lexer{
   
   const char* mem_;
-  const char* old_reader_;
-  const char* reader_;
-  std::vector<const char*> _checkpoints;
   
 public:
   std::unordered_map<StringView, rc_ptr<String>> string_table;

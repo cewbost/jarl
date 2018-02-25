@@ -126,8 +126,8 @@ public:
   }
   
   #ifndef NDEBUG
-  std::string opcodesToStr()const;
-  std::string toStr()const;
+  std::string opcodesToStrDebug()const;
+  std::string toStrDebug()const;
   #endif
 };
 
@@ -159,12 +159,12 @@ public:
   }
   
   #ifndef NDEBUG
-  std::string toStr()const;
+  std::string toStrDebug()const;
   #endif
 };
 
 #ifndef NDEBUG
-std::string opCodeToStr(OpCodeType);
+std::string opCodeToStrDebug(OpCodeType);
 #endif
 
 #endif

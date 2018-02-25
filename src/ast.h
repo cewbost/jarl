@@ -124,8 +124,8 @@ struct ASTNode {
   ASTNode& operator=(const ASTNode&) = delete;
   
   #ifndef NDEBUG
-  std::string toStr() const;
-  std::string toStr(int) const;
+  std::string toStrDebug() const;
+  std::string toStrDebug(int) const;
   #endif
 };
 

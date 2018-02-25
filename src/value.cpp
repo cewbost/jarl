@@ -984,7 +984,7 @@ void TypedValue::toPartial(){
 }
 
 #ifndef NDEBUG
-std::string TypedValue::toStr()const{
+std::string TypedValue::toStrDebug()const{
   using namespace std::string_literals;
   
   switch(this->type){
@@ -993,21 +993,21 @@ std::string TypedValue::toStr()const{
   case TypeTag::Null:
     return "null"s;
   case TypeTag::Bool:
-    return this->value.boolToStr();
+    return this->value.boolToStrDebug();
   case TypeTag::Int:
-    return this->value.intToStr();
+    return this->value.intToStrDebug();
   case TypeTag::Float:
-    return this->value.floatToStr();
+    return this->value.floatToStrDebug();
   case TypeTag::String:
-    return this->value.toStr();
+    return this->value.toStrDebug();
   case TypeTag::Rvalue:
-    return this->value.rvalue_v->toStr();
+    return this->value.rvalue_v->toStrDebug();
   case TypeTag::Proc:
-    return this->value.proc_v->toStr();
+    return this->value.proc_v->toStrDebug();
   case TypeTag::Partial:
-    return this->value.partial_v->toStr();
+    return this->value.partial_v->toStrDebug();
   case TypeTag::Array:
-    return this->value.array_v->toStr();
+    return this->value.array_v->toStrDebug();
   default:
     return std::to_string((uintptr_t)this->value.ptr_v);
   }

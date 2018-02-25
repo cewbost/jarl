@@ -87,16 +87,16 @@ struct Value{
   }
   
   #ifndef NDEBUG
-  std::string boolToStr()const{
+  std::string boolToStrDebug()const{
     return std::string(this->bool_v? "true" : "false");
   }
-  std::string intToStr()const{
+  std::string intToStrDebug()const{
     return std::to_string(this->int_v);
   }
-  std::string floatToStr()const{
+  std::string floatToStrDebug()const{
     return std::to_string(this->float_v);
   }
-  std::string toStr()const{
+  std::string toStrDebug()const{
     return std::string(this->string_v->str());
   }
   #endif
@@ -177,7 +177,7 @@ public:
   const String* asString()const{return this->value.string_v;}
   
   #ifndef NDEBUG
-  std::string toStr()const;
+  std::string toStrDebug()const;
   #endif
 };
 

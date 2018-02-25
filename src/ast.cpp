@@ -52,10 +52,10 @@ ASTNode::~ASTNode(){
 }
 
 #ifndef NDEBUG
-std::string ASTNode::toStr() const {
-  return this->toStr(0);
+std::string ASTNode::toStrDebug() const {
+  return this->toStrDebug(0);
 }
-std::string ASTNode::toStr(int indent) const {
+std::string ASTNode::toStrDebug(int indent) const {
   
   std::string ret = "";
   for(int i = 0; i < indent; ++i) ret += "| ";
@@ -187,18 +187,18 @@ std::string ASTNode::toStr(int indent) const {
     break;
   case ASTNodeType::OneChild:
     ret += "\n";
-    ret += this->child->toStr(indent + 1);
+    ret += this->child->toStrDebug(indent + 1);
     break;
   case ASTNodeType::TwoChildren:
     ret += "\n";
-    ret += this->children.first->toStr(indent + 1);
-    ret += this->children.second->toStr(indent + 1);
+    ret += this->children.first->toStrDebug(indent + 1);
+    ret += this->children.second->toStrDebug(indent + 1);
     break;
   case ASTNodeType::StringBranch:
     ret += ": ";
     ret += this->string_branch.value->str();
     ret += "\n";
-    ret += this->string_branch.next->toStr(indent + 1);
+    ret += this->string_branch.next->toStrDebug(indent + 1);
     break;
   default:
     assert(false);
