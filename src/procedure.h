@@ -93,6 +93,7 @@ using VectorMapBase = std::vector<std::pair<String* const, OpCodeType>>;
 class Procedure: public RcTraitDirect<Procedure>{
   
   void threadAST_(
+    VM*,
     ASTNode*,
     VarAllocMap*,
     VarAllocMap*,
@@ -108,7 +109,7 @@ public:
   
   int arguments;
   
-  Procedure(ASTNode*, VarAllocMap* = nullptr, VarAllocMap* = nullptr);
+  Procedure(VM*, ASTNode*, VarAllocMap* = nullptr, VarAllocMap* = nullptr);
   
   Procedure(const Procedure&) = delete;
   Procedure(Procedure&&) = delete;

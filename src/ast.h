@@ -14,9 +14,12 @@ enum class ASTNodeType: unsigned {
   Leaf = 0x0000,
   
   Nop,
+  
+  Error = 0x0100,
+  
   LexerError,
   
-  Value = 0x0100,
+  Value = 0x0200,
   
   Null,
   
