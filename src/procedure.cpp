@@ -28,13 +28,22 @@ void Procedure::threadAST_(
   switch(static_cast<ASTNodeType>(static_cast<unsigned>(tok->type) & ~0xff)){
   case ASTNodeType::Error:
     switch(tok->type){
-    case ASTNodeType::LexerError:
+    case ASTNodeType::LexError:
       {
         char* buffer = new char[64];
         sprintf(buffer, "line %d: Unrecognized lexeme.\n");
         vm->reportError(std::unique_ptr<char[]>(buffer));
       }
       break;
+    case ASTNodeType::ParseError:
+      {
+        char* buffer = new char[64];
+        sprintf(buffer, "line %d: Parser error.\n");
+        vm->reportError(std::unique_ptr<char[]>(buffer));
+      }
+      break;
+    default:
+      assert(false);
     }
   case ASTNodeType::Value:
     if(!ret) break;

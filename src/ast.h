@@ -17,7 +17,8 @@ enum class ASTNodeType: unsigned {
   
   Error = 0x0100,
   
-  LexerError,
+  LexError,
+  ParseError,
   
   Value = 0x0200,
   

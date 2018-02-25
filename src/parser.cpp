@@ -68,26 +68,26 @@ ASTNode* Parser::nud_(const Lexeme& lex){
     {
       auto tok = this->expression_(def_expr_bindp);
       if(!this->checkNext_(LexemeType::RParen)){
-        assert(false);
-      }
-      return tok;
+        delete tok;
+        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+      }else return tok;
     }
   case LexemeType::LBrace:
     {
       auto tok = this->codeBlock_();
       if(!this->checkNext_(LexemeType::RBrace)){
-        assert(false);
-      }
-      return tok;
+        delete tok;
+        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+      }else return tok;
     }
   case LexemeType::LBracket:
     {
       auto tok = this->expression_(0x11);
       tok = new ASTNode(ASTNodeType::Array, tok, lex.pos);
       if(!this->checkNext_(LexemeType::RBracket)){
-        assert(false);
-      }
-      return tok;
+        delete tok;
+        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+      }else return tok;
     }
   
   case LexemeType::Int:
@@ -104,7 +104,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
     return new ASTNode(ASTNodeType::Identifier, lex.value.s, lex.pos);
   
   case LexemeType::Error:
-    return new ASTNode(ASTNodeType::LexerError, lex.pos);
+    return new ASTNode(ASTNodeType::LexError, lex.pos);
   
   default:
     assert(false);
@@ -117,9 +117,10 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
     if(lex.type == LexemeType::LBracket){
       auto right = this->expression_(def_expr_bindp);
       if(!this->checkNext_(LexemeType::RBracket)){
-        assert(false);
-      }
-      return new ASTNode(ASTNodeType::Index, left, right, lex.pos);
+        delete right;
+        delete left;
+        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+      }else return new ASTNode(ASTNodeType::Index, left, right, lex.pos);
     }else{
       return new ASTNode(ASTNodeType::Apply, left, this->nud_(lex), lex.pos);
     }
@@ -222,7 +223,8 @@ ASTNode* Parser::ifExpr_(){
   ASTNode* condition = this->statement_(func_bindp);
   auto pos2 = this->lcurrent_->pos;
   if(!this->checkNext_(LexemeType::Colon)){
-    assert(false);
+    delete condition;
+    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
   }
   this->skipNewlines_();
   ASTNode* stmt = this->statement_(func_bindp);
@@ -257,7 +259,8 @@ ASTNode* Parser::whileExpr_(){
   auto pos = (this->lcurrent_ - 1)->pos;
   ASTNode* condition = this->statement_(func_bindp);
   if(!this->checkNext_(LexemeType::Colon)){
-    assert(false);
+    delete condition;
+    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
   }
   this->skipNewlines_();
   ASTNode* stmt = this->statement_(func_bindp);
@@ -301,7 +304,8 @@ ASTNode* Parser::functionExpr_(){
   ASTNode* arg_list = this->identifierList_();
   
   if(!this->checkNext_(LexemeType::Colon)){
-    assert(false);
+    delete arg_list;
+    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
   }
   this->skipNewlines_();
   ASTNode* code = this->statement_(func_bindp);
@@ -313,13 +317,17 @@ ASTNode* Parser::varDecl_(){
   auto pos = (this->lcurrent_ - 1)->pos;
   auto ret = new ASTNode(ASTNodeType::VarDecl, pos);
   auto iden = this->next_();
-  assert(iden.type == LexemeType::Identifier);
+  if(iden.type != LexemeType::Identifier){
+    delete ret;
+    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+  }
   ret->string_branch.value = iden.value.s;
   
   auto next = this->next_();
-  if(next.type == LexemeType::Assign){
-    ret->string_branch.next = this->statement_(def_expr_bindp);
-  }else assert(false);
+  if(next.type != LexemeType::Assign){
+    delete ret;
+    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+  }else ret->string_branch.next = this->statement_(def_expr_bindp);
   
   return ret;
 }
