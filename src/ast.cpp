@@ -43,6 +43,10 @@ ASTNode::ASTNode(ASTNodeType type, bool b, std::pair<uint16_t, uint16_t> pos)
 : type(type), pos(pos){
   this->bool_value = b;
 }
+ASTNode::ASTNode(ASTNodeType type, const char* s, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
+  this->c_str_value = s;
+}
 
 ASTNode::~ASTNode(){
   switch(

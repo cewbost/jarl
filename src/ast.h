@@ -109,6 +109,7 @@ struct ASTNode {
     Float float_value;
     String* string_value;
     bool bool_value;
+    const char* c_str_value;
     
     struct {
       ASTNode* next;
@@ -125,6 +126,7 @@ struct ASTNode {
   ASTNode(ASTNodeType, Float, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, String*, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, bool, std::pair<uint16_t, uint16_t>);
+  ASTNode(ASTNodeType, const char*, std::pair<uint16_t, uint16_t>);
   
   ~ASTNode();
   

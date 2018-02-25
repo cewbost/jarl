@@ -69,7 +69,11 @@ ASTNode* Parser::nud_(const Lexeme& lex){
       auto tok = this->expression_(def_expr_bindp);
       if(!this->checkNext_(LexemeType::RParen)){
         delete tok;
-        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+        return new ASTNode(
+          ASTNodeType::ParseError,
+          "expected ')'",
+          (this->lcurrent_ - 1)->pos
+        );
       }else return tok;
     }
   case LexemeType::LBrace:
@@ -77,7 +81,11 @@ ASTNode* Parser::nud_(const Lexeme& lex){
       auto tok = this->codeBlock_();
       if(!this->checkNext_(LexemeType::RBrace)){
         delete tok;
-        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+        return new ASTNode(
+          ASTNodeType::ParseError,
+          "expected '}'",
+          (this->lcurrent_ - 1)->pos
+        );
       }else return tok;
     }
   case LexemeType::LBracket:
@@ -86,7 +94,11 @@ ASTNode* Parser::nud_(const Lexeme& lex){
       tok = new ASTNode(ASTNodeType::Array, tok, lex.pos);
       if(!this->checkNext_(LexemeType::RBracket)){
         delete tok;
-        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+        return new ASTNode(
+          ASTNodeType::ParseError,
+          "expected ']'",
+          (this->lcurrent_ - 1)->pos
+        );
       }else return tok;
     }
   
@@ -104,7 +116,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
     return new ASTNode(ASTNodeType::Identifier, lex.value.s, lex.pos);
   
   case LexemeType::Error:
-    return new ASTNode(ASTNodeType::LexError, lex.pos);
+    return new ASTNode(ASTNodeType::LexError, "invalid symbol", lex.pos);
   
   default:
     assert(false);
@@ -119,7 +131,11 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
       if(!this->checkNext_(LexemeType::RBracket)){
         delete right;
         delete left;
-        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+        return new ASTNode(
+          ASTNodeType::ParseError,
+          "expected ']'",
+          (this->lcurrent_ - 1)->pos
+        );
       }else return new ASTNode(ASTNodeType::Index, left, right, lex.pos);
     }else{
       return new ASTNode(ASTNodeType::Apply, left, this->nud_(lex), lex.pos);
@@ -224,7 +240,11 @@ ASTNode* Parser::ifExpr_(){
   auto pos2 = this->lcurrent_->pos;
   if(!this->checkNext_(LexemeType::Colon)){
     delete condition;
-    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+    return new ASTNode(
+      ASTNodeType::ParseError,
+      "expected ':'",
+      (this->lcurrent_ - 1)->pos
+    );
   }
   this->skipNewlines_();
   ASTNode* stmt = this->statement_(func_bindp);
@@ -260,7 +280,11 @@ ASTNode* Parser::whileExpr_(){
   ASTNode* condition = this->statement_(func_bindp);
   if(!this->checkNext_(LexemeType::Colon)){
     delete condition;
-    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+    return new ASTNode(
+      ASTNodeType::ParseError,
+      "expected ':'",
+      (this->lcurrent_ - 1)->pos
+    );
   }
   this->skipNewlines_();
   ASTNode* stmt = this->statement_(func_bindp);
@@ -305,7 +329,11 @@ ASTNode* Parser::functionExpr_(){
   
   if(!this->checkNext_(LexemeType::Colon)){
     delete arg_list;
-    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+    return new ASTNode(
+      ASTNodeType::ParseError,
+      "expected ':'",
+      (this->lcurrent_ - 1)->pos
+    );
   }
   this->skipNewlines_();
   ASTNode* code = this->statement_(func_bindp);
@@ -319,14 +347,21 @@ ASTNode* Parser::varDecl_(){
   auto iden = this->next_();
   if(iden.type != LexemeType::Identifier){
     delete ret;
-    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+    return new ASTNode(
+      ASTNodeType::ParseError,
+      "expected identifier",
+      (this->lcurrent_ - 1)->pos
+    );
   }
   ret->string_branch.value = iden.value.s;
   
   auto next = this->next_();
   if(next.type != LexemeType::Assign){
     delete ret;
-    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+    return new ASTNode(
+      ASTNodeType::ParseError,
+      "expected '='",
+      (this->lcurrent_ - 1)->pos);
   }else ret->string_branch.next = this->statement_(def_expr_bindp);
   
   return ret;
