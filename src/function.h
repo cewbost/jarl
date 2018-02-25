@@ -90,7 +90,7 @@ using VectorMapDefault = VectorMap<Key, Val>;
 using VarAllocMap = DelegateMap<VectorMapDefault, String*, OpCodeType>;
 using VectorMapBase = std::vector<std::pair<String* const, OpCodeType>>;
 
-class Procedure: public RcTraitDirect<Procedure>{
+class Function: public RcTraitDirect<Function>{
   
   void threadAST_(
     VM*,
@@ -109,10 +109,10 @@ public:
   
   int arguments;
   
-  Procedure(VM*, ASTNode*, VarAllocMap* = nullptr, VarAllocMap* = nullptr);
+  Function(VM*, ASTNode*, VarAllocMap* = nullptr, VarAllocMap* = nullptr);
   
-  Procedure(const Procedure&) = delete;
-  Procedure(Procedure&&) = delete;
+  Function(const Function&) = delete;
+  Function(Function&&) = delete;
   
   const std::vector<OpCodeType>& getVCode()const{return this->code_;}
   const OpCodeType* getCode()const{return this->code_.data();}
@@ -136,19 +136,19 @@ class PartiallyApplied: public RcTraitDirect<PartiallyApplied>{
   
   typedef SSOVector<TypedValue, 8, sizeof(void*) * 2> ArgVectorType;
   
-  rc_ptr<const Procedure> proc_;
+  rc_ptr<const Function> proc_;
   ArgVectorType args_;
   
 public:
 
   int nargs;
   
-  PartiallyApplied(const Procedure*);
+  PartiallyApplied(const Function*);
   
   bool apply(const TypedValue&, int);
   bool apply(TypedValue&&, int);
   
-  const Procedure* getProc()const{return this->proc_.get();}
+  const Function* getProc()const{return this->proc_.get();}
   
   ArgVectorType::const_iterator cbegin()const{return this->args_.cbegin();}
   ArgVectorType::const_iterator cend()const{return this->args_.cend();}

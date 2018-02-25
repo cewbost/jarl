@@ -57,7 +57,7 @@ void VM::doCmpOp_(const OpCodeType** iptr, CmpMode mode){
   assert(success);
 }
 
-void VM::pushFunction_(const Procedure& proc){
+void VM::pushFunction_(const Function& proc){
   if(this->frame_.proc){
     this->call_stack_.push_back(std::move(this->frame_));
   }
@@ -78,7 +78,7 @@ void VM::pushFunction_(const PartiallyApplied& part){
   if(this->frame_.proc){
     this->call_stack_.push_back(std::move(this->frame_));
   }
-  const Procedure& proc = *part.getProc();
+  const Function& proc = *part.getProc();
   this->frame_.proc = &proc;
   this->frame_.ip = proc.getCode();
   this->frame_.bp = this->stack_.size();
@@ -117,7 +117,7 @@ bool VM::popFunction_(){
 VM::VM(int stack_size)
 : stack_(stack_size), print_func_(nullptr){}
 
-void VM::execute(const Procedure& proc){
+void VM::execute(const Function& proc){
   
   this->pushFunction_(proc);
   
@@ -306,10 +306,10 @@ void VM::execute(const Procedure& proc){
         }
         
         if(callee.type == TypeTag::Proc){
-          assert(callee.value.proc_v->arguments > bind_pos);
+          assert(callee.value.func_v->arguments > bind_pos);
           
-          if(callee.value.proc_v->arguments == 1){
-            this->pushFunction_(*callee.value.proc_v);
+          if(callee.value.func_v->arguments == 1){
+            this->pushFunction_(*callee.value.func_v);
             end_it = this->frame_.proc->getCode()
               + this->frame_.proc->getCodeSize();
             --this->frame_.ip;

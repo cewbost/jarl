@@ -42,7 +42,7 @@ void jarl::execute(vm v, const char* code){
   std::cout << parse_tree->toStrDebug() << std::endl;
   #endif
   
-  Procedure* proc = new Procedure(v, parse_tree);
+  Function* proc = new Function(v, parse_tree);
   
   #ifdef PRINT_CODE
   std::cout << "::proc::\n";

@@ -1,4 +1,4 @@
-#include "procedure.h"
+#include "function.h"
 
 #include "vm.h"
 #include "delegate_map.h"
@@ -16,7 +16,7 @@ namespace std{
   };
 }
 
-void Procedure::threadAST_(
+void Function::threadAST_(
   VM* vm,
   ASTNode* tok,
   VarAllocMap* va,
@@ -391,7 +391,7 @@ void Procedure::threadAST_(
       
     case ASTNodeType::Function:
       {
-        //some checking might be nessecary for the procedure being well formed
+        //some checking might be nessecary for the function being well formed
         
         if(!ret) break;
         
@@ -410,7 +410,7 @@ void Procedure::threadAST_(
         delete tok->children.first;
         tok->children.first = nullptr;
         
-        auto* proc = new Procedure(vm, tok->children.second, var_alloc, va);
+        auto* proc = new Function(vm, tok->children.second, var_alloc, va);
         
         tok->children.second = nullptr;
         this->code_.push_back(Op::Push | Op::Extended);
@@ -487,7 +487,7 @@ void Procedure::threadAST_(
   }
 }
 
-Procedure::Procedure(
+Function::Function(
   VM* vm,
   ASTNode* tree,
   VarAllocMap* var_alloc,
@@ -538,7 +538,7 @@ Procedure::Procedure(
   this->values_ = std::move(constants);
 }
 
-PartiallyApplied::PartiallyApplied(const Procedure* proc)
+PartiallyApplied::PartiallyApplied(const Function* proc)
 : proc_(proc), args_(proc->arguments), nargs(proc->arguments){}
 
 bool PartiallyApplied::apply(const TypedValue& val, int bind_pos){
@@ -567,7 +567,7 @@ bool PartiallyApplied::apply(TypedValue&& val, int bind_pos){
 }
 
 #ifndef NDEBUG
-std::string Procedure::opcodesToStrDebug()const{
+std::string Function::opcodesToStrDebug()const{
   using namespace std::string_literals;
   
   std::string ret = "";
@@ -713,7 +713,7 @@ std::string opCodeToStrDebug(OpCodeType op){
   return ret;
 }
 
-std::string Procedure::toStrDebug()const{
+std::string Function::toStrDebug()const{
   char buffer[20] = "";
   std::sprintf(buffer, "%p", (const void*)this);
   return buffer;

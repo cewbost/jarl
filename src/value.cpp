@@ -43,7 +43,7 @@ void TypedValue::clear_(){
     this->value.string_v->decRefCount();
     break;
   case TypeTag::Proc:
-    this->value.proc_v->decRefCount();
+    this->value.func_v->decRefCount();
     break;
   case TypeTag::Partial:
     this->value.partial_v->decRefCount();
@@ -76,8 +76,8 @@ void TypedValue::copy_(const TypedValue& other)noexcept{
     this->value.string_v->incRefCount();
     break;
   case TypeTag::Proc:
-    this->value.proc_v = other.value.proc_v;
-    this->value.proc_v->incRefCount();
+    this->value.func_v = other.value.func_v;
+    this->value.func_v->incRefCount();
     break;
   case TypeTag::Partial:
     this->value.partial_v = other.value.partial_v;
@@ -124,9 +124,9 @@ TypedValue::TypedValue(String* s){
   value.string_v = s;
   s->incRefCount();
 }
-TypedValue::TypedValue(Procedure* p){
+TypedValue::TypedValue(Function* p){
   type = TypeTag::Proc;
-  value.proc_v = p;
+  value.func_v = p;
   p->incRefCount();
 }
 TypedValue::TypedValue(PartiallyApplied* p){
@@ -183,10 +183,10 @@ TypedValue& TypedValue::operator=(String* val){
   val->incRefCount();
   return *this;
 }
-TypedValue& TypedValue::operator=(Procedure* val){
+TypedValue& TypedValue::operator=(Function* val){
   this->clear_();
   this->type = TypeTag::Proc;
-  this->value.proc_v = val;
+  this->value.func_v = val;
   val->incRefCount();
   return *this;
 }
@@ -976,7 +976,7 @@ bool TypedValue::toString(){
 
 void TypedValue::toPartial(){
   assert(this->type == TypeTag::Proc);
-  auto proc = this->value.proc_v;
+  auto proc = this->value.func_v;
   this->value.partial_v = new PartiallyApplied(proc);
   this->value.partial_v->incRefCount();
   proc->decRefCount();
@@ -1003,7 +1003,7 @@ std::string TypedValue::toStrDebug()const{
   case TypeTag::Rvalue:
     return this->value.rvalue_v->toStrDebug();
   case TypeTag::Proc:
-    return this->value.proc_v->toStrDebug();
+    return this->value.func_v->toStrDebug();
   case TypeTag::Partial:
     return this->value.partial_v->toStrDebug();
   case TypeTag::Array:
