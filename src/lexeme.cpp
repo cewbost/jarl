@@ -25,97 +25,114 @@ namespace {
   #endif
 }
 
-Lexeme::Lexeme(LexemeType t){
+Lexeme::Lexeme(LexemeType t, std::pair<uint16_t, uint16_t> pos){
   this->type = t;
+  this->pos = pos;
 }
-Lexeme::Lexeme(Int i){
+Lexeme::Lexeme(Int i, std::pair<uint16_t, uint16_t> pos){
   this->type = LexemeType::Int;
   this->value.i = i;
+  this->pos = pos;
 }
-Lexeme::Lexeme(unsigned long long i){
+Lexeme::Lexeme(unsigned long long i, std::pair<uint16_t, uint16_t> pos){
   this->type = LexemeType::Int;
   this->value.i = i;
+  this->pos = pos;
 }
-Lexeme::Lexeme(Float f){
+Lexeme::Lexeme(Float f, std::pair<uint16_t, uint16_t> pos){
   this->type = LexemeType::Float;
   this->value.f = f;
+  this->pos = pos;
 }
-Lexeme::Lexeme(bool b){
+Lexeme::Lexeme(bool b, std::pair<uint16_t, uint16_t> pos){
   this->type = LexemeType::Bool;
   this->value.b = b;
+  this->pos = pos;
 }
-Lexeme::Lexeme(LexemeType t, String* s){
+Lexeme::Lexeme(LexemeType t, String* s, std::pair<uint16_t, uint16_t> pos){
   this->type = t;
   this->value.s = s;
+  this->pos = pos;
 }
-Lexeme::Lexeme(String* s){
+Lexeme::Lexeme(String* s, std::pair<uint16_t, uint16_t> pos){
   this->type = LexemeType::String;
   this->value.s = s;
+  this->pos = pos;
 }
 
 #ifndef NDEBUG
-std::string Lexeme::toStr() const {
+std::string Lexeme::toStrDebug() const {
   using namespace std::string_literals;
+  
+  std::string ret
+    = std::to_string(this->pos.first)
+    + ":"s
+    + std::to_string(this->pos.second)
+    + " \t";
   
   switch(this->type){
   case LexemeType::Bool:
-    return "bool: "s + (this->value.b? "true"s : "false"s);
+    ret += "bool: "s + (this->value.b? "true"s : "false"s); break;
   case LexemeType::Int:
-    return "int: "s + std::to_string(this->value.i);
+    ret += "int: "s + std::to_string(this->value.i); break;
   case LexemeType::Float:
-    return "float: "s + std::to_string(this->value.f);
+    ret += "float: "s + std::to_string(this->value.f); break;
   case LexemeType::String:
-    return "string: \""s + unquoteString_(this->value.s->str()) + "\""s;
+    ret += "string: \""s + unquoteString_(this->value.s->str()) + "\""s; break;
   case LexemeType::Identifier:
-    return "identifier: "s + std::string(this->value.s->str());
+    ret += "identifier: "s + std::string(this->value.s->str()); break;
   case LexemeType::Newline:
-    return "newline"s;
+    ret += "newline"s; break;
   
-  case LexemeType::Plus: return "+"s;
-  case LexemeType::Minus: return "-"s;
-  case LexemeType::Mul: return "*"s;
-  case LexemeType::Div: return "/"s;
-  case LexemeType::Mod: return "%"s;
-  case LexemeType::Append: return "++"s;
-  case LexemeType::Assign: return "="s;
-  case LexemeType::AddAssign: return "+="s;
-  case LexemeType::SubAssign: return "-="s;
-  case LexemeType::MulAssign: return "*="s;
-  case LexemeType::DivAssign: return "/="s;
-  case LexemeType::ModAssign: return "%="s;
-  case LexemeType::AppendAssign: return "++="s;
-  case LexemeType::Eq: return "=="s;
-  case LexemeType::Neq: return "!="s;
-  case LexemeType::Gt: return ">"s;
-  case LexemeType::Lt: return "<"s;
-  case LexemeType::Geq: return ">="s;
-  case LexemeType::Leq: return "<="s;
-  case LexemeType::Cmp: return "<=>"s;
-  case LexemeType::LParen: return "("s;
-  case LexemeType::RParen: return ")"s;
-  case LexemeType::LBrace: return "{"s;
-  case LexemeType::RBrace: return "}"s;
-  case LexemeType::LBracket: return "["s;
-  case LexemeType::RBracket: return "]"s;
-  case LexemeType::Comma: return ","s;
-  case LexemeType::Semicolon: return ";"s;
-  case LexemeType::Colon: return ":"s;
+  case LexemeType::Plus: ret += "+"s; break;
+  case LexemeType::Minus: ret += "-"s; break;
+  case LexemeType::Mul: ret += "*"s; break;
+  case LexemeType::Div: ret += "/"s; break;
+  case LexemeType::Mod: ret += "%"s; break;
+  case LexemeType::Append: ret += "++"s; break;
+  case LexemeType::Assign: ret += "="s; break;
+  case LexemeType::AddAssign: ret += "+="s; break;
+  case LexemeType::SubAssign: ret += "-="s; break;
+  case LexemeType::MulAssign: ret += "*="s; break;
+  case LexemeType::DivAssign: ret += "/="s; break;
+  case LexemeType::ModAssign: ret += "%="s; break;
+  case LexemeType::AppendAssign: ret += "++="s; break;
+  case LexemeType::Eq: ret += "=="s; break;
+  case LexemeType::Neq: ret += "!="s; break;
+  case LexemeType::Gt: ret += ">"s; break;
+  case LexemeType::Lt: ret += "<"s; break;
+  case LexemeType::Geq: ret += ">="s; break;
+  case LexemeType::Leq: ret += "<="s; break;
+  case LexemeType::Cmp: ret += "<=>"s; break;
+  case LexemeType::LParen: ret += "("s; break;
+  case LexemeType::RParen: ret += ")"s; break;
+  case LexemeType::LBrace: ret += "{"s; break;
+  case LexemeType::RBrace: ret += "}"s; break;
+  case LexemeType::LBracket: ret += "["s; break;
+  case LexemeType::RBracket: ret += "]"s; break;
+  case LexemeType::Comma: ret += ","s; break;
+  case LexemeType::Semicolon: ret += ";"s; break;
+  case LexemeType::Colon: ret += ":"s; break;
   
-  case LexemeType::Not: return "not"s;
-  case LexemeType::And: return "and"s;
-  case LexemeType::Or: return "or"s;
+  case LexemeType::Not: ret += "not"s; break;
+  case LexemeType::And: ret += "and"s; break;
+  case LexemeType::Or: ret += "or"s; break;
   
-  case LexemeType::Var: return "var"s;
-  case LexemeType::Null: return "null"s;
-  case LexemeType::If: return "if"s;
-  case LexemeType::Else: return "else"s;
-  case LexemeType::While: return "while"s;
-  case LexemeType::Func: return "func"s;
-  case LexemeType::Print: return "print"s;
+  case LexemeType::Var: ret += "var"s; break;
+  case LexemeType::Null: ret += "null"s; break;
+  case LexemeType::If: ret += "if"s; break;
+  case LexemeType::Else: ret += "else"s; break;
+  case LexemeType::While: ret += "while"s; break;
+  case LexemeType::Func: ret += "func"s; break;
+  case LexemeType::Print: ret += "print"s; break;
   
-  case LexemeType::End: return "end"s;
+  case LexemeType::End: ret += "end"s; break;
   
-  default: return "unrecognized lexeme"s;
+  case LexemeType::Error: ret += "error"s; break;
+  
+  default: ret += "unrecognized lexeme"s;
   }
+  
+  return ret;
 }
 #endif

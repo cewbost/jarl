@@ -2,30 +2,50 @@
 
 #include <cassert>
 
-ASTNode::ASTNode(ASTNodeType type): type(type){}
-ASTNode::ASTNode(ASTNodeType type, ASTNode* child): type(type){
+ASTNode::ASTNode(ASTNodeType type, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){}
+ASTNode::ASTNode(ASTNodeType type, ASTNode* child, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
   this->child = child;
 }
-ASTNode::ASTNode(ASTNodeType type, ASTNode* child1, ASTNode* child2): type(type){
+ASTNode::ASTNode(
+  ASTNodeType type,
+  ASTNode* child1,
+  ASTNode* child2,
+  std::pair<uint16_t, uint16_t> pos
+): type(type), pos(pos){
   this->children.first = child1;
   this->children.second = child2;
 }
-ASTNode::ASTNode(ASTNodeType type, String* str, ASTNode* nex): type(type){
+ASTNode::ASTNode(
+  ASTNodeType type,
+  String* str,
+  ASTNode* nex,
+  std::pair<uint16_t, uint16_t> pos
+): type(type), pos(pos){
   this->string_branch.value = str;
   this->string_branch.next = nex;
 }
 
-ASTNode::ASTNode(ASTNodeType type, Int i): type(type){
+ASTNode::ASTNode(ASTNodeType type, Int i, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
   this->int_value = i;
 }
-ASTNode::ASTNode(ASTNodeType type, Float f): type(type){
+ASTNode::ASTNode(ASTNodeType type, Float f, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
   this->float_value = f;
 }
-ASTNode::ASTNode(ASTNodeType type, String* s): type(type){
+ASTNode::ASTNode(ASTNodeType type, String* s, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
   this->string_value = s;
 }
-ASTNode::ASTNode(ASTNodeType type, bool b): type(type){
+ASTNode::ASTNode(ASTNodeType type, bool b, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
   this->bool_value = b;
+}
+ASTNode::ASTNode(ASTNodeType type, const char* s, std::pair<uint16_t, uint16_t> pos)
+: type(type), pos(pos){
+  this->c_str_value = s;
 }
 
 ASTNode::~ASTNode(){
@@ -52,10 +72,10 @@ ASTNode::~ASTNode(){
 }
 
 #ifndef NDEBUG
-std::string ASTNode::toStr() const {
-  return this->toStr(0);
+std::string ASTNode::toStrDebug() const {
+  return this->toStrDebug(0);
 }
-std::string ASTNode::toStr(int indent) const {
+std::string ASTNode::toStrDebug(int indent) const {
   
   std::string ret = "";
   for(int i = 0; i < indent; ++i) ret += "| ";
@@ -187,18 +207,18 @@ std::string ASTNode::toStr(int indent) const {
     break;
   case ASTNodeType::OneChild:
     ret += "\n";
-    ret += this->child->toStr(indent + 1);
+    ret += this->child->toStrDebug(indent + 1);
     break;
   case ASTNodeType::TwoChildren:
     ret += "\n";
-    ret += this->children.first->toStr(indent + 1);
-    ret += this->children.second->toStr(indent + 1);
+    ret += this->children.first->toStrDebug(indent + 1);
+    ret += this->children.second->toStrDebug(indent + 1);
     break;
   case ASTNodeType::StringBranch:
     ret += ": ";
     ret += this->string_branch.value->str();
     ret += "\n";
-    ret += this->string_branch.next->toStr(indent + 1);
+    ret += this->string_branch.next->toStrDebug(indent + 1);
     break;
   default:
     assert(false);

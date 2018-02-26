@@ -15,7 +15,12 @@ enum class ASTNodeType: unsigned {
   
   Nop,
   
-  Value = 0x0100,
+  Error = 0x0100,
+  
+  LexError,
+  ParseError,
+  
+  Value = 0x0200,
   
   Null,
   
@@ -93,30 +98,35 @@ enum class ASTNodeType: unsigned {
 struct ASTNode {
   
   ASTNodeType type;
+  std::pair<uint16_t, uint16_t> pos;
   union{
     ASTNode* child;
     struct {
       ASTNode *first, *second;
     } children;
+    
     Int int_value;
     Float float_value;
     String* string_value;
     bool bool_value;
+    const char* c_str_value;
+    
     struct {
       ASTNode* next;
       String* value;
     } string_branch;
   };
   
-  ASTNode(ASTNodeType);
-  ASTNode(ASTNodeType, ASTNode*);
-  ASTNode(ASTNodeType, ASTNode*, ASTNode*);
-  ASTNode(ASTNodeType, String*, ASTNode*);
+  ASTNode(ASTNodeType, std::pair<uint16_t, uint16_t>);
+  ASTNode(ASTNodeType, ASTNode*, std::pair<uint16_t, uint16_t>);
+  ASTNode(ASTNodeType, ASTNode*, ASTNode*, std::pair<uint16_t, uint16_t>);
+  ASTNode(ASTNodeType, String*, ASTNode*, std::pair<uint16_t, uint16_t>);
   
-  ASTNode(ASTNodeType, Int);
-  ASTNode(ASTNodeType, Float);
-  ASTNode(ASTNodeType, String*);
-  ASTNode(ASTNodeType, bool);
+  ASTNode(ASTNodeType, Int, std::pair<uint16_t, uint16_t>);
+  ASTNode(ASTNodeType, Float, std::pair<uint16_t, uint16_t>);
+  ASTNode(ASTNodeType, String*, std::pair<uint16_t, uint16_t>);
+  ASTNode(ASTNodeType, bool, std::pair<uint16_t, uint16_t>);
+  ASTNode(ASTNodeType, const char*, std::pair<uint16_t, uint16_t>);
   
   ~ASTNode();
   
@@ -124,8 +134,8 @@ struct ASTNode {
   ASTNode& operator=(const ASTNode&) = delete;
   
   #ifndef NDEBUG
-  std::string toStr() const;
-  std::string toStr(int) const;
+  std::string toStrDebug() const;
+  std::string toStrDebug(int) const;
   #endif
 };
 

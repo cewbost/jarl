@@ -57,7 +57,7 @@ void VM::doCmpOp_(const OpCodeType** iptr, CmpMode mode){
   assert(success);
 }
 
-void VM::pushFunction_(const Procedure& proc){
+void VM::pushFunction_(const Function& proc){
   if(this->frame_.proc){
     this->call_stack_.push_back(std::move(this->frame_));
   }
@@ -78,7 +78,7 @@ void VM::pushFunction_(const PartiallyApplied& part){
   if(this->frame_.proc){
     this->call_stack_.push_back(std::move(this->frame_));
   }
-  const Procedure& proc = *part.getProc();
+  const Function& proc = *part.getProc();
   this->frame_.proc = &proc;
   this->frame_.ip = proc.getCode();
   this->frame_.bp = this->stack_.size();
@@ -117,7 +117,7 @@ bool VM::popFunction_(){
 VM::VM(int stack_size)
 : stack_(stack_size), print_func_(nullptr){}
 
-void VM::execute(const Procedure& proc){
+void VM::execute(const Function& proc){
   
   this->pushFunction_(proc);
   
@@ -127,7 +127,7 @@ void VM::execute(const Procedure& proc){
     
     /*#ifndef NDEBUG
     for(auto& val: stack_){
-      std::cout << "\t" << val.toStr() << std::endl;
+      std::cout << "\t" << val.toStrDebug() << std::endl;
     }
     if(*this->frame_.ip & Op::Extended){
       std::cout
@@ -296,8 +296,8 @@ void VM::execute(const Procedure& proc){
       }
       break;
     
-    case Op::Apply: {
-        
+    case Op::Apply:
+      {
         auto& callee = stack_[stack_.size() - 2];
         int bind_pos = 0;
         
@@ -306,10 +306,10 @@ void VM::execute(const Procedure& proc){
         }
         
         if(callee.type == TypeTag::Proc){
-          assert(callee.value.proc_v->arguments > bind_pos);
+          assert(callee.value.func_v->arguments > bind_pos);
           
-          if(callee.value.proc_v->arguments == 1){
-            this->pushFunction_(*callee.value.proc_v);
+          if(callee.value.func_v->arguments == 1){
+            this->pushFunction_(*callee.value.func_v);
             end_it = this->frame_.proc->getCode()
               + this->frame_.proc->getCodeSize();
             --this->frame_.ip;
@@ -329,7 +329,8 @@ void VM::execute(const Procedure& proc){
             --this->frame_.ip;
           }
         }else assert(false);
-      }break;
+      }
+      break;
       
     case Op::CreateArray:
       if(*this->frame_.ip & Op::Extended){
@@ -348,31 +349,31 @@ void VM::execute(const Procedure& proc){
       }
       break;
     
-    case Op::CreateRange: {
-      
-      Array* arr = new Array;
-      
-      const auto& int_1 = stack_[stack_.size() - 2];
-      const auto& int_2 = stack_[stack_.size() - 1];
-      
-      assert(int_1.type == TypeTag::Int);
-      assert(int_2.type == TypeTag::Int);
-      
-      Int begin = int_1.value.int_v;
-      Int end = int_2.value.int_v;
-      
-      while(begin < end){
-        arr->emplace_back(begin++);
+    case Op::CreateRange:
+      {
+        
+        Array* arr = new Array;
+        
+        const auto& int_1 = stack_[stack_.size() - 2];
+        const auto& int_2 = stack_[stack_.size() - 1];
+        
+        assert(int_1.type == TypeTag::Int);
+        assert(int_2.type == TypeTag::Int);
+        
+        Int begin = int_1.value.int_v;
+        Int end = int_2.value.int_v;
+        
+        while(begin < end){
+          arr->emplace_back(begin++);
+        }
+        while(begin > end){
+          arr->emplace_back(begin--);
+        }
+        
+        stack_.resize(stack_.size() - 1);
+        stack_.back() = TypedValue(arr);
       }
-      while(begin > end){
-        arr->emplace_back(begin--);
-      }
-      
-      stack_.resize(stack_.size() - 1);
-      stack_.back() = TypedValue(arr);
-      
       break;
-    }
     
     case Op::Return:
       
@@ -384,10 +385,14 @@ void VM::execute(const Procedure& proc){
       
       break;
     
-    case Op::Print: {
-        auto msg = this->stack_.back().toStr();
+    case Op::Print:
+      {
+        #ifndef NDEBUG
+        auto msg = this->stack_.back().toStrDebug();
         this->print_func_(msg.c_str());
-      }break;
+        #endif
+      }
+      break;
     
     default:
       assert(false);
@@ -395,10 +400,25 @@ void VM::execute(const Procedure& proc){
     ++this->frame_.ip;
   }
   
-  //std::cout << stack_.back().toStr() << std::endl;
+  //std::cout << stack_.back().toStrDebug() << std::endl;
   stack_.pop_back();
 }
 
 void VM::setPrintFunc(void(*func)(const char*)){
   this->print_func_ = func;
+}
+
+void VM::reportError(std::unique_ptr<char[]> msg){
+  this->errors_.push_back(std::move(msg));
+}
+
+int VM::errors() const {
+  return this->errors_.size();
+}
+
+std::unique_ptr<char[]> VM::getError(){
+  if(this->errors_.size() == 0) return nullptr;
+  auto ret = std::move(this->errors_[0]);
+  this->errors_.erase(this->errors_.begin());
+  return ret;
 }

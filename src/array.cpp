@@ -16,16 +16,16 @@ void Array::sliceInline(int first, int second){
 }
 
 #ifndef NDEBUG
-std::string Array::toStr()const{
+std::string Array::toStrDebug()const{
   std::string ret = "[";
   
   auto it = this->begin();
   if(it != this->end()){
-    ret += it->toStr();
+    ret += it->toStrDebug();
     ++it;
     while(it != this->end()){
       ret += ", ";
-      ret += it->toStr();
+      ret += it->toStrDebug();
       ++it;
     }
   }

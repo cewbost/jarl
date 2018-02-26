@@ -2,7 +2,6 @@
 #define PARSER_H_INCLUDED
 
 #include "lexer.h"
-#include "procedure.h"
 #include "ast.h"
 
 #include <memory>
@@ -39,7 +38,7 @@ public:
   
   Parser(const std::vector<Lexeme>&);
   
-  Procedure* parse();
+  ASTNode* parse();
 };
 
 #endif

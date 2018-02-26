@@ -2,7 +2,7 @@
 #define VALUE_H_INCLUDED
 
 #include "string.h"
-#include "procedure.h"
+#include "function.h"
 #include "array.h"
 
 #include <jarl.h>
@@ -13,7 +13,7 @@
 #include <string>
 #endif
 
-class Procedure;
+class Function;
 class PartiallyApplied;
 class Array;
 
@@ -60,7 +60,7 @@ struct Value{
     Float             float_v;
     String*           string_v;
     Value*            ref_v;
-    Procedure*        proc_v;
+    Function*         func_v;
     PartiallyApplied* partial_v;
     Array*            array_v;
     void*             ptr_v;
@@ -87,16 +87,16 @@ struct Value{
   }
   
   #ifndef NDEBUG
-  std::string boolToStr()const{
+  std::string boolToStrDebug()const{
     return std::string(this->bool_v? "true" : "false");
   }
-  std::string intToStr()const{
+  std::string intToStrDebug()const{
     return std::to_string(this->int_v);
   }
-  std::string floatToStr()const{
+  std::string floatToStrDebug()const{
     return std::to_string(this->float_v);
   }
-  std::string toStr()const{
+  std::string toStrDebug()const{
     return std::string(this->string_v->str());
   }
   #endif
@@ -120,7 +120,7 @@ public:
   TypedValue(Int);
   TypedValue(Float);
   TypedValue(String*);
-  TypedValue(Procedure*);
+  TypedValue(Function*);
   TypedValue(PartiallyApplied*);
   TypedValue(Array*);
   TypedValue(const void*);
@@ -131,7 +131,7 @@ public:
   TypedValue& operator=(Int);
   TypedValue& operator=(Float);
   TypedValue& operator=(String*);
-  TypedValue& operator=(Procedure*);
+  TypedValue& operator=(Function*);
   TypedValue& operator=(PartiallyApplied*);
   TypedValue& operator=(Array*);
   TypedValue& operator=(const void*);
@@ -177,7 +177,7 @@ public:
   const String* asString()const{return this->value.string_v;}
   
   #ifndef NDEBUG
-  std::string toStr()const;
+  std::string toStrDebug()const;
   #endif
 };
 
