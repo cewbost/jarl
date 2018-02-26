@@ -17,8 +17,8 @@ namespace std{
 }
 
 void Function::threadAST_(
-  VM* vm,
   ASTNode* node,
+  std::vector<std::unique_ptr<char[]>>* errors,
   VarAllocMap* va,
   VarAllocMap* cva,
   VectorSet<TypedValue>* vc,
@@ -30,7 +30,7 @@ void Function::threadAST_(
     {
       char* buffer = new char[64];
       sprintf(buffer, "line %d: %s\n", node->pos.first, node->c_str_value);
-      vm->reportError(std::unique_ptr<char[]>(buffer));
+      errors->push_back(std::unique_ptr<char[]>(buffer));
     }
     break;
     
@@ -84,7 +84,7 @@ void Function::threadAST_(
               node->pos.first,
               node->string_value->str()
             );
-            vm->reportError(std::unique_ptr<char[]>(buffer));
+            errors->push_back(std::unique_ptr<char[]>(buffer));
             break;
           }
           
@@ -106,7 +106,7 @@ void Function::threadAST_(
     break;
     
   case ASTNodeType::UnaryExpr:
-    this->threadAST_(vm, node->child, va, cva, vc, ss);
+    this->threadAST_(node->child, errors, va, cva, vc, ss);
     switch(node->type){
     case ASTNodeType::Neg:
       this->code_.push_back(Op::Neg);
@@ -124,8 +124,8 @@ void Function::threadAST_(
     break;
     
   case ASTNodeType::BinaryExpr:
-    this->threadAST_(vm, node->children.first, va, cva, vc, ss);
-    this->threadAST_(vm, node->children.second, va, cva, vc, ss);
+    this->threadAST_(node->children.first, errors, va, cva, vc, ss);
+    this->threadAST_(node->children.second, errors, va, cva, vc, ss);
     switch(node->type){
     case ASTNodeType::Apply:
       this->code_.push_back(Op::Apply);
@@ -184,14 +184,14 @@ void Function::threadAST_(
   case ASTNodeType::BranchExpr:
     {
       unsigned jmp_addr;
-      this->threadAST_(vm, node->children.first, va, cva, vc, ss);
+      this->threadAST_(node->children.first, errors, va, cva, vc, ss);
       
       switch(node->type){
       case ASTNodeType::And:
         this->code_.push_back(Op::Jfsc | Op::Extended);
         jmp_addr = this->code_.size();
         this->code_.push_back((OpCodeType)0);
-        this->threadAST_(vm, node->children.second, va, cva, vc, ss);
+        this->threadAST_(node->children.second, errors, va, cva, vc, ss);
         this->code_[jmp_addr] = (OpCodeType)this->code_.size() - 1;
         
         if(!ret){
@@ -203,7 +203,7 @@ void Function::threadAST_(
         this->code_.push_back(Op::Jtsc | Op::Extended);
         jmp_addr = this->code_.size();
         this->code_.push_back((OpCodeType)0);
-        this->threadAST_(vm, node->children.second, va, cva, vc, ss);
+        this->threadAST_(node->children.second, errors, va, cva, vc, ss);
         this->code_[jmp_addr] = (OpCodeType)this->code_.size() - 1;
         
         if(!ret){
@@ -220,9 +220,9 @@ void Function::threadAST_(
         this->code_.push_back((OpCodeType)0);
         --(*ss);
         
-        this->threadAST_(vm,
+        this->threadAST_(
           node->children.second->children.first,
-          va, cva, vc, ss, ret
+          errors, va, cva, vc, ss, ret
         );
         --(*ss);
         
@@ -236,9 +236,9 @@ void Function::threadAST_(
             this->code_.push_back(Op::Push);
             ++(*ss);
           }else{
-            this->threadAST_(vm,
+            this->threadAST_(
               node->children.second->children.second,
-              va, cva, vc, ss
+              errors, va, cva, vc, ss
             );
           }
           this->code_[jmp_addr] = (OpCodeType)this->code_.size() + 1;
@@ -247,9 +247,9 @@ void Function::threadAST_(
           jmp_addr = this->code_.size();
           this->code_.push_back((OpCodeType)0);
           
-          this->threadAST_(vm,
+          this->threadAST_(
             node->children.second->children.second,
-            va, cva, vc, ss, false
+            errors, va, cva, vc, ss, false
           );
           
           this->code_[jmp_addr] = (OpCodeType)this->code_.size() + 1;
@@ -267,11 +267,11 @@ void Function::threadAST_(
       if(node->children.first->type != ASTNodeType::Identifier){
         char* buffer = new char[32];
         sprintf(buffer, "line %d: assignment to rvalue\n", node->pos.first);
-        vm->reportError(std::unique_ptr<char[]>(buffer));
+        errors->push_back(std::unique_ptr<char[]>(buffer));
       }
       
       auto stack_pos = (OpCodeType)(*va)[node->children.first->string_value];
-      this->threadAST_(vm, node->children.second, va, cva, vc, ss);
+      this->threadAST_(node->children.second, errors, va, cva, vc, ss);
       switch(node->type){
       case ASTNodeType::Assign:
         this->code_.push_back(Op::Write | Op::Extended | Op::Dest);
@@ -314,7 +314,7 @@ void Function::threadAST_(
     case ASTNodeType::CodeBlock:
       {
         VarAllocMap* var_allocs = new VarAllocMap(va);
-        this->threadAST_(vm, node->children.first, var_allocs, cva, vc, ss);
+        this->threadAST_(node->children.first, errors, var_allocs, cva, vc, ss);
         var_allocs->set_delegate(nullptr);
         if(ret){
           if(var_allocs->size() > 0){
@@ -348,12 +348,12 @@ void Function::threadAST_(
             OpCodeType elems = 0;
             
             for(;;){
-              this->threadAST_(vm, t->children.first, va, cva, vc, ss);
+              this->threadAST_(t->children.first, errors, va, cva, vc, ss);
               ++elems;
               if(t->children.second->type == ASTNodeType::ExprList){
                 t = t->children.second;
               }else{
-                this->threadAST_(vm, t->children.second, va, cva, vc, ss);
+                this->threadAST_(t->children.second, errors, va, cva, vc, ss);
                 ++elems;
                 break;
               }
@@ -363,12 +363,12 @@ void Function::threadAST_(
             this->code_.push_back(elems);
             *ss -= elems - 1;
           }else if(node->child->type == ASTNodeType::Range){
-            this->threadAST_(vm, node->child->children.first, va, cva, vc, ss);
-            this->threadAST_(vm, node->child->children.second, va, cva, vc, ss);
+            this->threadAST_(node->child->children.first, errors, va, cva, vc, ss);
+            this->threadAST_(node->child->children.second, errors, va, cva, vc, ss);
             this->code_.push_back(Op::CreateRange);
             --(*ss);
           }else{
-            this->threadAST_(vm, node->child, va, cva, vc, ss);
+            this->threadAST_(node->child, errors, va, cva, vc, ss);
             this->code_.push_back(Op::CreateArray | Op::Extended | Op::Int);
             this->code_.push_back(1);
           }
@@ -387,14 +387,14 @@ void Function::threadAST_(
         }
         unsigned begin_addr = this->code_.size() - 1;
         
-        this->threadAST_(vm, node->children.first, va, cva, vc, ss);
+        this->threadAST_(node->children.first, errors, va, cva, vc, ss);
         
         this->code_.push_back(Op::Jf | Op::Extended);
         --(*ss);
         unsigned end_jmp_addr = this->code_.size();
         this->code_.push_back((OpCodeType)0);
         
-        this->threadAST_(vm, node->children.second, va, cva, vc, ss, ret);
+        this->threadAST_(node->children.second, errors, va, cva, vc, ss, ret);
         if(ret){
           this->code_.push_back(Op::Reduce);
           --(*ss);
@@ -426,7 +426,7 @@ void Function::threadAST_(
         delete node->children.first;
         node->children.first = nullptr;
         
-        auto* proc = new Function(vm, node->children.second, var_alloc, va);
+        auto* proc = new Function(node->children.second, errors, var_alloc, va);
         
         node->children.second = nullptr;
         this->code_.push_back(Op::Push | Op::Extended);
@@ -447,14 +447,14 @@ void Function::threadAST_(
       break;
       
     case ASTNodeType::Seq:
-      this->threadAST_(vm, node->children.first, va, cva, vc, ss, false);
-      this->threadAST_(vm, node->children.second, va, cva, vc, ss);
+      this->threadAST_(node->children.first, errors, va, cva, vc, ss, false);
+      this->threadAST_(node->children.second, errors, va, cva, vc, ss);
       break;
       
     case ASTNodeType::VarDecl:
       {
         auto stack_size = *ss;
-        this->threadAST_(vm, node->string_branch.next, va, cva, vc, ss);
+        this->threadAST_(node->string_branch.next, errors, va, cva, vc, ss);
         va->direct()[node->string_branch.value]
           = stack_size | stack_pos_local_;
       }
@@ -462,27 +462,27 @@ void Function::threadAST_(
       
     case ASTNodeType::Print:
       {
-        this->threadAST_(vm, node->child, va, cva, vc, ss);
+        this->threadAST_(node->child, errors, va, cva, vc, ss);
         this->code_.push_back(Op::Print);
       }
       break;
       
     case ASTNodeType::Index:
       {
-        this->threadAST_(vm, node->children.first, va, cva, vc, ss);
+        this->threadAST_(node->children.first, errors, va, cva, vc, ss);
         
         if(node->children.second->type == ASTNodeType::Range){
-          this->threadAST_(vm,
+          this->threadAST_(
             node->children.second->children.first,
-            va, cva, vc, ss
+            errors, va, cva, vc, ss
           );
-          this->threadAST_(vm,
+          this->threadAST_(
             node->children.second->children.second,
-            va, cva, vc, ss
+            errors, va, cva, vc, ss
           );
           this->code_.push_back(Op::Slice);
         }else{
-          this->threadAST_(vm, node->children.second, va, cva, vc, ss);
+          this->threadAST_(node->children.second, errors, va, cva, vc, ss);
           this->code_.push_back(Op::Get);
         }
         
@@ -504,8 +504,8 @@ void Function::threadAST_(
 }
 
 Function::Function(
-  VM* vm,
   ASTNode* tree,
+  std::vector<std::unique_ptr<char[]>>* errors,
   VarAllocMap* var_alloc,
   VarAllocMap* context_vars
 ){
@@ -522,7 +522,7 @@ Function::Function(
   VectorSet<TypedValue> constants;
   int stack_size = 0;
   
-  this->threadAST_(vm, tree, var_alloc, context_vars, &constants, &stack_size);
+  this->threadAST_(tree, errors, var_alloc, context_vars, &constants, &stack_size);
   this->code_.push_back(Op::Return);
   
   delete tree;

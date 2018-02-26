@@ -54,10 +54,7 @@ public:
   void execute(const Function&);
   
   void setPrintFunc(void(*)(const char*));
-  
-  void reportError(std::unique_ptr<char[]>);
-  int errors() const;
-  std::unique_ptr<char[]> getError();
+  void print(const char*);
 };
 
 #endif

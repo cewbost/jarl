@@ -42,7 +42,15 @@ void jarl::execute(vm v, const char* code){
   std::cout << parse_tree->toStrDebug() << std::endl;
   #endif
   
-  Function* proc = new Function(v, parse_tree);
+  std::vector<std::unique_ptr<char[]>> errors;
+  Function* proc = new Function(parse_tree, &errors);
+  if(errors.size() > 0){
+    for(auto& error: errors){
+      v->print(error.get());
+    }
+    delete proc;
+    return;
+  }
   
   #ifdef PRINT_CODE
   std::cout << "::proc::\n";

@@ -93,8 +93,8 @@ using VectorMapBase = std::vector<std::pair<String* const, OpCodeType>>;
 class Function: public RcTraitDirect<Function>{
   
   void threadAST_(
-    VM*,
     ASTNode*,
+    std::vector<std::unique_ptr<char[]>>*,
     VarAllocMap*,
     VarAllocMap*,
     VectorSet<TypedValue>*,
@@ -109,7 +109,12 @@ public:
   
   int arguments;
   
-  Function(VM*, ASTNode*, VarAllocMap* = nullptr, VarAllocMap* = nullptr);
+  Function(
+    ASTNode*,
+    std::vector<std::unique_ptr<char[]>>*,
+    VarAllocMap* = nullptr,
+    VarAllocMap* = nullptr
+  );
   
   Function(const Function&) = delete;
   Function(Function&&) = delete;

@@ -407,18 +407,6 @@ void VM::execute(const Function& proc){
 void VM::setPrintFunc(void(*func)(const char*)){
   this->print_func_ = func;
 }
-
-void VM::reportError(std::unique_ptr<char[]> msg){
-  this->errors_.push_back(std::move(msg));
-}
-
-int VM::errors() const {
-  return this->errors_.size();
-}
-
-std::unique_ptr<char[]> VM::getError(){
-  if(this->errors_.size() == 0) return nullptr;
-  auto ret = std::move(this->errors_[0]);
-  this->errors_.erase(this->errors_.begin());
-  return ret;
+void VM::print(const char* msg){
+  this->print_func_(msg);
 }
