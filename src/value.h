@@ -146,28 +146,28 @@ public:
     this->clear_();
   }
   
-  bool add(const TypedValue&);
-  bool sub(const TypedValue&);
-  bool mul(const TypedValue&);
-  bool div(const TypedValue&);
-  bool mod(const TypedValue&);
-  bool append(const TypedValue&);
-  bool append(TypedValue&&);
-  bool neg();
+  void add(const TypedValue&);
+  void sub(const TypedValue&);
+  void mul(const TypedValue&);
+  void div(const TypedValue&);
+  void mod(const TypedValue&);
+  void append(const TypedValue&);
+  void append(TypedValue&&);
+  void neg();
   
-  bool cmp(const TypedValue&);
-  bool cmp(const TypedValue&, CmpMode);
+  void cmp(const TypedValue&);
+  void cmp(const TypedValue&, CmpMode);
   
-  bool boolNot();
+  void boolNot();
   
-  bool get(const TypedValue&);
-  bool slice(const TypedValue&, const TypedValue&);
+  void get(const TypedValue&);
+  void slice(const TypedValue&, const TypedValue&);
   
-  bool toBool();
-  bool toBool(bool*);
-  bool toInt();
-  bool toFloat();
-  bool toString();
+  void toBool();
+  void toBool(bool*);
+  void toInt();
+  void toFloat();
+  void toString();
   
   void toPartial();
   

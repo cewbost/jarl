@@ -1,5 +1,7 @@
 #include "value.h"
 
+#include "vm.h"
+
 #include <memory>
 #include <algorithm>
 #include <iterator>
@@ -234,7 +236,7 @@ TypedValue& TypedValue::operator=(const TypedValue& other)noexcept{
 
 //other stuff
 
-bool TypedValue::add(const TypedValue& rhs){
+void TypedValue::add(const TypedValue& rhs){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->add(rhs);
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
@@ -251,7 +253,7 @@ bool TypedValue::add(const TypedValue& rhs){
         + other->value.float_v;
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::Float:
@@ -263,16 +265,18 @@ bool TypedValue::add(const TypedValue& rhs){
       this->value.float_v += other->value.float_v;
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   default:
-    return false;
+    goto error;
   }
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::sub(const TypedValue& rhs){
+void TypedValue::sub(const TypedValue& rhs){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->sub(rhs);
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
@@ -287,7 +291,7 @@ bool TypedValue::sub(const TypedValue& rhs){
       this->value.float_v = static_cast<Float>(this->value.int_v) - other->value.float_v;
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::Float:
@@ -298,16 +302,18 @@ bool TypedValue::sub(const TypedValue& rhs){
     case TypeTag::Float:
       this->value.float_v -= other->value.float_v;
     default:
-      return false;
+      goto error;
     }
     break;
   default:
-    return false;
+    goto error;
   }
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::mul(const TypedValue& rhs){
+void TypedValue::mul(const TypedValue& rhs){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->mul(rhs);
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
@@ -322,7 +328,7 @@ bool TypedValue::mul(const TypedValue& rhs){
       this->value.float_v = static_cast<Float>(this->value.int_v) * other->value.float_v;
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::Float:
@@ -334,16 +340,18 @@ bool TypedValue::mul(const TypedValue& rhs){
       this->value.float_v *= other->value.float_v;
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   default:
-    return false;
+    goto error;
   }
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::div(const TypedValue& rhs){
+void TypedValue::div(const TypedValue& rhs){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->div(rhs);
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
@@ -352,7 +360,7 @@ bool TypedValue::div(const TypedValue& rhs){
     switch(other->type){
     case TypeTag::Int:
       if(other->value.int_v == 0){
-        return false;
+        goto error;
       }
       this->value.int_v /= other->value.int_v;
       break;
@@ -361,7 +369,7 @@ bool TypedValue::div(const TypedValue& rhs){
       this->value.float_v = static_cast<Float>(this->value.int_v) / other->value.float_v;
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::Float:
@@ -373,16 +381,18 @@ bool TypedValue::div(const TypedValue& rhs){
       this->value.float_v /= other->value.float_v;
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   default:
-    return false;
+    goto error;
   }
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::mod(const TypedValue& rhs){
+void TypedValue::mod(const TypedValue& rhs){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->mod(rhs);
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
@@ -391,7 +401,7 @@ bool TypedValue::mod(const TypedValue& rhs){
     switch(other->type){
     case TypeTag::Int:
       if(other->value.int_v == 0){
-        return false;
+        goto error;
       }
       this->value.int_v %= other->value.int_v;
       break;
@@ -401,7 +411,7 @@ bool TypedValue::mod(const TypedValue& rhs){
         std::fmod(static_cast<Float>(this->value.int_v), other->value.float_v);
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::Float:
@@ -414,16 +424,18 @@ bool TypedValue::mod(const TypedValue& rhs){
       this->value.float_v = std::fmod(this->value.float_v, other->value.float_v);
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   default:
-    return false;
+    goto error;
   }
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::append(const TypedValue& rhs){
+void TypedValue::append(const TypedValue& rhs){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->append(rhs);
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
@@ -440,7 +452,7 @@ bool TypedValue::append(const TypedValue& rhs){
       *this = constructArray(new Array, *this, *other->value.array_v);
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::Int:
@@ -455,7 +467,7 @@ bool TypedValue::append(const TypedValue& rhs){
       *this = constructArray(new Array, *this, *other->value.array_v);
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::Float:
@@ -470,7 +482,7 @@ bool TypedValue::append(const TypedValue& rhs){
       *this = constructArray(new Array, *this, *other->value.array_v);
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::String:
@@ -503,7 +515,7 @@ bool TypedValue::append(const TypedValue& rhs){
       *this = constructArray(new Array, *this, *other->value.array_v);
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::Array:
@@ -526,13 +538,15 @@ bool TypedValue::append(const TypedValue& rhs){
       *this = constructArray(new Array, *this, *other->value.array_v);
       break;
     default:
-      return false;
+      goto error;
     }
   }
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::append(TypedValue&& rhs){
+void TypedValue::append(TypedValue&& rhs){
   if(rhs.type == TypeTag::Rvalue)
     return this->append(rhs.value.rvalue_v);
   if(this->type == TypeTag::Rvalue)
@@ -553,7 +567,7 @@ bool TypedValue::append(TypedValue&& rhs){
       *this = std::move(*other);
       break;
     default:
-      return false;
+      goto error;
     }
   case TypeTag::Int:
     switch(other->type){
@@ -568,7 +582,7 @@ bool TypedValue::append(TypedValue&& rhs){
       *this = std::move(*other);
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::Float:
@@ -584,7 +598,7 @@ bool TypedValue::append(TypedValue&& rhs){
       *this = std::move(*other);
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::String:
@@ -618,7 +632,7 @@ bool TypedValue::append(TypedValue&& rhs){
       *this = std::move(*other);
       break;
     default:
-      return false;
+      goto error;
     }
     break;
   case TypeTag::Array:
@@ -642,13 +656,15 @@ bool TypedValue::append(TypedValue&& rhs){
       *this = constructArray(new Array, *this, *other->value.array_v);
       break;
     default:
-      return false;
+      goto error;
     }
   }
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::neg(){
+void TypedValue::neg(){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->neg();
   
   switch(this->type){
@@ -659,11 +675,14 @@ bool TypedValue::neg(){
     this->value.float_v = -this->value.float_v;
     break;
   default:
-    return false;
+    goto error;
   }
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::cmp(const TypedValue& rhs){
+void TypedValue::cmp(const TypedValue& rhs){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->cmp(rhs);
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
@@ -672,7 +691,7 @@ bool TypedValue::cmp(const TypedValue& rhs){
     if(other->type == TypeTag::Bool){
       this->type = TypeTag::Int;
       this->value.int_v = (Int)this->value.bool_v - (Int)other->value.bool_v;
-    }else return false;
+    }else goto error;
     break;
   case TypeTag::Int:
     if(other->type == TypeTag::Int){
@@ -681,7 +700,7 @@ bool TypedValue::cmp(const TypedValue& rhs){
     }else if(other->type == TypeTag::Float){
       Float t = (Float)this->value.int_v - other->value.float_v;
       this->value.int_v = t > 0? 1 : (t < 0? -1 : 0);
-    }else return false;
+    }else goto error;
     break;
   case TypeTag::Float:
     if(other->type == TypeTag::Float){
@@ -692,26 +711,27 @@ bool TypedValue::cmp(const TypedValue& rhs){
       Float t = this->value.float_v - (Float)other->value.int_v;
       this->type = TypeTag::Int;
       this->value.int_v = t > 0? 1 : (t < 0? -1 : 0);
-    }else return false;
+    }else goto error;
     break;
   case TypeTag::String:
     if(other->type == TypeTag::String){
       this->type = TypeTag::Int;
       this->value.int_v = this->value.string_v->cmp(*other->value.string_v);
-    }else return false;
+    }else goto error;
     break;
   default:
-    return false;
+    goto error;
   }
-  
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
+void TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->cmp(rhs, mode);
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
-  if(this->type != other->type) return false;
+  if(this->type != other->type) goto error;
   
   int cmp;
   switch(this->type){
@@ -728,7 +748,7 @@ bool TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
     cmp = this->value.string_v->cmp(*other->value.string_v);
     break;
   default:
-    return false;
+    goto error;
   }
   
   this->type = TypeTag::Bool;
@@ -753,48 +773,55 @@ bool TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
     this->value.bool_v = cmp <= 0;
     break;
   }
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::boolNot(){
+void TypedValue::boolNot(){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->boolNot();
   
   if(this->type != TypeTag::Bool){
-    if(!this->toBool()) return false;
+    this->toBool();
   }
   this->value.bool_v = !this->value.bool_v;
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::get(const TypedValue& rhs){
+void TypedValue::get(const TypedValue& rhs){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->get(rhs);
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
   Int index;
   if(other->type == TypeTag::Int){
     index = other->value.int_v;
-  }else return false;
+  }else goto error;
   
   switch(this->type){
   case TypeTag::Array:
     if(index < 0) index = this->value.array_v->size() + index;
-    if(index >= this->value.array_v->size()) return false;
+    if(index >= this->value.array_v->size()) goto error;
     *this = this->value.array_v->operator[](index);
-    return true;
+    break;
   case TypeTag::String:
     {
       if(index < 0) index = this->value.string_v->utf8Len() + index;
       auto glyph = this->value.string_v->utf8Get(index);
-      if(glyph == 0xffffffff) return false;
+      if(glyph == 0xffffffff) goto error;
       *this = make_new<String, uint32_t>(glyph);
-      return true;
     }
+    break;
   default:
-    return false;
+    goto error;
   }
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::slice(const TypedValue& rhs1, const TypedValue& rhs2){
+void TypedValue::slice(const TypedValue& rhs1, const TypedValue& rhs2){
   if(this->type == TypeTag::Rvalue) return this->value.rvalue_v->slice(rhs1, rhs2);
   const TypedValue* other1 =
     rhs1.type == TypeTag::Rvalue? rhs1.value.rvalue_v : &rhs1;
@@ -806,12 +833,12 @@ bool TypedValue::slice(const TypedValue& rhs1, const TypedValue& rhs2){
     index1 = other1->value.int_v;
   }else if(other1->type == TypeTag::Null){
     index1 = 0;
-  }else return false;
+  }else goto error;
   if(other2->type == TypeTag::Int){
     index2 = other2->value.int_v;
   }else if(other2->type == TypeTag::Null){
     index2 = std::numeric_limits<Int>::max();
-  }else return false;
+  }else goto error;
   
   switch(this->type){
   case TypeTag::Array:
@@ -831,7 +858,7 @@ bool TypedValue::slice(const TypedValue& rhs1, const TypedValue& rhs2){
     }else{
       *this = this->value.array_v->slice(index1, index2);
     }
-    return true;
+    break;
   case TypeTag::String:
     {
       int size = this->value.string_v->utf8Len();
@@ -852,18 +879,21 @@ bool TypedValue::slice(const TypedValue& rhs1, const TypedValue& rhs2){
         (int)(index2 - index1)
       );
     }
-    return true;
+    break;
   default:
-    return false;
+    goto error;
   }
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::toBool(){
+void TypedValue::toBool(){
   TypedValue* value = this->type == TypeTag::Rvalue? this->value.rvalue_v : this;
   
   switch(value->type){
   case TypeTag::Bool:
-    return true;
+    break;
   case TypeTag::Int:
     value->value.bool_v = static_cast<bool>(value->value.int_v);
     break;
@@ -871,13 +901,15 @@ bool TypedValue::toBool(){
     value->value.bool_v = static_cast<bool>(value->value.float_v);
     break;
   default:
-    return false;
+    goto error;
   }
   value->type = TypeTag::Bool;
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::toBool(bool* ret){
+void TypedValue::toBool(bool* ret){
   TypedValue* value = this->type == TypeTag::Rvalue? this->value.rvalue_v : this;
   
   switch(value->type){
@@ -891,12 +923,14 @@ bool TypedValue::toBool(bool* ret){
     *ret = (bool)value->value.float_v;
     break;
   default:
-    return false;
+    goto error;
   }
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::toInt(){
+void TypedValue::toInt(){
   TypedValue* value = this->type == TypeTag::Rvalue? this->value.rvalue_v : this;
   
   switch(value->type){
@@ -911,19 +945,21 @@ bool TypedValue::toInt(){
   case TypeTag::String: {
       Int i;
       if(!_toInt(value->value.string_v, &i)){
-        return false;
+        goto error;
       }
       value->value.string_v->decRefCount();
       value->value.int_v = i;
     }break;
   default:
-    return false;
+    goto error;
   }
   value->type = TypeTag::Int;
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::toFloat(){
+void TypedValue::toFloat(){
   TypedValue* value = this->type == TypeTag::Rvalue? this->value.rvalue_v : this;
   
   switch(value->type){
@@ -938,19 +974,21 @@ bool TypedValue::toFloat(){
   case TypeTag::String: {
       Float f;
       if(!_toFloat(value->value.string_v, &f)){
-        return false;
+        goto error;
       }
       value->value.string_v->decRefCount();
       value->value.float_v = f;
     }break;
   default:
-    return false;
+    goto error;
   }
   value->type = TypeTag::Float;
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
-bool TypedValue::toString(){
+void TypedValue::toString(){
   TypedValue* value = this->type == TypeTag::Rvalue? this->value.rvalue_v : this;
   
   String* s;
@@ -965,17 +1003,21 @@ bool TypedValue::toString(){
     s = make_new<String>(value->value.float_v);
     break;
   case TypeTag::String:
-    return true;
+    return;
   default:
-    return false;
+    goto error;
   }
   value->value.string_v = s;
   s->incRefCount();
-  return true;
+  return;
+error:
+  VM::getCurrentVM()->errorJmp(1);
 }
 
 void TypedValue::toPartial(){
-  assert(this->type == TypeTag::Proc);
+  if(this->type != TypeTag::Proc){
+    VM::getCurrentVM()->errorJmp(1);
+  }
   auto proc = this->value.func_v;
   this->value.partial_v = new PartiallyApplied(proc);
   this->value.partial_v->incRefCount();

@@ -11,9 +11,11 @@
 #include <unordered_map>
 #include <memory>
 
+#include <csetjmp>
+
 class VM{
   
-  std::vector<std::unique_ptr<char[]>> errors_;
+  jmp_buf error_jmp_env_;
   
   struct StackFrame{
     rc_ptr<const Function> proc;
@@ -41,7 +43,7 @@ class VM{
   
   StackFrame frame_;
   
-  void doArithOp_(const OpCodeType**, bool (TypedValue::*)(const TypedValue&));
+  void doArithOp_(const OpCodeType**, void (TypedValue::*)(const TypedValue&));
   void doCmpOp_(const OpCodeType**, CmpMode);
   void pushFunction_(const Function&);
   void pushFunction_(const PartiallyApplied&);
@@ -55,6 +57,11 @@ public:
   
   void setPrintFunc(void(*)(const char*));
   void print(const char*);
+  
+  void errorJmp(int);
+  
+  static void setCurrentVM(VM*);
+  static VM* getCurrentVM();
 };
 
 #endif
