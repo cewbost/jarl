@@ -36,7 +36,7 @@ void Function::threadAST_(
   case ASTNodeType::Error:
     {
       errors->emplace_back(
-        dynSprintf("%d: compiler error: %s\n", node->pos.first, node->c_str_value)
+        dynSprintf("%d: Compiler error. %s", node->pos.first, node->c_str_value)
       );
     }
     break;
@@ -90,7 +90,7 @@ void Function::threadAST_(
           if(it == cva->end()){
             errors->emplace_back(
               dynSprintf(
-                "%d: compiler error: undeclared identifier '%s'\n",
+                "%d: Compiler error. Undeclared identifier '%s'.",
                 node->pos.first,
                 node->string_value->str()
               )
@@ -276,7 +276,7 @@ void Function::threadAST_(
     {
       if(node->children.first->type != ASTNodeType::Identifier){
         errors->emplace_back(
-          dynSprintf("%d: compiler error: assignment to rvalue\n", node->pos.first)
+          dynSprintf("%d: Compiler error. Assignment to rvalue.", node->pos.first)
         );
       }
       

@@ -96,28 +96,6 @@ void TypedValue::copy_(const TypedValue& other)noexcept{
   }
 }
 
-const char* TypedValue::typeStr() const {
-  switch(this->type){
-  case TypeTag::Null:
-    return "null";
-  case TypeTag::Bool:
-    return "bool";
-  case TypeTag::Int:
-    return "int";
-  case TypeTag::Float:
-    return "float";
-  case TypeTag::String:
-    return "string";
-  case TypeTag::Func:
-  case TypeTag::Partial:
-    return "function";
-  case TypeTag::Array:
-    return "array";
-  default:
-    assert(false);
-  }
-}
-
 //constructors
 
 TypedValue::TypedValue(){
@@ -1285,6 +1263,28 @@ void TypedValue::toPartial(){
   this->value.partial_v->incRefCount();
   proc->decRefCount();
   this->type = TypeTag::Partial;
+}
+
+const char* TypedValue::typeStr() const {
+  switch(this->type){
+  case TypeTag::Null:
+    return "null";
+  case TypeTag::Bool:
+    return "bool";
+  case TypeTag::Int:
+    return "int";
+  case TypeTag::Float:
+    return "float";
+  case TypeTag::String:
+    return "string";
+  case TypeTag::Func:
+  case TypeTag::Partial:
+    return "function";
+  case TypeTag::Array:
+    return "array";
+  default:
+    assert(false);
+  }
 }
 
 #ifndef NDEBUG

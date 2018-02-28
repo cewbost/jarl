@@ -310,7 +310,16 @@ void VM::execute(const Function& func){
           }
           
           if(callee.type == TypeTag::Func){
-            assert(callee.value.func_v->arguments > bind_pos);
+            if(callee.value.func_v->arguments <= bind_pos){
+              char* msg = dynSprintf(
+                "%d: Unable to bind argument to index %d.",
+                this->getFrame()->func->getLine(this->getFrame()->ip),
+                bind_pos
+              );
+              this->print(msg);
+              delete[] msg;
+              this->errorJmp(1);
+            }
             
             if(callee.value.func_v->arguments == 1){
               this->pushFunction_(*callee.value.func_v);
@@ -323,7 +332,16 @@ void VM::execute(const Function& func){
               this->stack_.pop_back();
             }
           }else if(callee.type == TypeTag::Partial){
-            assert(callee.value.partial_v->nargs > bind_pos);
+            if(callee.value.partial_v->nargs <= bind_pos){
+              char* msg = dynSprintf(
+                "%d: Unable to bind argument to index %d.",
+                this->getFrame()->func->getLine(this->getFrame()->ip),
+                bind_pos
+              );
+              this->print(msg);
+              delete[] msg;
+              this->errorJmp(1);
+            }
             
             callee.value.partial_v->apply(std::move(stack_.back()), bind_pos);
             this->stack_.pop_back();
@@ -333,7 +351,16 @@ void VM::execute(const Function& func){
                 this->frame_.func->getCode() + this->frame_.func->getCodeSize();
               --this->frame_.ip;
             }
-          }else assert(false);
+          }else{
+            char* msg = dynSprintf(
+              "%d: Type error. Cannot bind argument to %s.",
+              this->getFrame()->func->getLine(this->getFrame()->ip),
+              callee.typeStr()
+            );
+            this->print(msg);
+            delete[] msg;
+            this->errorJmp(1);
+          }
         }
         break;
         
@@ -362,8 +389,17 @@ void VM::execute(const Function& func){
           const auto& int_1 = stack_[stack_.size() - 2];
           const auto& int_2 = stack_[stack_.size() - 1];
           
-          assert(int_1.type == TypeTag::Int);
-          assert(int_2.type == TypeTag::Int);
+          if(int_1.type != TypeTag::Int || int_2.type != TypeTag::Int){
+            char* msg = dynSprintf(
+              "%d: Type error. Create range from %s to %s.",
+              this->getFrame()->func->getLine(this->getFrame()->ip),
+              int_1.typeStr(),
+              int_2.typeStr()
+            );
+            this->print(msg);
+            delete[] msg;
+            this->errorJmp(1);
+          }
           
           Int begin = int_1.value.int_v;
           Int end = int_2.value.int_v;

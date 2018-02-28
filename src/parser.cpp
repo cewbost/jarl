@@ -71,7 +71,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
         delete tok;
         return new ASTNode(
           ASTNodeType::ParseError,
-          "expected ')'",
+          "Expected ')'.",
           (this->lcurrent_ - 1)->pos
         );
       }else return tok;
@@ -83,7 +83,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
         delete tok;
         return new ASTNode(
           ASTNodeType::ParseError,
-          "expected '}'",
+          "Expected '}'.",
           (this->lcurrent_ - 1)->pos
         );
       }else return tok;
@@ -96,7 +96,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
         delete tok;
         return new ASTNode(
           ASTNodeType::ParseError,
-          "expected ']'",
+          "Expected ']'.",
           (this->lcurrent_ - 1)->pos
         );
       }else return tok;
@@ -116,7 +116,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
     return new ASTNode(ASTNodeType::Identifier, lex.value.s, lex.pos);
   
   case LexemeType::Error:
-    return new ASTNode(ASTNodeType::LexError, "invalid symbol", lex.pos);
+    return new ASTNode(ASTNodeType::LexError, "Invalid symbol.", lex.pos);
   
   default:
     assert(false);
@@ -133,7 +133,7 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
         delete left;
         return new ASTNode(
           ASTNodeType::ParseError,
-          "expected ']'",
+          "Expected ']'.",
           (this->lcurrent_ - 1)->pos
         );
       }else return new ASTNode(ASTNodeType::Index, left, right, lex.pos);
@@ -242,7 +242,7 @@ ASTNode* Parser::ifExpr_(){
     delete condition;
     return new ASTNode(
       ASTNodeType::ParseError,
-      "expected ':'",
+      "Expected ':'.",
       (this->lcurrent_ - 1)->pos
     );
   }
@@ -282,7 +282,7 @@ ASTNode* Parser::whileExpr_(){
     delete condition;
     return new ASTNode(
       ASTNodeType::ParseError,
-      "expected ':'",
+      "Expected ':'.",
       (this->lcurrent_ - 1)->pos
     );
   }
@@ -331,7 +331,7 @@ ASTNode* Parser::functionExpr_(){
     delete arg_list;
     return new ASTNode(
       ASTNodeType::ParseError,
-      "expected ':'",
+      "Expected ':'.",
       (this->lcurrent_ - 1)->pos
     );
   }
@@ -349,7 +349,7 @@ ASTNode* Parser::varDecl_(){
     delete ret;
     return new ASTNode(
       ASTNodeType::ParseError,
-      "expected identifier",
+      "Expected identifier.",
       (this->lcurrent_ - 1)->pos
     );
   }
@@ -360,7 +360,7 @@ ASTNode* Parser::varDecl_(){
     delete ret;
     return new ASTNode(
       ASTNodeType::ParseError,
-      "expected '='",
+      "Expected '='.",
       (this->lcurrent_ - 1)->pos);
   }else ret->string_branch.next = this->statement_(def_expr_bindp);
   

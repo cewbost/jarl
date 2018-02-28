@@ -108,8 +108,6 @@ class TypedValue{
   void move_(TypedValue&&)noexcept;
   void copy_(const TypedValue&)noexcept;
   
-  const char* typeStr() const;
-  
 public:
   
   TypeTag type;
@@ -172,6 +170,8 @@ public:
   void toString();
   
   void toPartial();
+  
+  const char* typeStr() const;
   
   bool asBool()const{return this->value.bool_v;}
   Int asInt()const{return this->value.int_v;}
