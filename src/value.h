@@ -36,7 +36,7 @@ enum class TypeTag: Int{
   Int,
   Float,
   String,
-  Proc,
+  Func,
   Partial,
   Array
 };
@@ -107,6 +107,8 @@ class TypedValue{
   void clear_();
   void move_(TypedValue&&)noexcept;
   void copy_(const TypedValue&)noexcept;
+  
+  const char* typeStr() const;
   
 public:
   

@@ -28,9 +28,9 @@ void Function::threadAST_(
   switch(static_cast<ASTNodeType>(static_cast<unsigned>(node->type) & ~0xff)){
   case ASTNodeType::Error:
     {
-      char* buffer = new char[64];
-      sprintf(buffer, "line %d: %s\n", node->pos.first, node->c_str_value);
-      errors->push_back(std::unique_ptr<char[]>(buffer));
+      errors->emplace_back(
+        dynSprintf("%d compiler error: %s\n", node->pos.first, node->c_str_value)
+      );
     }
     break;
     
@@ -76,15 +76,13 @@ void Function::threadAST_(
           it = cva->find(node->string_value);
           
           if(it == cva->end()){
-            int len = node->string_value->len();
-            char* buffer = new char[len + 40];
-            sprintf(
-              buffer,
-              "line %d: undeclared identifier '%s'\n",
-              node->pos.first,
-              node->string_value->str()
+            errors->emplace_back(
+              dynSprintf(
+                "%d compiler error: undeclared identifier '%s'\n",
+                node->pos.first,
+                node->string_value->str()
+              )
             );
-            errors->push_back(std::unique_ptr<char[]>(buffer));
             break;
           }
           
@@ -265,9 +263,9 @@ void Function::threadAST_(
   case ASTNodeType::AssignExpr:
     {
       if(node->children.first->type != ASTNodeType::Identifier){
-        char* buffer = new char[32];
-        sprintf(buffer, "line %d: assignment to rvalue\n", node->pos.first);
-        errors->push_back(std::unique_ptr<char[]>(buffer));
+        errors->emplace_back(
+          dynSprintf("%d compiler error: assignment to rvalue\n", node->pos.first)
+        );
       }
       
       auto stack_pos = (OpCodeType)(*va)[node->children.first->string_value];
@@ -426,16 +424,16 @@ void Function::threadAST_(
         delete node->children.first;
         node->children.first = nullptr;
         
-        auto* proc = new Function(node->children.second, errors, var_alloc, va);
+        auto* func = new Function(node->children.second, errors, var_alloc, va);
         
         node->children.second = nullptr;
         this->code_.push_back(Op::Push | Op::Extended);
-        this->code_.push_back((OpCodeType)vc->emplace(proc) | stack_pos_const_);
+        this->code_.push_back((OpCodeType)vc->emplace(func) | stack_pos_const_);
         ++(*ss);
         
-        if(proc->arguments > std_args){
+        if(func->arguments > std_args){
           VectorMapBase& base = var_alloc->base();
-          for(int i = std_args; i < proc->arguments; ++i){
+          for(int i = std_args; i < func->arguments; ++i){
             this->code_.push_back(Op::Push | Op::Extended);
             this->code_.push_back((*va)[base[i].first]);
             this->code_.push_back(Op::Apply | Op::Extended | Op::Int);
@@ -554,8 +552,8 @@ Function::Function(
   this->values_ = std::move(constants);
 }
 
-PartiallyApplied::PartiallyApplied(const Function* proc)
-: proc_(proc), args_(proc->arguments), nargs(proc->arguments){}
+PartiallyApplied::PartiallyApplied(const Function* func)
+: func_(func), args_(func->arguments), nargs(func->arguments){}
 
 bool PartiallyApplied::apply(const TypedValue& val, int bind_pos){
   assert(this->nargs > 0);

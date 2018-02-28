@@ -57,17 +57,17 @@ void VM::doCmpOp_(const OpCodeType** iptr, CmpMode mode){
   }
 }
 
-void VM::pushFunction_(const Function& proc){
-  if(this->frame_.proc){
+void VM::pushFunction_(const Function& func){
+  if(this->frame_.func){
     this->call_stack_.push_back(std::move(this->frame_));
   }
-  this->frame_.proc = &proc;
-  this->frame_.ip = proc.getCode();
-  this->frame_.bp = this->stack_.size() - proc.arguments;
+  this->frame_.func = &func;
+  this->frame_.ip = func.getCode();
+  this->frame_.bp = this->stack_.size() - func.arguments;
   
   std::copy(
-    proc.getVValues().begin(),
-    proc.getVValues().end(),
+    func.getVValues().begin(),
+    func.getVValues().end(),
     std::back_inserter(stack_)
   );
 }
@@ -75,12 +75,12 @@ void VM::pushFunction_(const Function& proc){
 void VM::pushFunction_(const PartiallyApplied& part){
   assert(part.nargs == 0);
   
-  if(this->frame_.proc){
+  if(this->frame_.func){
     this->call_stack_.push_back(std::move(this->frame_));
   }
-  const Function& proc = *part.getProc();
-  this->frame_.proc = &proc;
-  this->frame_.ip = proc.getCode();
+  const Function& func = *part.getFunc();
+  this->frame_.func = &func;
+  this->frame_.ip = func.getCode();
   this->frame_.bp = this->stack_.size();
   
   std::copy(
@@ -89,8 +89,8 @@ void VM::pushFunction_(const PartiallyApplied& part){
     std::back_inserter(stack_)
   );
   std::copy(
-    proc.getVValues().begin(),
-    proc.getVValues().end(),
+    func.getVValues().begin(),
+    func.getVValues().end(),
     std::back_inserter(stack_)
   );
 }
@@ -109,7 +109,7 @@ bool VM::popFunction_(){
       this->stack_[0] = std::move(this->stack_.back());
       this->stack_.resize(1);
     }
-    this->frame_.proc = nullptr;
+    this->frame_.func = nullptr;
     return true;
   }
 }
@@ -117,11 +117,11 @@ bool VM::popFunction_(){
 VM::VM(int stack_size)
 : stack_(stack_size), print_func_(nullptr){}
 
-void VM::execute(const Function& proc){
+void VM::execute(const Function& func){
   
-  this->pushFunction_(proc);
+  this->pushFunction_(func);
   
-  const OpCodeType* end_it = proc.getCode() + proc.getCodeSize();
+  const OpCodeType* end_it = func.getCode() + func.getCodeSize();
   
   if(setjmp(this->error_jmp_env_) == 0){
     while(this->frame_.ip != end_it){
@@ -257,14 +257,14 @@ void VM::execute(const Function& proc){
       case Op::Jmp:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
-        this->frame_.ip = proc.getCode() + (OpCodeType)*this->frame_.ip;
+        this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
         break;
       case Op::Jt:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
         stack_.back().toBool();
         if(stack_.back().value.bool_v){
-          this->frame_.ip = proc.getCode() + (OpCodeType)*this->frame_.ip;
+          this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
         }
         stack_.pop_back();
         break;
@@ -272,7 +272,7 @@ void VM::execute(const Function& proc){
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
         if(!stack_.back().value.bool_v){
-          this->frame_.ip = proc.getCode() + (OpCodeType)*this->frame_.ip;
+          this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
         }
         stack_.pop_back();
         break;
@@ -281,7 +281,7 @@ void VM::execute(const Function& proc){
         ++this->frame_.ip;
         stack_.back().toBool();
         if(stack_.back().value.bool_v){
-          this->frame_.ip = proc.getCode() + (OpCodeType)*this->frame_.ip;
+          this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
         }else{
           stack_.pop_back();
         }
@@ -291,7 +291,7 @@ void VM::execute(const Function& proc){
         ++this->frame_.ip;
         stack_.back().toBool();
         if(!stack_.back().value.bool_v){
-          this->frame_.ip = proc.getCode() + (OpCodeType)*this->frame_.ip;
+          this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
         }else{
           stack_.pop_back();
         }
@@ -302,17 +302,20 @@ void VM::execute(const Function& proc){
           auto& callee = stack_[stack_.size() - 2];
           int bind_pos = 0;
           
-          if((*this->frame_.ip & (Op::Extended | Op::Int)) == (Op::Extended | Op::Int)){
+          if(
+            (*this->frame_.ip & (Op::Extended | Op::Int))
+            == (Op::Extended | Op::Int)
+          ){
             bind_pos = *(++this->frame_.ip);
           }
           
-          if(callee.type == TypeTag::Proc){
+          if(callee.type == TypeTag::Func){
             assert(callee.value.func_v->arguments > bind_pos);
             
             if(callee.value.func_v->arguments == 1){
               this->pushFunction_(*callee.value.func_v);
-              end_it = this->frame_.proc->getCode()
-                + this->frame_.proc->getCodeSize();
+              end_it = this->frame_.func->getCode()
+                + this->frame_.func->getCodeSize();
               --this->frame_.ip;
             }else{
               callee.toPartial();
@@ -326,7 +329,8 @@ void VM::execute(const Function& proc){
             this->stack_.pop_back();
             if(callee.value.partial_v->nargs == 0){
               this->pushFunction_(*callee.value.partial_v);
-              end_it = this->frame_.proc->getCode() + this->frame_.proc->getCodeSize();
+              end_it =
+                this->frame_.func->getCode() + this->frame_.func->getCodeSize();
               --this->frame_.ip;
             }
           }else assert(false);
@@ -381,7 +385,7 @@ void VM::execute(const Function& proc){
         if(this->popFunction_()){
           end_it = this->frame_.ip + 1;
         }else{
-          end_it = this->frame_.proc->getCode() + this->frame_.proc->getCodeSize();
+          end_it = this->frame_.func->getCode() + this->frame_.func->getCodeSize();
         }
         
         break;

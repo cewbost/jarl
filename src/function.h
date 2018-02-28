@@ -141,7 +141,7 @@ class PartiallyApplied: public RcTraitDirect<PartiallyApplied>{
   
   typedef SSOVector<TypedValue, 8, sizeof(void*) * 2> ArgVectorType;
   
-  rc_ptr<const Function> proc_;
+  rc_ptr<const Function> func_;
   ArgVectorType args_;
   
 public:
@@ -153,7 +153,7 @@ public:
   bool apply(const TypedValue&, int);
   bool apply(TypedValue&&, int);
   
-  const Function* getProc()const{return this->proc_.get();}
+  const Function* getFunc()const{return this->func_.get();}
   
   ArgVectorType::const_iterator cbegin()const{return this->args_.cbegin();}
   ArgVectorType::const_iterator cend()const{return this->args_.cend();}

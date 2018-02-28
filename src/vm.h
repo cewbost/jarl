@@ -18,12 +18,12 @@ class VM{
   jmp_buf error_jmp_env_;
   
   struct StackFrame{
-    rc_ptr<const Function> proc;
+    rc_ptr<const Function> func;
     const OpCodeType* ip;
     unsigned bp;
     
-    StackFrame(): proc(nullptr), ip(nullptr), bp(0){}
-    StackFrame(const Function* p, unsigned b): proc(p), ip(nullptr), bp(b){}
+    StackFrame(): func(nullptr), ip(nullptr), bp(0){}
+    StackFrame(const Function* p, unsigned b): func(p), ip(nullptr), bp(b){}
     
     StackFrame(StackFrame&&) = default;
     StackFrame& operator=(StackFrame&&) = default;

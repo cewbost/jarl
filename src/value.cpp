@@ -44,7 +44,7 @@ void TypedValue::clear_(){
   case TypeTag::String:
     this->value.string_v->decRefCount();
     break;
-  case TypeTag::Proc:
+  case TypeTag::Func:
     this->value.func_v->decRefCount();
     break;
   case TypeTag::Partial:
@@ -77,7 +77,7 @@ void TypedValue::copy_(const TypedValue& other)noexcept{
     this->value.string_v = other.value.string_v;
     this->value.string_v->incRefCount();
     break;
-  case TypeTag::Proc:
+  case TypeTag::Func:
     this->value.func_v = other.value.func_v;
     this->value.func_v->incRefCount();
     break;
@@ -91,6 +91,28 @@ void TypedValue::copy_(const TypedValue& other)noexcept{
     break;
   case TypeTag::None:
     break;
+  default:
+    assert(false);
+  }
+}
+
+const char* TypedValue::typeStr() const {
+  switch(this->type){
+  case TypeTag::Null:
+    return "null";
+  case TypeTag::Bool:
+    return "bool";
+  case TypeTag::Int:
+    return "int";
+  case TypeTag::Float:
+    return "float";
+  case TypeTag::String:
+    return "string";
+  case TypeTag::Func:
+  case TypeTag::Partial:
+    return "function";
+  case TypeTag::Array:
+    return "array";
   default:
     assert(false);
   }
@@ -127,7 +149,7 @@ TypedValue::TypedValue(String* s){
   s->incRefCount();
 }
 TypedValue::TypedValue(Function* p){
-  type = TypeTag::Proc;
+  type = TypeTag::Func;
   value.func_v = p;
   p->incRefCount();
 }
@@ -187,7 +209,7 @@ TypedValue& TypedValue::operator=(String* val){
 }
 TypedValue& TypedValue::operator=(Function* val){
   this->clear_();
-  this->type = TypeTag::Proc;
+  this->type = TypeTag::Func;
   this->value.func_v = val;
   val->incRefCount();
   return *this;
@@ -272,8 +294,17 @@ void TypedValue::add(const TypedValue& rhs){
     goto error;
   }
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s + %s",
+    this->typeStr(),
+    other->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::sub(const TypedValue& rhs){
@@ -288,7 +319,8 @@ void TypedValue::sub(const TypedValue& rhs){
       break;
     case TypeTag::Float:
       this->type = TypeTag::Float;
-      this->value.float_v = static_cast<Float>(this->value.int_v) - other->value.float_v;
+      this->value.float_v
+        = static_cast<Float>(this->value.int_v) - other->value.float_v;
       break;
     default:
       goto error;
@@ -309,8 +341,17 @@ void TypedValue::sub(const TypedValue& rhs){
     goto error;
   }
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s - %s",
+    this->typeStr(),
+    other->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::mul(const TypedValue& rhs){
@@ -325,7 +366,8 @@ void TypedValue::mul(const TypedValue& rhs){
       break;
     case TypeTag::Float:
       this->type = TypeTag::Float;
-      this->value.float_v = static_cast<Float>(this->value.int_v) * other->value.float_v;
+      this->value.float_v
+        = static_cast<Float>(this->value.int_v) * other->value.float_v;
       break;
     default:
       goto error;
@@ -347,8 +389,17 @@ void TypedValue::mul(const TypedValue& rhs){
     goto error;
   }
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s * %s",
+    this->typeStr(),
+    other->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::div(const TypedValue& rhs){
@@ -360,16 +411,17 @@ void TypedValue::div(const TypedValue& rhs){
     switch(other->type){
     case TypeTag::Int:
       if(other->value.int_v == 0){
-        goto error;
+        goto div_zero_error;
       }
       this->value.int_v /= other->value.int_v;
       break;
     case TypeTag::Float:
       this->type = TypeTag::Float;
-      this->value.float_v = static_cast<Float>(this->value.int_v) / other->value.float_v;
+      this->value.float_v
+        = static_cast<Float>(this->value.int_v) / other->value.float_v;
       break;
     default:
-      goto error;
+      goto type_error;
     }
     break;
   case TypeTag::Float:
@@ -381,15 +433,34 @@ void TypedValue::div(const TypedValue& rhs){
       this->value.float_v /= other->value.float_v;
       break;
     default:
-      goto error;
+      goto type_error;
     }
     break;
   default:
-    goto error;
+    goto type_error;
   }
   return;
-error:
-  VM::getCurrentVM()->errorJmp(1);
+  
+type_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf(
+      "type error: unsupported operation %s / %s",
+      this->typeStr(),
+      other->typeStr()
+    );
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(1);
+  }
+div_zero_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf("division by zero error");
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(2);
+  }
 }
 
 void TypedValue::mod(const TypedValue& rhs){
@@ -401,7 +472,7 @@ void TypedValue::mod(const TypedValue& rhs){
     switch(other->type){
     case TypeTag::Int:
       if(other->value.int_v == 0){
-        goto error;
+        goto div_zero_error;
       }
       this->value.int_v %= other->value.int_v;
       break;
@@ -411,7 +482,7 @@ void TypedValue::mod(const TypedValue& rhs){
         std::fmod(static_cast<Float>(this->value.int_v), other->value.float_v);
       break;
     default:
-      goto error;
+      goto type_error;
     }
     break;
   case TypeTag::Float:
@@ -424,15 +495,34 @@ void TypedValue::mod(const TypedValue& rhs){
       this->value.float_v = std::fmod(this->value.float_v, other->value.float_v);
       break;
     default:
-      goto error;
+      goto type_error;
     }
     break;
   default:
-    goto error;
+    goto type_error;
   }
   return;
-error:
-  VM::getCurrentVM()->errorJmp(1);
+  
+type_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf(
+      "type error: unsupported operation %s %% %s",
+      this->typeStr(),
+      other->typeStr()
+    );
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(1);
+  }
+div_zero_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf("division by zero error");
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(2);
+  }
 }
 
 void TypedValue::append(const TypedValue& rhs){
@@ -542,8 +632,17 @@ void TypedValue::append(const TypedValue& rhs){
     }
   }
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s ++ %s",
+    this->typeStr(),
+    other->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::append(TypedValue&& rhs){
@@ -660,8 +759,17 @@ void TypedValue::append(TypedValue&& rhs){
     }
   }
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s ++ %s",
+    this->typeStr(),
+    other->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::neg(){
@@ -678,8 +786,16 @@ void TypedValue::neg(){
     goto error;
   }
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation -%s",
+    this->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::cmp(const TypedValue& rhs){
@@ -723,8 +839,17 @@ void TypedValue::cmp(const TypedValue& rhs){
     goto error;
   }
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s <=> %s",
+    this->typeStr(),
+    other->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
@@ -774,8 +899,17 @@ void TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
     break;
   }
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s <=> %s",
+    this->typeStr(),
+    other->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::boolNot(){
@@ -786,8 +920,6 @@ void TypedValue::boolNot(){
   }
   this->value.bool_v = !this->value.bool_v;
   return;
-error:
-  VM::getCurrentVM()->errorJmp(1);
 }
 
 void TypedValue::get(const TypedValue& rhs){
@@ -797,28 +929,47 @@ void TypedValue::get(const TypedValue& rhs){
   Int index;
   if(other->type == TypeTag::Int){
     index = other->value.int_v;
-  }else goto error;
+  }else goto type_error;
   
   switch(this->type){
   case TypeTag::Array:
     if(index < 0) index = this->value.array_v->size() + index;
-    if(index >= this->value.array_v->size()) goto error;
+    if(index >= this->value.array_v->size()) goto index_error;
     *this = this->value.array_v->operator[](index);
     break;
   case TypeTag::String:
     {
       if(index < 0) index = this->value.string_v->utf8Len() + index;
       auto glyph = this->value.string_v->utf8Get(index);
-      if(glyph == 0xffffffff) goto error;
+      if(glyph == 0xffffffff) goto index_error;
       *this = make_new<String, uint32_t>(glyph);
     }
     break;
   default:
-    goto error;
+    goto type_error;
   }
   return;
-error:
-  VM::getCurrentVM()->errorJmp(1);
+  
+type_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf(
+      "type error: unsupported operation %s[%s]",
+      this->typeStr(),
+      other->typeStr()
+    );
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(1);
+  }
+index_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf("index out of range error: %lld", (long long)index);
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(3);
+  }
 }
 
 void TypedValue::slice(const TypedValue& rhs1, const TypedValue& rhs2){
@@ -884,8 +1035,18 @@ void TypedValue::slice(const TypedValue& rhs1, const TypedValue& rhs2){
     goto error;
   }
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s[%s:%s]",
+    this->typeStr(),
+    rhs1.typeStr(),
+    rhs2.typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::toBool(){
@@ -905,8 +1066,16 @@ void TypedValue::toBool(){
   }
   value->type = TypeTag::Bool;
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s to bool",
+    this->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::toBool(bool* ret){
@@ -926,8 +1095,16 @@ void TypedValue::toBool(bool* ret){
     goto error;
   }
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s to bool",
+    this->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::toInt(){
@@ -945,18 +1122,36 @@ void TypedValue::toInt(){
   case TypeTag::String: {
       Int i;
       if(!_toInt(value->value.string_v, &i)){
-        goto error;
+        goto bad_op_error;
       }
       value->value.string_v->decRefCount();
       value->value.int_v = i;
     }break;
   default:
-    goto error;
+    goto type_error;
   }
   value->type = TypeTag::Int;
   return;
-error:
-  VM::getCurrentVM()->errorJmp(1);
+  
+type_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf(
+      "type error: unsupported operation %s to int",
+      this->typeStr()
+    );
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(1);
+  }
+bad_op_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf("bad conversion error");
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(4);
+  }
 }
 
 void TypedValue::toFloat(){
@@ -974,18 +1169,36 @@ void TypedValue::toFloat(){
   case TypeTag::String: {
       Float f;
       if(!_toFloat(value->value.string_v, &f)){
-        goto error;
+        goto bad_op_error;
       }
       value->value.string_v->decRefCount();
       value->value.float_v = f;
     }break;
   default:
-    goto error;
+    goto type_error;
   }
   value->type = TypeTag::Float;
   return;
-error:
-  VM::getCurrentVM()->errorJmp(1);
+  
+type_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf(
+      "type error: unsupported operation %s to float",
+      this->typeStr()
+    );
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(1);
+  }
+bad_op_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf("bad conversion error");
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(4);
+  }
 }
 
 void TypedValue::toString(){
@@ -1010,13 +1223,28 @@ void TypedValue::toString(){
   value->value.string_v = s;
   s->incRefCount();
   return;
+  
 error:
-  VM::getCurrentVM()->errorJmp(1);
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "type error: unsupported operation %s to string",
+    this->typeStr()
+  );
+  vm->print(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::toPartial(){
-  if(this->type != TypeTag::Proc){
-    VM::getCurrentVM()->errorJmp(1);
+  if(this->type != TypeTag::Func){
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf(
+      "type error: unsupported operation %s to function",
+      this->typeStr()
+    );
+    vm->print(msg);
+    delete[] msg;
+    vm->errorJmp(1);
   }
   auto proc = this->value.func_v;
   this->value.partial_v = new PartiallyApplied(proc);
@@ -1044,7 +1272,7 @@ std::string TypedValue::toStrDebug()const{
     return this->value.toStrDebug();
   case TypeTag::Rvalue:
     return this->value.rvalue_v->toStrDebug();
-  case TypeTag::Proc:
+  case TypeTag::Func:
     return this->value.func_v->toStrDebug();
   case TypeTag::Partial:
     return this->value.partial_v->toStrDebug();
