@@ -130,7 +130,7 @@ public:
   const TypedValue* getValues()const{return this->values_.data();}
   size_t getNumValues()const{return this->values_.size();}
   
-  int getLine(std::vector<OpCodeType>::const_iterator) const;
+  int getLine(const OpCodeType*) const;
   
   void operator delete(void* ptr){
     ::operator delete(ptr);

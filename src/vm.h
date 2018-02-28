@@ -14,9 +14,7 @@
 #include <csetjmp>
 
 class VM{
-  
-  jmp_buf error_jmp_env_;
-  
+public:
   struct StackFrame{
     rc_ptr<const Function> func;
     const OpCodeType* ip;
@@ -28,6 +26,10 @@ class VM{
     StackFrame(StackFrame&&) = default;
     StackFrame& operator=(StackFrame&&) = default;
   };
+  
+private:
+  
+  jmp_buf error_jmp_env_;
   
   std::unordered_map<
     rc_ptr<String>,
@@ -57,6 +59,8 @@ public:
   
   void setPrintFunc(void(*)(const char*));
   void print(const char*);
+  
+  StackFrame* getFrame();
   
   void errorJmp(int);
   

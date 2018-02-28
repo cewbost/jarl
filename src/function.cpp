@@ -607,10 +607,10 @@ bool PartiallyApplied::apply(TypedValue&& val, int bind_pos){
   return --this->nargs == 0;
 }
 
-int Function::getLine(std::vector<OpCodeType>::const_iterator iit) const {
-  int pos = iit - this->code_.begin();
+int Function::getLine(const OpCodeType* iit) const {
+  ptrdiff_t pos = iit - this->code_.data();
   auto it = this->code_positions_.begin();
-  int line = it->first;
+  ptrdiff_t line = it->first;
   for(;;){
     if(it == this->code_positions_.end()){
       return this->code_positions_.back().second;

@@ -418,6 +418,10 @@ void VM::print(const char* msg){
   this->print_func_(msg);
 }
 
+VM::StackFrame* VM::getFrame(){
+  return &this->frame_;
+}
+
 void VM::errorJmp(int val){
   longjmp(this->error_jmp_env_, val);
 }

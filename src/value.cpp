@@ -298,7 +298,8 @@ void TypedValue::add(const TypedValue& rhs){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s + %s",
+    "%d: Type error. Unsupported operation %s + %s.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr(),
     other->typeStr()
   );
@@ -345,7 +346,8 @@ void TypedValue::sub(const TypedValue& rhs){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s - %s",
+    "%d: Type error. Unsupported operation %s - %s.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr(),
     other->typeStr()
   );
@@ -393,7 +395,8 @@ void TypedValue::mul(const TypedValue& rhs){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s * %s",
+    "%d: Type error. Unsupported operation %s * %s.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr(),
     other->typeStr()
   );
@@ -445,7 +448,8 @@ type_error:
   {
     VM* vm = VM::getCurrentVM();
     char* msg = dynSprintf(
-      "type error: unsupported operation %s / %s",
+      "%d: Type error. Unsupported operation %s / %s.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr(),
       other->typeStr()
     );
@@ -456,7 +460,10 @@ type_error:
 div_zero_error:
   {
     VM* vm = VM::getCurrentVM();
-    char* msg = dynSprintf("division by zero error");
+    char* msg = dynSprintf(
+      "%d: Division by zero error.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip)
+    );
     vm->print(msg);
     delete[] msg;
     vm->errorJmp(2);
@@ -507,7 +514,8 @@ type_error:
   {
     VM* vm = VM::getCurrentVM();
     char* msg = dynSprintf(
-      "type error: unsupported operation %s %% %s",
+      "%d: Type error. Unsupported operation %s %% %s.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr(),
       other->typeStr()
     );
@@ -518,7 +526,10 @@ type_error:
 div_zero_error:
   {
     VM* vm = VM::getCurrentVM();
-    char* msg = dynSprintf("division by zero error");
+    char* msg = dynSprintf(
+      "%d: Division by zero error.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip)
+    );
     vm->print(msg);
     delete[] msg;
     vm->errorJmp(2);
@@ -636,7 +647,8 @@ void TypedValue::append(const TypedValue& rhs){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s ++ %s",
+    "%d: Type error. Unsupported operation %s ++ %s.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr(),
     other->typeStr()
   );
@@ -763,7 +775,8 @@ void TypedValue::append(TypedValue&& rhs){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s ++ %s",
+    "%d: Type error. Unsupported operation %s ++ %s.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr(),
     other->typeStr()
   );
@@ -790,7 +803,8 @@ void TypedValue::neg(){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation -%s",
+    "%d: Type error. Unsupported operation -%s.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
   vm->print(msg);
@@ -843,7 +857,8 @@ void TypedValue::cmp(const TypedValue& rhs){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s <=> %s",
+    "%d: Type error. Unsupported operation %s <=> %s.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr(),
     other->typeStr()
   );
@@ -903,7 +918,8 @@ void TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s <=> %s",
+    "%d: Type error. Unsupported operation %s <=> %s.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr(),
     other->typeStr()
   );
@@ -954,7 +970,8 @@ type_error:
   {
     VM* vm = VM::getCurrentVM();
     char* msg = dynSprintf(
-      "type error: unsupported operation %s[%s]",
+      "%d: Type error. Unsupported operation %s[%s].",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr(),
       other->typeStr()
     );
@@ -965,7 +982,11 @@ type_error:
 index_error:
   {
     VM* vm = VM::getCurrentVM();
-    char* msg = dynSprintf("index out of range error: %lld", (long long)index);
+    char* msg = dynSprintf(
+      "%d: Index out of range error: %lld.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
+      (long long)index
+    );
     vm->print(msg);
     delete[] msg;
     vm->errorJmp(3);
@@ -1039,7 +1060,8 @@ void TypedValue::slice(const TypedValue& rhs1, const TypedValue& rhs2){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s[%s:%s]",
+    "%d: Type error. Unsupported operation %s[%s:%s].",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr(),
     rhs1.typeStr(),
     rhs2.typeStr()
@@ -1070,7 +1092,8 @@ void TypedValue::toBool(){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s to bool",
+    "%d: Type error. Unsupported operation %s to bool.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
   vm->print(msg);
@@ -1099,7 +1122,8 @@ void TypedValue::toBool(bool* ret){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s to bool",
+    "%d: Type error. Unsupported operation %s to bool.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
   vm->print(msg);
@@ -1137,7 +1161,8 @@ type_error:
   {
     VM* vm = VM::getCurrentVM();
     char* msg = dynSprintf(
-      "type error: unsupported operation %s to int",
+      "%d: Type error. Unsupported operation %s to int.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr()
     );
     vm->print(msg);
@@ -1147,7 +1172,10 @@ type_error:
 bad_op_error:
   {
     VM* vm = VM::getCurrentVM();
-    char* msg = dynSprintf("bad conversion error");
+    char* msg = dynSprintf(
+      "%d: Bad conversion error.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip)
+    );
     vm->print(msg);
     delete[] msg;
     vm->errorJmp(4);
@@ -1184,7 +1212,8 @@ type_error:
   {
     VM* vm = VM::getCurrentVM();
     char* msg = dynSprintf(
-      "type error: unsupported operation %s to float",
+      "%d: Type error. Unsupported operation %s to float.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr()
     );
     vm->print(msg);
@@ -1194,7 +1223,10 @@ type_error:
 bad_op_error:
   {
     VM* vm = VM::getCurrentVM();
-    char* msg = dynSprintf("bad conversion error");
+    char* msg = dynSprintf(
+      "%d: Bad conversion error.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip)
+    );
     vm->print(msg);
     delete[] msg;
     vm->errorJmp(4);
@@ -1227,7 +1259,8 @@ void TypedValue::toString(){
 error:
   VM* vm = VM::getCurrentVM();
   char* msg = dynSprintf(
-    "type error: unsupported operation %s to string",
+    "%d: Type error. Unsupported operation %s to string.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
   vm->print(msg);
@@ -1239,7 +1272,8 @@ void TypedValue::toPartial(){
   if(this->type != TypeTag::Func){
     VM* vm = VM::getCurrentVM();
     char* msg = dynSprintf(
-      "type error: unsupported operation %s to function",
+      "%d: Type error. Unsupported operation %s to function.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr()
     );
     vm->print(msg);
