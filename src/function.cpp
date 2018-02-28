@@ -16,6 +16,13 @@ namespace std{
   };
 }
 
+void Function::putInstruction_(OpCodeType op, int pos){
+  if(this->code_positions_.back().first != pos){
+    this->code_positions_.emplace_back(pos, this->code_.size());
+  }
+  this->code_.push_back(op);
+}
+
 void Function::threadAST_(
   ASTNode* node,
   std::vector<std::unique_ptr<char[]>>* errors,
@@ -29,7 +36,7 @@ void Function::threadAST_(
   case ASTNodeType::Error:
     {
       errors->emplace_back(
-        dynSprintf("%d compiler error: %s\n", node->pos.first, node->c_str_value)
+        dynSprintf("%d: compiler error: %s\n", node->pos.first, node->c_str_value)
       );
     }
     break;
@@ -39,38 +46,43 @@ void Function::threadAST_(
     switch(node->type){
     case ASTNodeType::Bool:
       if(node->bool_value){
-        this->code_.push_back(Op::PushTrue);
+        this->putInstruction_(Op::PushTrue, node->pos.first);
       }else{
-        this->code_.push_back(Op::PushFalse);
+        this->putInstruction_(Op::PushFalse, node->pos.first);
       }
       break;
     case ASTNodeType::Int:
       if(node->int_value <= std::numeric_limits<OpCodeSignedType>::max()
       && node->int_value >= std::numeric_limits<OpCodeSignedType>::min()){
-        this->code_.push_back(Op::Push | Op::Extended | Op::Int);
-        this->code_.push_back(static_cast<OpCodeType>(node->int_value));
+        this->putInstruction_(Op::Push | Op::Extended | Op::Int, node->pos.first);
+        this->putInstruction_(
+          static_cast<OpCodeType>(node->int_value), node->pos.first
+        );
       }else{
-        this->code_.push_back(Op::Push | Op::Extended);
-        this->code_.push_back(
-          (OpCodeType)(vc->emplace(node->int_value) | stack_pos_const_)
+        this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
+        this->putInstruction_(
+          (OpCodeType)(vc->emplace(node->int_value) | stack_pos_const_),
+          node->pos.first
         );
       }
       break;
     case ASTNodeType::Float:
-      this->code_.push_back(Op::Push | Op::Extended);
-      this->code_.push_back(
-        (OpCodeType)(vc->emplace(node->float_value) | stack_pos_const_)
+      this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
+      this->putInstruction_(
+        (OpCodeType)(vc->emplace(node->float_value) | stack_pos_const_),
+        node->pos.first
       );
       break;
     case ASTNodeType::String:
-      this->code_.push_back(Op::Push | Op::Extended);
-      this->code_.push_back(
-        (OpCodeType)(vc->emplace(node->string_value) | stack_pos_const_)
+      this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
+      this->putInstruction_(
+        (OpCodeType)(vc->emplace(node->string_value) | stack_pos_const_),
+        node->pos.first
       );
       break;
     case ASTNodeType::Identifier:
       {
-        this->code_.push_back(Op::Push | Op::Extended);
+        this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
         auto it = va->find(node->string_value);
         if(it == va->end()){
           it = cva->find(node->string_value);
@@ -78,7 +90,7 @@ void Function::threadAST_(
           if(it == cva->end()){
             errors->emplace_back(
               dynSprintf(
-                "%d compiler error: undeclared identifier '%s'\n",
+                "%d: compiler error: undeclared identifier '%s'\n",
                 node->pos.first,
                 node->string_value->str()
               )
@@ -87,15 +99,15 @@ void Function::threadAST_(
           }
           
           va->base()[node->string_value] = this->arguments;
-          this->code_.push_back(this->arguments);
+          this->putInstruction_(this->arguments, node->pos.first);
           ++this->arguments;
         }else{
-          this->code_.push_back(it->second);
+          this->putInstruction_(it->second, node->pos.first);
         }
       }
       break;
     case ASTNodeType::Null:
-      this->code_.push_back(Op::Push);
+      this->putInstruction_(Op::Push, node->pos.first);
       break;
     default:
       assert(false);
@@ -107,16 +119,16 @@ void Function::threadAST_(
     this->threadAST_(node->child, errors, va, cva, vc, ss);
     switch(node->type){
     case ASTNodeType::Neg:
-      this->code_.push_back(Op::Neg);
+      this->putInstruction_(Op::Neg, node->pos.first);
       break;
     case ASTNodeType::Not:
-      this->code_.push_back(Op::Not);
+      this->putInstruction_(Op::Not, node->pos.first);
       break;
     default:
       assert(false);
     }
     if(!ret){
-      this->code_.push_back(Op::Pop);
+      this->putInstruction_(Op::Pop, node->pos.first);
       --(*ss);
     }
     break;
@@ -126,55 +138,55 @@ void Function::threadAST_(
     this->threadAST_(node->children.second, errors, va, cva, vc, ss);
     switch(node->type){
     case ASTNodeType::Apply:
-      this->code_.push_back(Op::Apply);
+      this->putInstruction_(Op::Apply, node->pos.first);
       break;
       
     case ASTNodeType::Add:
-      this->code_.push_back(Op::Add);
+      this->putInstruction_(Op::Add, node->pos.first);
       break;
     case ASTNodeType::Sub:
-      this->code_.push_back(Op::Sub);
+      this->putInstruction_(Op::Sub, node->pos.first);
       break;
     case ASTNodeType::Mul:
-      this->code_.push_back(Op::Mul);
+      this->putInstruction_(Op::Mul, node->pos.first);
       break;
     case ASTNodeType::Div:
-      this->code_.push_back(Op::Div);
+      this->putInstruction_(Op::Div, node->pos.first);
       break;
     case ASTNodeType::Mod:
-      this->code_.push_back(Op::Mod);
+      this->putInstruction_(Op::Mod, node->pos.first);
       break;
     case ASTNodeType::Append:
-      this->code_.push_back(Op::Append);
+      this->putInstruction_(Op::Append, node->pos.first);
       break;
       
     case ASTNodeType::Cmp:
-      this->code_.push_back(Op::Cmp);
+      this->putInstruction_(Op::Cmp, node->pos.first);
       break;
     case ASTNodeType::Eq:
-      this->code_.push_back(Op::Eq);
+      this->putInstruction_(Op::Eq, node->pos.first);
       break;
     case ASTNodeType::Neq:
-      this->code_.push_back(Op::Neq);
+      this->putInstruction_(Op::Neq, node->pos.first);
       break;
     case ASTNodeType::Gt:
-      this->code_.push_back(Op::Gt);
+      this->putInstruction_(Op::Gt, node->pos.first);
       break;
     case ASTNodeType::Lt:
-      this->code_.push_back(Op::Lt);
+      this->putInstruction_(Op::Lt, node->pos.first);
       break;
     case ASTNodeType::Geq:
-      this->code_.push_back(Op::Geq);
+      this->putInstruction_(Op::Geq, node->pos.first);
       break;
     case ASTNodeType::Leq:
-      this->code_.push_back(Op::Leq);
+      this->putInstruction_(Op::Leq, node->pos.first);
       break;
       
     default:
       assert(false);
     }
     if(!ret){
-      this->code_.push_back(Op::Pop);
+      this->putInstruction_(Op::Pop, node->pos.first);
       *ss -= 2;
     }else --(*ss);
     break;
@@ -186,26 +198,26 @@ void Function::threadAST_(
       
       switch(node->type){
       case ASTNodeType::And:
-        this->code_.push_back(Op::Jfsc | Op::Extended);
+        this->putInstruction_(Op::Jfsc | Op::Extended, node->pos.first);
         jmp_addr = this->code_.size();
-        this->code_.push_back((OpCodeType)0);
+        this->putInstruction_((OpCodeType)0, node->pos.first);
         this->threadAST_(node->children.second, errors, va, cva, vc, ss);
         this->code_[jmp_addr] = (OpCodeType)this->code_.size() - 1;
         
         if(!ret){
-          this->code_.push_back(Op::Pop);
+          this->putInstruction_(Op::Pop, node->pos.first);
           --(*ss);
         }
         break;
       case ASTNodeType::Or:
-        this->code_.push_back(Op::Jtsc | Op::Extended);
+        this->putInstruction_(Op::Jtsc | Op::Extended, node->pos.first);
         jmp_addr = this->code_.size();
-        this->code_.push_back((OpCodeType)0);
+        this->putInstruction_((OpCodeType)0, node->pos.first);
         this->threadAST_(node->children.second, errors, va, cva, vc, ss);
         this->code_[jmp_addr] = (OpCodeType)this->code_.size() - 1;
         
         if(!ret){
-          this->code_.push_back(Op::Pop);
+          this->putInstruction_(Op::Pop, node->pos.first);
           --(*ss);
         }
         break;
@@ -213,9 +225,9 @@ void Function::threadAST_(
       case ASTNodeType::Conditional:
         assert(node->children.second->type == ASTNodeType::Branch);
         
-        this->code_.push_back(Op::Jf | Op::Extended);
+        this->putInstruction_(Op::Jf | Op::Extended, node->pos.first);
         jmp_addr = this->code_.size();
-        this->code_.push_back((OpCodeType)0);
+        this->putInstruction_((OpCodeType)0, node->pos.first);
         --(*ss);
         
         this->threadAST_(
@@ -227,11 +239,11 @@ void Function::threadAST_(
         this->code_[jmp_addr] = (OpCodeType)this->code_.size() + 1;
         
         if(ret){
-          this->code_.push_back(Op::Jmp | Op::Extended);
+          this->putInstruction_(Op::Jmp | Op::Extended, node->pos.first);
           jmp_addr = this->code_.size();
-          this->code_.push_back((OpCodeType)0);
+          this->putInstruction_((OpCodeType)0, node->pos.first);
           if(node->children.second->children.second->type == ASTNodeType::Nop){
-            this->code_.push_back(Op::Push);
+            this->putInstruction_(Op::Push, node->pos.first);
             ++(*ss);
           }else{
             this->threadAST_(
@@ -241,9 +253,9 @@ void Function::threadAST_(
           }
           this->code_[jmp_addr] = (OpCodeType)this->code_.size() + 1;
         }else if(node->children.second->children.second->type != ASTNodeType::Nop){
-          this->code_.push_back(Op::Jmp | Op::Extended);
+          this->putInstruction_(Op::Jmp | Op::Extended, node->pos.first);
           jmp_addr = this->code_.size();
-          this->code_.push_back((OpCodeType)0);
+          this->putInstruction_((OpCodeType)0, node->pos.first);
           
           this->threadAST_(
             node->children.second->children.second,
@@ -264,7 +276,7 @@ void Function::threadAST_(
     {
       if(node->children.first->type != ASTNodeType::Identifier){
         errors->emplace_back(
-          dynSprintf("%d compiler error: assignment to rvalue\n", node->pos.first)
+          dynSprintf("%d: compiler error: assignment to rvalue\n", node->pos.first)
         );
       }
       
@@ -272,35 +284,35 @@ void Function::threadAST_(
       this->threadAST_(node->children.second, errors, va, cva, vc, ss);
       switch(node->type){
       case ASTNodeType::Assign:
-        this->code_.push_back(Op::Write | Op::Extended | Op::Dest);
+        this->putInstruction_(Op::Write | Op::Extended | Op::Dest, node->pos.first);
         break;
       case ASTNodeType::AddAssign:
-        this->code_.push_back(Op::Add | Op::Extended | Op::Dest);
+        this->putInstruction_(Op::Add | Op::Extended | Op::Dest, node->pos.first);
         break;
       case ASTNodeType::SubAssign:
-        this->code_.push_back(Op::Sub | Op::Extended | Op::Dest);
+        this->putInstruction_(Op::Sub | Op::Extended | Op::Dest, node->pos.first);
         break;
       case ASTNodeType::MulAssign:
-        this->code_.push_back(Op::Mul | Op::Extended | Op::Dest);
+        this->putInstruction_(Op::Mul | Op::Extended | Op::Dest, node->pos.first);
         break;
       case ASTNodeType::DivAssign:
-        this->code_.push_back(Op::Div | Op::Extended | Op::Dest);
+        this->putInstruction_(Op::Div | Op::Extended | Op::Dest, node->pos.first);
         break;
       case ASTNodeType::ModAssign:
-        this->code_.push_back(Op::Mod | Op::Extended | Op::Dest);
+        this->putInstruction_(Op::Mod | Op::Extended | Op::Dest, node->pos.first);
         break;
       case ASTNodeType::AppendAssign:
-        this->code_.push_back(Op::Append | Op::Extended | Op::Dest);
+        this->putInstruction_(Op::Append | Op::Extended | Op::Dest, node->pos.first);
         break;
         
       default:
         assert(false);
       }
       
-      this->code_.push_back(stack_pos);
+      this->putInstruction_(stack_pos, node->pos.first);
       if(ret){
-        this->code_.push_back(Op::Push | Op::Extended | Op::Dest);
-        this->code_.push_back(stack_pos);
+        this->putInstruction_(Op::Push | Op::Extended | Op::Dest, node->pos.first);
+        this->putInstruction_(stack_pos, node->pos.first);
       }else{
         --(*ss);
       }
@@ -317,19 +329,23 @@ void Function::threadAST_(
         if(ret){
           if(var_allocs->size() > 0){
             if(var_allocs->size() == 1){
-              this->code_.push_back(Op::Reduce);
+              this->putInstruction_(Op::Reduce, node->pos.first);
             }else{
-              this->code_.push_back(Op::Reduce | Op::Extended);
-              this->code_.push_back(static_cast<OpCodeType>(var_allocs->size()));
+              this->putInstruction_(Op::Reduce | Op::Extended, node->pos.first);
+              this->putInstruction_(
+                static_cast<OpCodeType>(var_allocs->size()), node->pos.first
+              );
             }
             *ss -= var_allocs->size();
           }
         }else{
           if(var_allocs->size() == 0){
-            this->code_.push_back(Op::Pop);
+            this->putInstruction_(Op::Pop, node->pos.first);
           }else{
-            this->code_.push_back(Op::Pop | Op::Extended);
-            this->code_.push_back(static_cast<OpCodeType>(var_allocs->size() + 1));
+            this->putInstruction_(Op::Pop | Op::Extended, node->pos.first);
+            this->putInstruction_(
+              static_cast<OpCodeType>(var_allocs->size() + 1), node->pos.first
+            );
           }
         }
         delete var_allocs;
@@ -357,21 +373,27 @@ void Function::threadAST_(
               }
             }
             
-            this->code_.push_back(Op::CreateArray | Op::Extended | Op::Int);
-            this->code_.push_back(elems);
+            this->putInstruction_(
+              Op::CreateArray | Op::Extended | Op::Int,
+              node->pos.first
+            );
+            this->putInstruction_(elems, node->pos.first);
             *ss -= elems - 1;
           }else if(node->child->type == ASTNodeType::Range){
             this->threadAST_(node->child->children.first, errors, va, cva, vc, ss);
             this->threadAST_(node->child->children.second, errors, va, cva, vc, ss);
-            this->code_.push_back(Op::CreateRange);
+            this->putInstruction_(Op::CreateRange, node->pos.first);
             --(*ss);
           }else{
             this->threadAST_(node->child, errors, va, cva, vc, ss);
-            this->code_.push_back(Op::CreateArray | Op::Extended | Op::Int);
-            this->code_.push_back(1);
+            this->putInstruction_(
+              Op::CreateArray | Op::Extended | Op::Int,
+              node->pos.first
+            );
+            this->putInstruction_(1, node->pos.first);
           }
         }else{
-          this->code_.push_back(Op::CreateArray);
+          this->putInstruction_(Op::CreateArray, node->pos.first);
           ++(*ss);
         }
       }
@@ -380,26 +402,26 @@ void Function::threadAST_(
     case ASTNodeType::While:
       {
         if(ret){
-          this->code_.push_back(Op::Push);
+          this->putInstruction_(Op::Push, node->pos.first);
           ++(*ss);
         }
         unsigned begin_addr = this->code_.size() - 1;
         
         this->threadAST_(node->children.first, errors, va, cva, vc, ss);
         
-        this->code_.push_back(Op::Jf | Op::Extended);
+        this->putInstruction_(Op::Jf | Op::Extended, node->pos.first);
         --(*ss);
         unsigned end_jmp_addr = this->code_.size();
-        this->code_.push_back((OpCodeType)0);
+        this->putInstruction_((OpCodeType)0, node->pos.first);
         
         this->threadAST_(node->children.second, errors, va, cva, vc, ss, ret);
         if(ret){
-          this->code_.push_back(Op::Reduce);
+          this->putInstruction_(Op::Reduce, node->pos.first);
           --(*ss);
         }
-        this->code_.push_back(Op::Jmp | Op::Extended);
+        this->putInstruction_(Op::Jmp | Op::Extended, node->pos.first);
         this->code_[end_jmp_addr] = (OpCodeType)this->code_.size();
-        this->code_.push_back((OpCodeType)begin_addr);
+        this->putInstruction_((OpCodeType)begin_addr, node->pos.first);
       }
       break;
       
@@ -427,17 +449,20 @@ void Function::threadAST_(
         auto* func = new Function(node->children.second, errors, var_alloc, va);
         
         node->children.second = nullptr;
-        this->code_.push_back(Op::Push | Op::Extended);
-        this->code_.push_back((OpCodeType)vc->emplace(func) | stack_pos_const_);
+        this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
+        this->putInstruction_(
+          (OpCodeType)vc->emplace(func) | stack_pos_const_,
+          node->pos.first
+        );
         ++(*ss);
         
         if(func->arguments > std_args){
           VectorMapBase& base = var_alloc->base();
           for(int i = std_args; i < func->arguments; ++i){
-            this->code_.push_back(Op::Push | Op::Extended);
-            this->code_.push_back((*va)[base[i].first]);
-            this->code_.push_back(Op::Apply | Op::Extended | Op::Int);
-            this->code_.push_back((OpCodeType)std_args);
+            this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
+            this->putInstruction_((*va)[base[i].first], node->pos.first);
+            this->putInstruction_(Op::Apply | Op::Extended | Op::Int, node->pos.first);
+            this->putInstruction_((OpCodeType)std_args, node->pos.first);
           }
         }
         delete var_alloc;
@@ -461,7 +486,7 @@ void Function::threadAST_(
     case ASTNodeType::Print:
       {
         this->threadAST_(node->child, errors, va, cva, vc, ss);
-        this->code_.push_back(Op::Print);
+        this->putInstruction_(Op::Print, node->pos.first);
       }
       break;
       
@@ -478,21 +503,21 @@ void Function::threadAST_(
             node->children.second->children.second,
             errors, va, cva, vc, ss
           );
-          this->code_.push_back(Op::Slice);
+          this->putInstruction_(Op::Slice, node->pos.first);
         }else{
           this->threadAST_(node->children.second, errors, va, cva, vc, ss);
-          this->code_.push_back(Op::Get);
+          this->putInstruction_(Op::Get, node->pos.first);
         }
         
         if(!ret){
-          this->code_.push_back(Op::Pop);
+          this->putInstruction_(Op::Pop, node->pos.first);
           *ss -= 2;
         }else --(*ss);
       }
       break;
       
     case ASTNodeType::Nop:
-      this->code_.push_back(Op::Push);
+      this->putInstruction_(Op::Push, node->pos.first);
       break;
       
     default:
@@ -520,8 +545,10 @@ Function::Function(
   VectorSet<TypedValue> constants;
   int stack_size = 0;
   
+  auto pos = tree->pos.first;
+  this->code_positions_.emplace_back(pos, 0);
   this->threadAST_(tree, errors, var_alloc, context_vars, &constants, &stack_size);
-  this->code_.push_back(Op::Return);
+  this->putInstruction_(Op::Return, pos);
   
   delete tree;
   if(!var_allocs) delete var_alloc;
@@ -578,6 +605,22 @@ bool PartiallyApplied::apply(TypedValue&& val, int bind_pos){
     }
   }
   return --this->nargs == 0;
+}
+
+int Function::getLine(std::vector<OpCodeType>::const_iterator iit) const {
+  int pos = iit - this->code_.begin();
+  auto it = this->code_positions_.begin();
+  int line = it->first;
+  for(;;){
+    if(it == this->code_positions_.end()){
+      return this->code_positions_.back().second;
+    }
+    if(it->second > pos) break;
+    
+    line = it->first;
+    ++it;
+  }
+  return line;
 }
 
 #ifndef NDEBUG

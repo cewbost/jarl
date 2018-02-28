@@ -92,6 +92,12 @@ using VectorMapBase = std::vector<std::pair<String* const, OpCodeType>>;
 
 class Function: public RcTraitDirect<Function>{
   
+  std::vector<OpCodeType> code_;
+  std::vector<TypedValue> values_;
+  std::vector<std::pair<int, int>> code_positions_;
+  
+  void putInstruction_(OpCodeType, int);
+  
   void threadAST_(
     ASTNode*,
     std::vector<std::unique_ptr<char[]>>*,
@@ -101,9 +107,6 @@ class Function: public RcTraitDirect<Function>{
     int*,
     bool = true
   );
-  
-  std::vector<OpCodeType> code_;
-  std::vector<TypedValue> values_;
   
 public:
   
@@ -126,6 +129,8 @@ public:
   const std::vector<TypedValue>& getVValues()const{return this->values_;}
   const TypedValue* getValues()const{return this->values_.data();}
   size_t getNumValues()const{return this->values_.size();}
+  
+  int getLine(std::vector<OpCodeType>::const_iterator) const;
   
   void operator delete(void* ptr){
     ::operator delete(ptr);
