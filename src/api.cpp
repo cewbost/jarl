@@ -4,11 +4,10 @@
 #include "parser.h"
 #include "vm.h"
 
-#include <iostream>
-
 #ifndef NDEBUG
-//#define PRINT_LEXEMES
-//#define PRINT_AST
+#include <iostream>
+#define PRINT_LEXEMES
+#define PRINT_AST
 //#define PRINT_CODE
 #endif
 

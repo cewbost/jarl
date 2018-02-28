@@ -171,6 +171,12 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "var"; break;
   case ASTNodeType::Print:
     ret += "print"; break;
+  case ASTNodeType::LexError:
+    ret += "lex error"; break;
+  case ASTNodeType::ParseError:
+    ret += "parse error"; break;
+  default:
+    ret += "unidentified ast node"; break;
   }
   
   switch(

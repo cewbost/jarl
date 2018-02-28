@@ -520,6 +520,13 @@ void Function::threadAST_(
       this->putInstruction_(Op::Push, node->pos.first);
       break;
       
+    case ASTNodeType::Range:
+      errors->emplace_back(dynSprintf(
+        "%d: Compiler error. Range generators not yet supported.",
+        node->pos.first
+      ));
+      break;
+      
     default:
       assert(false);
     }

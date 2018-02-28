@@ -309,6 +309,14 @@ ASTNode* Parser::identifierList_(){
     while(this->lcurrent_->type == LexemeType::Comma){
       ++this->lcurrent_;
       assert(this->lcurrent_->type == LexemeType::Identifier);
+      if(this->lcurrent_->type != LexemeType::Identifier){
+        delete node;
+        return new ASTNode(
+          ASTNodeType::ParseError,
+          "Expected identifier.",
+          (this->lcurrent_ - 1)->pos
+        );
+      }
       
       next = &this->next_();
       *next_node = new ASTNode(
