@@ -3,6 +3,10 @@
 
 #include <type_traits>
 #include <functional>
+#include <memory>
+
+#include <cstdio>
+#include <cstdarg>
 
 /*
   use this instead of new, to allow for overloading where the parameters are passed
@@ -27,6 +31,20 @@ struct ptr_equal_to{
     return equal_to::operator()(*lhs, *rhs);
   }
 };
+
+inline char* dynSprintf(const char* format, ...){
+  va_list args;
+  va_start(args, format);
+  int len = vsnprintf(nullptr, 0, format, args);
+  
+  char* buffer = new char[len + 1];
+  va_end(args);
+  va_start(args, format);
+  vsprintf(buffer, format, args);
+  
+  va_end(args);
+  return buffer;
+}
 
 #ifndef NDEBUG
 inline std::string unlexString(const char* str){

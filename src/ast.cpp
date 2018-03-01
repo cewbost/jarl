@@ -3,7 +3,10 @@
 #include <cassert>
 
 ASTNode::ASTNode(ASTNodeType type, std::pair<uint16_t, uint16_t> pos)
-: type(type), pos(pos){}
+: type(type), pos(pos){
+  this->children.first = nullptr;
+  this->children.second = nullptr;
+}
 ASTNode::ASTNode(ASTNodeType type, ASTNode* child, std::pair<uint16_t, uint16_t> pos)
 : type(type), pos(pos){
   this->child = child;
@@ -171,6 +174,12 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "var"; break;
   case ASTNodeType::Print:
     ret += "print"; break;
+  case ASTNodeType::LexError:
+    ret += "lex error"; break;
+  case ASTNodeType::ParseError:
+    ret += "parse error"; break;
+  default:
+    ret += "unidentified ast node"; break;
   }
   
   switch(

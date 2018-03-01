@@ -11,21 +11,25 @@
 #include <unordered_map>
 #include <memory>
 
+#include <csetjmp>
+
 class VM{
-  
-  std::vector<std::unique_ptr<char[]>> errors_;
-  
+public:
   struct StackFrame{
-    rc_ptr<const Function> proc;
+    rc_ptr<const Function> func;
     const OpCodeType* ip;
     unsigned bp;
     
-    StackFrame(): proc(nullptr), ip(nullptr), bp(0){}
-    StackFrame(const Function* p, unsigned b): proc(p), ip(nullptr), bp(b){}
+    StackFrame(): func(nullptr), ip(nullptr), bp(0){}
+    StackFrame(const Function* p, unsigned b): func(p), ip(nullptr), bp(b){}
     
     StackFrame(StackFrame&&) = default;
     StackFrame& operator=(StackFrame&&) = default;
   };
+  
+private:
+  
+  jmp_buf error_jmp_env_;
   
   std::unordered_map<
     rc_ptr<String>,
@@ -41,7 +45,7 @@ class VM{
   
   StackFrame frame_;
   
-  void doArithOp_(const OpCodeType**, bool (TypedValue::*)(const TypedValue&));
+  void doArithOp_(const OpCodeType**, void (TypedValue::*)(const TypedValue&));
   void doCmpOp_(const OpCodeType**, CmpMode);
   void pushFunction_(const Function&);
   void pushFunction_(const PartiallyApplied&);
@@ -54,10 +58,14 @@ public:
   void execute(const Function&);
   
   void setPrintFunc(void(*)(const char*));
+  void print(const char*);
   
-  void reportError(std::unique_ptr<char[]>);
-  int errors() const;
-  std::unique_ptr<char[]> getError();
+  StackFrame* getFrame();
+  
+  void errorJmp(int);
+  
+  static void setCurrentVM(VM*);
+  static VM* getCurrentVM();
 };
 
 #endif

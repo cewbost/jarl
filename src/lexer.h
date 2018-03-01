@@ -18,11 +18,7 @@ public:
   
   Lexer(const char*);
   
-  void setCheckpoint();
-  void removeCheckpoint();
-  void revert();
-  
-  std::vector<Lexeme> lex();
+  std::vector<Lexeme> lex(std::vector<std::unique_ptr<char[]>>*);
 };
 
 #endif

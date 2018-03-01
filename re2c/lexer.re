@@ -89,7 +89,7 @@ Lexer::Lexer(const char* mem){
   this->mem_ = mem;
 }
 
-std::vector<Lexeme> Lexer::lex(){
+std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
   const char* marker;
   const char* token;
   
@@ -125,6 +125,7 @@ std::vector<Lexeme> Lexer::lex(){
       
       * {
         if(lexemes.back().type != LexemeType::Error){
+          errors->emplace_back(dynSprintf("line %d: Invalid symbol.", line));
           PUT_LEXEME(LexemeType::Error);
         } else continue;
       }

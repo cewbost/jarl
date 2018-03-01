@@ -92,9 +92,15 @@ using VectorMapBase = std::vector<std::pair<String* const, OpCodeType>>;
 
 class Function: public RcTraitDirect<Function>{
   
+  std::vector<OpCodeType> code_;
+  std::vector<TypedValue> values_;
+  std::vector<std::pair<int, int>> code_positions_;
+  
+  void putInstruction_(OpCodeType, int);
+  
   void threadAST_(
-    VM*,
     ASTNode*,
+    std::vector<std::unique_ptr<char[]>>*,
     VarAllocMap*,
     VarAllocMap*,
     VectorSet<TypedValue>*,
@@ -102,14 +108,16 @@ class Function: public RcTraitDirect<Function>{
     bool = true
   );
   
-  std::vector<OpCodeType> code_;
-  std::vector<TypedValue> values_;
-  
 public:
   
   int arguments;
   
-  Function(VM*, ASTNode*, VarAllocMap* = nullptr, VarAllocMap* = nullptr);
+  Function(
+    ASTNode*,
+    std::vector<std::unique_ptr<char[]>>*,
+    VarAllocMap* = nullptr,
+    VarAllocMap* = nullptr
+  );
   
   Function(const Function&) = delete;
   Function(Function&&) = delete;
@@ -121,6 +129,8 @@ public:
   const std::vector<TypedValue>& getVValues()const{return this->values_;}
   const TypedValue* getValues()const{return this->values_.data();}
   size_t getNumValues()const{return this->values_.size();}
+  
+  int getLine(const OpCodeType*) const;
   
   void operator delete(void* ptr){
     ::operator delete(ptr);
@@ -136,7 +146,7 @@ class PartiallyApplied: public RcTraitDirect<PartiallyApplied>{
   
   typedef SSOVector<TypedValue, 8, sizeof(void*) * 2> ArgVectorType;
   
-  rc_ptr<const Function> proc_;
+  rc_ptr<const Function> func_;
   ArgVectorType args_;
   
 public:
@@ -148,7 +158,7 @@ public:
   bool apply(const TypedValue&, int);
   bool apply(TypedValue&&, int);
   
-  const Function* getProc()const{return this->proc_.get();}
+  const Function* getFunc()const{return this->func_.get();}
   
   ArgVectorType::const_iterator cbegin()const{return this->args_.cbegin();}
   ArgVectorType::const_iterator cend()const{return this->args_.cend();}
