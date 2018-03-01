@@ -119,6 +119,8 @@ VM::VM(int stack_size)
 
 void VM::execute(const Function& func){
   
+  VM::setCurrentVM(this);
+  
   this->pushFunction_(func);
   
   const OpCodeType* end_it = func.getCode() + func.getCodeSize();
@@ -441,7 +443,7 @@ void VM::execute(const Function& func){
       ++this->frame_.ip;
     }
   }else{
-    assert(false);
+    //nop for now
   }
   
   stack_.pop_back();
