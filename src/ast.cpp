@@ -3,7 +3,10 @@
 #include <cassert>
 
 ASTNode::ASTNode(ASTNodeType type, std::pair<uint16_t, uint16_t> pos)
-: type(type), pos(pos){}
+: type(type), pos(pos){
+  this->children.first = nullptr;
+  this->children.second = nullptr;
+}
 ASTNode::ASTNode(ASTNodeType type, ASTNode* child, std::pair<uint16_t, uint16_t> pos)
 : type(type), pos(pos){
   this->child = child;

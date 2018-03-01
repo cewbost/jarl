@@ -116,7 +116,10 @@ ASTNode* Parser::nud_(const Lexeme& lex){
     return new ASTNode(ASTNodeType::Identifier, lex.value.s, lex.pos);
   
   default:
-    assert(false);
+    this->errors_->emplace_back(dynSprintf(
+      "line %d: Expected expression.",
+      (this->lcurrent_ - 1)->pos.first
+    ));
   }
 }
 
@@ -349,15 +352,15 @@ ASTNode* Parser::functionExpr_(){
 ASTNode* Parser::varDecl_(){
   auto pos = (this->lcurrent_ - 1)->pos;
   auto ret = new ASTNode(ASTNodeType::VarDecl, pos);
-  auto iden = this->next_();
-  if(iden.type != LexemeType::Identifier){
+  if(this->lcurrent_->type != LexemeType::Identifier){
     delete ret;
     this->errors_->emplace_back(dynSprintf(
       "line %d: Expected Identifier.",
-      (this->lcurrent_ - 1)->pos.first
+      this->lcurrent_->pos.first
     ));
-    return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+    return new ASTNode(ASTNodeType::ParseError, this->lcurrent_->pos);
   }
+  auto iden = this->next_();
   ret->string_branch.value = iden.value.s;
   
   auto next = this->next_();

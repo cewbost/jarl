@@ -81,16 +81,23 @@ void Function::threadAST_(
         this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
         auto it = va->find(node->string_value);
         if(it == va->end()){
+          if(cva == nullptr){
+            errors->emplace_back(dynSprintf(
+              "line %d: Undeclared identifier '%s'.",
+              node->pos.first,
+              node->string_value->str()
+            ));
+            break;
+          }
+          
           it = cva->find(node->string_value);
           
           if(it == cva->end()){
-            errors->emplace_back(
-              dynSprintf(
-                "line %d: Undeclared identifier '%s'.",
-                node->pos.first,
-                node->string_value->str()
-              )
-            );
+            errors->emplace_back(dynSprintf(
+              "line %d: Undeclared identifier '%s'.",
+              node->pos.first,
+              node->string_value->str()
+            ));
             break;
           }
           
