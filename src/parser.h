@@ -14,6 +14,8 @@ class Parser{
   const Lexit_ lend_;
   Lexit_ lcurrent_;
   
+  std::vector<std::unique_ptr<char[]>>* errors_;
+  
   const Lexeme& next_();
   const Lexeme& nextNoNewline_();
   bool checkNext_(LexemeType);
@@ -38,7 +40,7 @@ public:
   
   Parser(const std::vector<Lexeme>&);
   
-  ASTNode* parse();
+  ASTNode* parse(std::vector<std::unique_ptr<char[]>>*);
 };
 
 #endif

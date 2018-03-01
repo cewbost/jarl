@@ -34,11 +34,7 @@ void Function::threadAST_(
 ){
   switch(static_cast<ASTNodeType>(static_cast<unsigned>(node->type) & ~0xff)){
   case ASTNodeType::Error:
-    {
-      errors->emplace_back(
-        dynSprintf("%d: Compiler error. %s", node->pos.first, node->c_str_value)
-      );
-    }
+    assert(false);
     break;
     
   case ASTNodeType::Value:
@@ -90,7 +86,7 @@ void Function::threadAST_(
           if(it == cva->end()){
             errors->emplace_back(
               dynSprintf(
-                "%d: Compiler error. Undeclared identifier '%s'.",
+                "line %d: Undeclared identifier '%s'.",
                 node->pos.first,
                 node->string_value->str()
               )
@@ -276,7 +272,7 @@ void Function::threadAST_(
     {
       if(node->children.first->type != ASTNodeType::Identifier){
         errors->emplace_back(
-          dynSprintf("%d: Compiler error. Assignment to rvalue.", node->pos.first)
+          dynSprintf("line %d: Assignment to rvalue.", node->pos.first)
         );
       }
       
@@ -522,7 +518,7 @@ void Function::threadAST_(
       
     case ASTNodeType::Range:
       errors->emplace_back(dynSprintf(
-        "%d: Compiler error. Range generators not yet supported.",
+        "line %d: Range generators not yet supported.",
         node->pos.first
       ));
       break;

@@ -23,8 +23,17 @@ void jarl::destroy_vm(vm v){
 
 void jarl::execute(vm v, const char* code){
   
+  std::vector<std::unique_ptr<char[]>> errors;
+  
   Lexer lex(code);
-  auto lexemes = lex.lex();
+  auto lexemes = lex.lex(&errors);
+  
+  if(errors.size() > 0){
+    for(auto& error: errors){
+      v->print(error.get());
+    }
+    return;
+  }
   
   #ifdef PRINT_LEXEMES
   std::cout << "::lexemes::" << std::endl;
@@ -34,14 +43,20 @@ void jarl::execute(vm v, const char* code){
   #endif
   
   Parser parser(lexemes);
-  auto parse_tree = parser.parse();
+  auto parse_tree = parser.parse(&errors);
+  
+  if(errors.size() > 0){
+    for(auto& error: errors){
+      v->print(error.get());
+    }
+    return;
+  }
   
   #ifdef PRINT_AST
   std::cout << "::AST::" << std::endl;
   std::cout << parse_tree->toStrDebug() << std::endl;
   #endif
   
-  std::vector<std::unique_ptr<char[]>> errors;
   Function* proc = new Function(parse_tree, &errors);
   if(errors.size() > 0){
     for(auto& error: errors){
