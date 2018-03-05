@@ -1,7 +1,7 @@
 # Jarl
 
-A scripting language bord out of a frustration with more conventional languages like
-Lua and Squirrel.
+A functional, reactive scripting language, born out of a frustration with more
+conventional languages like Lua and Squirrel.
 
 The main goal is to make it easier and safer to manage persistent state across several
 threads of execution. Scripting languages are not generally used to perform heavy
@@ -11,7 +11,7 @@ Safety, dryness and memory footprint will be prioritized over runtime performanc
 This is what's planned:
 
   - Consistency guarantees for persistant state. Consistence checks for state changes,
-    and easy rollback on errors.
+    and easy rollback on errors. Transactional updates.
   - Less error prone semantics, arguments passed by immutable reference, unique
     ownership by default.
   - Multithreading support. Safe communication between parallel VMs.
@@ -30,7 +30,7 @@ Use CMAKE. Requires C++14.
 
 Currently it depends on the C++ standard library. This will be optional in the future.
 
-The lexer code is generated using re2c. The generated file is included in the src
+The lexer code is generated using re2c. The generated file is included in the src/
 folder, but if you want to generate it again, or modify the lexer, make the changes
 to re2c/lexer.re and run re2c/Makefile.
 
@@ -85,13 +85,17 @@ print x[2:] ++ x[:2]
 //[3, 4, 5, 1, 2]
 ```
 
-Lambdas, partial application and currying:
+Lambdas, higher order functions, partial application and currying:
 
 ```
 var x = 5
 var f = func a: x * a
 print f 2
 //10
+
+f = func a, b, f: f a b
+print f 3 4 (func a * b)
+//12
 
 f = func a, b: a * b
 var g = f 10
