@@ -76,7 +76,7 @@ print (if {
 Arrays and slices:
 
 ```
-var x = [1, 2, 3, 4, 5]
+var x = [1:6]
 print x
 //[1, 2, 3, 4, 5]
 print x[1:-1]
