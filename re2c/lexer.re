@@ -131,14 +131,14 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       }
       
       //whitespace
-      [ \t\r\v\f]         {continue;}
+      [ \n\t\r\v\f]         {continue;}
       
-      "\n" {
-        PLACE_LEXEME(LexemeType::Newline)
-        ++line;
-        line_start = reader;
-        continue;
-      }
+      //"\n" {
+      //  PLACE_LEXEME(LexemeType::Newline)
+      //  ++line;
+      //  line_start = reader;
+      //  continue;
+      //}
       
       //comments
       "//" [^\x00\n]*     {continue;}

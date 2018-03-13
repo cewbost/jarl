@@ -51,6 +51,7 @@ enum class ASTNodeType: unsigned {
   
   ExprList,
   Range,
+  Then,
   Function,
   
   BinaryExpr = 0x2100,

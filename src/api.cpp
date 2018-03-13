@@ -49,13 +49,15 @@ void jarl::execute(vm v, const char* code){
     for(auto& error: errors){
       v->print(error.get());
     }
-    return;
+    //return;
   }
   
   #ifdef PRINT_AST
   std::cout << "::AST::" << std::endl;
   std::cout << parse_tree->toStrDebug() << std::endl;
   #endif
+  
+  return;
   
   Function* proc = new Function(parse_tree, &errors);
   if(errors.size() > 0){

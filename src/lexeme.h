@@ -15,18 +15,25 @@ enum class LexemeType: unsigned {
   
   StopSymbolClass = 0x10,
   Newline,
-  Semicolon,
   RParen,
   RBrace,
   RBracket,
   Var,
-  Else,
   Print,
   
-  RightAssocClass = 0x20,
-  Comma,
+  L20 = 0x20,
+  Semicolon,
   
   L30 = 0x30,
+  Colon,
+  
+  L40 = 0x40,
+  Else,
+  
+  L50 = 0x50,
+  Comma,
+  
+  RightAssocClass = 0x60,
   Assign,
   AddAssign,
   SubAssign,
@@ -35,14 +42,11 @@ enum class LexemeType: unsigned {
   ModAssign,
   AppendAssign,
   
-  L40 = 0x40,
-  Colon,
-  
-  LeftAssocClass = 0x50,
+  LeftAssocClass = 0x70,
   And,
   Or,
   
-  L60 = 0x60,
+  L80 = 0x80,
   Eq,
   Neq,
   Gt,
@@ -51,24 +55,24 @@ enum class LexemeType: unsigned {
   Leq,
   Cmp,
   
-  L70 = 0x70,
+  L90 = 0x90,
   Append,
   
-  L80 = 0x80,
+  LA0 = 0xA0,
   Plus,
   Minus,
   
-  L90 = 0x90,
+  LB0 = 0xB0,
   Mul,
   Div,
   Mod,
   
-  ExprClass = 0xa0,
+  ExprClass = 0xC0,
   LParen,
   LBrace,
   LBracket,
   
-  LB0 = 0xb0,
+  LD0 = 0xD0,
   Not,
   Int,
   Float,
@@ -80,7 +84,7 @@ enum class LexemeType: unsigned {
   While,
   Func,
   
-  LC0 = 0xc0,
+  LE0 = 0xE0,
   
   Error
 };

@@ -6,8 +6,12 @@
 #include <iostream>
 #endif
 
-constexpr int def_expr_bindp  = static_cast<int>(LexemeType::RightAssocClass);
+constexpr int def_expr_bindp  = 0x11;
 constexpr int func_bindp      = static_cast<int>(LexemeType::LeftAssocClass);
+
+int Parser::bindp_(LexemeType type){
+  return static_cast<unsigned>(type) & ~0xf;
+}
 
 const Lexeme& Parser::next_(){
   const Lexeme& next = *this->lcurrent_;
@@ -36,23 +40,42 @@ void Parser::skipNewlines_(){
   }
 }
 
-int Parser::bindp_(LexemeType type){
-  return static_cast<unsigned>(type) & ~0xf;
-}
-
 ASTNode* Parser::nud_(const Lexeme& lex){
   switch(lex.type){
   case LexemeType::Plus:
-    return this->expression_(0x81);
+    return this->expression_(bindp_(lex.type) + 1);
   case LexemeType::Minus:
-    return new ASTNode(ASTNodeType::Neg, this->expression_(0x81), lex.pos);
+    return new ASTNode(
+      ASTNodeType::Neg,
+      this->expression_(bindp_(lex.type) + 1),
+      lex.pos
+    );
   case LexemeType::Not:
-    return new ASTNode(ASTNodeType::Not, this->statement_(0x51), lex.pos);
+    return new ASTNode(
+      ASTNodeType::Not,
+      this->expression_(bindp_(lex.type) + 1),
+      lex.pos
+    );
+  
   case LexemeType::Colon:
     return new ASTNode(
-      ASTNodeType::Range,
+      ASTNodeType::Then,
       new ASTNode(ASTNodeType::Nop, lex.pos),
-      this->expression_(0x31),
+      this->expression_(bindp_(lex.type) + 1),
+      lex.pos
+    );
+  case LexemeType::Semicolon:
+    return new ASTNode(
+      ASTNodeType::Seq,
+      new ASTNode(ASTNodeType::Nop, lex.pos),
+      this->expression_(bindp_(lex.type) + 1),
+      lex.pos
+    );
+  case LexemeType::Comma:
+    return new ASTNode(
+      ASTNodeType::ExprList,
+      new ASTNode(ASTNodeType::Nop, lex.pos),
+      this->expression_(bindp_(lex.type) + 1),
       lex.pos
     );
   
@@ -78,7 +101,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
     }
   case LexemeType::LBrace:
     {
-      auto tok = this->codeBlock_();
+      auto tok = this->expression_(def_expr_bindp);
       if(!this->checkNext_(LexemeType::RBrace)){
         delete tok;
         this->errors_->emplace_back(dynSprintf(
@@ -86,12 +109,11 @@ ASTNode* Parser::nud_(const Lexeme& lex){
           (this->lcurrent_ - 1)->pos.first
         ));
         return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
-      }else return tok;
+      }else return new ASTNode(ASTNodeType::CodeBlock, tok, lex.pos);
     }
   case LexemeType::LBracket:
     {
-      auto tok = this->expression_(0x11);
-      tok = new ASTNode(ASTNodeType::Array, tok, lex.pos);
+      auto tok = this->expression_(def_expr_bindp);
       if(!this->checkNext_(LexemeType::RBracket)){
         delete tok;
         this->errors_->emplace_back(dynSprintf(
@@ -99,7 +121,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
           (this->lcurrent_ - 1)->pos.first
         ));
         return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
-      }else return tok;
+      }else return new ASTNode(ASTNodeType::Array, tok, lex.pos);
     }
   
   case LexemeType::Int:
@@ -124,7 +146,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
 }
 
 ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
-  auto typen = this->bindp_(lex.type);
+  auto typen = bindp_(lex.type);
   if(typen >= static_cast<unsigned>(LexemeType::ExprClass)){
     if(lex.type == LexemeType::LBracket){
       auto right = this->expression_(def_expr_bindp);
@@ -199,24 +221,35 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
       return new ASTNode(ASTNodeType::AppendAssign, left, right, lex.pos);
     
     case LexemeType::Colon:
-      return new ASTNode(ASTNodeType::Range, left, right, lex.pos);
+      return new ASTNode(ASTNodeType::Then, left, right, lex.pos);
     case LexemeType::Comma:
       return new ASTNode(ASTNodeType::ExprList, left, right, lex.pos);
     
     default:
       assert(false);
     }
-  }else assert(false);
+  }else if(typen >= static_cast<unsigned>(LexemeType::StopSymbolClass)){
+    auto right = this->expression_(typen);
+    switch(lex.type){
+    case LexemeType::Semicolon:
+      return new ASTNode(ASTNodeType::Seq, left, right, lex.pos);
+    case LexemeType::Comma:
+      return new ASTNode(ASTNodeType::ExprList, left, right, lex.pos);
+      
+    default:
+      assert(false);
+    }
+  }
   
   return nullptr;
 }
 
 ASTNode* Parser::statement_(int bindp){
-  if(bindp >= this->bindp_(this->lcurrent_->type)){
+  if(bindp >= bindp_(this->lcurrent_->type)){
     return new ASTNode(ASTNodeType::Nop, this->lcurrent_->pos);
   }
   auto left = this->nud_(this->next_());
-  while(bindp < this->bindp_(this->lcurrent_->type)){
+  while(bindp < bindp_(this->lcurrent_->type)){
     left = this->led_(this->next_(), left);
   }
   return left;
@@ -224,11 +257,11 @@ ASTNode* Parser::statement_(int bindp){
 
 ASTNode* Parser::expression_(int bindp){
   this->skipNewlines_();
-  if(bindp > this->bindp_(this->lcurrent_->type)){
+  if(bindp > bindp_(this->lcurrent_->type)){
     return new ASTNode(ASTNodeType::Nop, this->lcurrent_->pos);
   }
   auto left = this->nud_(this->nextNoNewline_());
-  while(bindp < this->bindp_(this->lcurrent_->type)){
+  while(bindp < bindp_(this->lcurrent_->type)){
     left = this->led_(this->nextNoNewline_(), left);
   }
   return left;
@@ -457,5 +490,6 @@ Parser::Parser(const std::vector<Lexeme>& lexes)
 
 ASTNode* Parser::parse(std::vector<std::unique_ptr<char[]>>* errors){
   this->errors_ = errors;
-  return this->codeBlock_();
+  return this->expression_(def_expr_bindp);
+  //return this->codeBlock_();
 }
