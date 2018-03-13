@@ -35,6 +35,7 @@ enum class ASTNodeType: unsigned {
   CodeBlock,
   Array,
   Print,
+  VarDecl,
   
   UnaryExpr = 0x1100,
   
@@ -92,8 +93,7 @@ enum class ASTNodeType: unsigned {
   
   StringBranch = 0x3000,
   
-  IdentifierList,
-  VarDecl
+  IdentifierList
 };
 
 struct ASTNode {
