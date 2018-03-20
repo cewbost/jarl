@@ -131,14 +131,13 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       }
       
       //whitespace
-      [ \n\t\r\v\f]         {continue;}
+      [ \t\r\v\f]         {continue;}
       
-      //"\n" {
-      //  PLACE_LEXEME(LexemeType::Newline)
-      //  ++line;
-      //  line_start = reader;
-      //  continue;
-      //}
+      "\n" {
+        ++line;
+        line_start = reader;
+        continue;
+      }
       
       //comments
       "//" [^\x00\n]*     {continue;}
@@ -173,6 +172,7 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "/"   {PUT_LEXEME(LexemeType::Div)}
       "%"   {PUT_LEXEME(LexemeType::Mod)}
       "++"  {PUT_LEXEME(LexemeType::Append)}
+      ":="  {PUT_LEXEME(LexemeType::Define)}
       "="   {PUT_LEXEME(LexemeType::Assign)}
       "+="  {PUT_LEXEME(LexemeType::AddAssign)}
       "-="  {PUT_LEXEME(LexemeType::SubAssign)}
@@ -199,7 +199,6 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       ":"   {PUT_LEXEME(LexemeType::Colon)}
       
       //keywords
-      "var"   {PUT_LEXEME(LexemeType::Var)}
       "null"  {PUT_LEXEME(LexemeType::Null)}
       "true"  {PUT_LEXEME(true)}
       "false" {PUT_LEXEME(false)}
@@ -208,7 +207,7 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "or"    {PUT_LEXEME(LexemeType::Or)}
       "if"    {PUT_LEXEME(LexemeType::If)}
       "else"  {PUT_LEXEME(LexemeType::Else)}
-      "while" {PUT_LEXEME(LexemeType::While)}
+      "for"   {PUT_LEXEME(LexemeType::For)}
       "func"  {PUT_LEXEME(LexemeType::Func)}
       "print" {PUT_LEXEME(LexemeType::Print)}
       

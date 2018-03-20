@@ -46,7 +46,9 @@ enum class ASTNodeType: unsigned {
   
   Seq,
   Branch,
+  Else,
   While,
+  For,
   
   Index,
   
@@ -79,10 +81,12 @@ enum class ASTNodeType: unsigned {
   And,
   Or,
   
+  If,
   Conditional,
   
   AssignExpr = 0x2300,
   
+  Define,
   Assign,
   AddAssign,
   SubAssign,

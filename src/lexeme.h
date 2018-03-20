@@ -15,25 +15,25 @@ enum class LexemeType: unsigned {
   
   StopSymbolClass = 0x10,
   Newline,
+  
   RParen,
   RBrace,
   RBracket,
   
   Colon,
-  Else,
   
   L20 = 0x20,
   Semicolon,
   
   L30 = 0x30,
-  Var,
+  Else,
   Print,
-  While,
   
   L40 = 0x40,
   Comma,
   
   RightAssocClass = 0x50,
+  Define,
   Assign,
   AddAssign,
   SubAssign,
@@ -81,6 +81,7 @@ enum class LexemeType: unsigned {
   String,
   Null,
   If,
+  For,
   Func,
   
   LD0 = 0xD0,

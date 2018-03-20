@@ -81,10 +81,6 @@ struct Op{
   };
 };
 
-/*enum class Op: OpCodeType{
-  
-};*/
-
 template<class Key, class Val>
 using VectorMapDefault = VectorMap<Key, Val>;
 using VarAllocMap = DelegateMap<VectorMapDefault, String*, OpCodeType>;

@@ -108,6 +108,8 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "and"; break;
   case ASTNodeType::Or:
     ret += "or"; break;
+  case ASTNodeType::Define:
+    ret += ":="; break;
   case ASTNodeType::Assign:
     ret += "="; break;
   case ASTNodeType::AddAssign:
@@ -156,8 +158,14 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "conditional"; break;
   case ASTNodeType::Branch:
     ret += "branch"; break;
+  case ASTNodeType::If:
+    ret += "if"; break;
+  case ASTNodeType::Else:
+    ret += "else"; break;
   case ASTNodeType::While:
     ret += "while"; break;
+  case ASTNodeType::For:
+    ret += "for"; break;
   case ASTNodeType::CodeBlock:
     ret += "code block"; break;
   case ASTNodeType::Index:
