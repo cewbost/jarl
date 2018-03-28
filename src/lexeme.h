@@ -29,10 +29,10 @@ enum class LexemeType: unsigned {
   Else,
   Print,
   
-  L40 = 0x40,
+  L50 = 0x50,
   Comma,
   
-  RightAssocClass = 0x50,
+  RightAssocClass = 0x60,
   Define,
   Assign,
   AddAssign,
@@ -42,11 +42,11 @@ enum class LexemeType: unsigned {
   ModAssign,
   AppendAssign,
   
-  LeftAssocClass = 0x60,
+  LeftAssocClass = 0x70,
   And,
   Or,
   
-  L70 = 0x70,
+  L80 = 0x80,
   Eq,
   Neq,
   Gt,
@@ -55,24 +55,24 @@ enum class LexemeType: unsigned {
   Leq,
   Cmp,
   
-  L80 = 0x80,
+  L90 = 0x90,
   Append,
   
-  L90 = 0x90,
+  LA0 = 0xA0,
   Plus,
   Minus,
   
-  LA0 = 0xA0,
+  LB0 = 0xB0,
   Mul,
   Div,
   Mod,
   
-  ExprClass = 0xB0,
+  ExprClass = 0xC0,
   LParen,
   LBrace,
   LBracket,
   
-  LC0 = 0xC0,
+  LD0 = 0xD0,
   Not,
   Int,
   Float,
@@ -84,7 +84,7 @@ enum class LexemeType: unsigned {
   For,
   Func,
   
-  LD0 = 0xD0,
+  LE0 = 0xE0,
   
   Error
 };
