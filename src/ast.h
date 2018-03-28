@@ -83,10 +83,13 @@ enum class ASTNodeType: unsigned {
   
   If,
   Conditional,
-  
-  AssignExpr = 0x2300,
+
+  DefineExpr = 0x2300,
   
   Define,
+  
+  AssignExpr = 0x2400,
+  
   Assign,
   AddAssign,
   SubAssign,
