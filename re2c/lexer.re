@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <iostream>
+#include <stack>
 
 namespace{
   
@@ -99,6 +100,8 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
   #define YYDEBUG(state, current)
   
   std::vector<Lexeme> lexemes;
+  std::stack<char> br_stack;
+  br_stack.push('{');
   
   uint16_t line = 1;
   const char* line_start = reader;
@@ -134,6 +137,9 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       [ \t\r\v\f]         {continue;}
       
       "\n" {
+        if(br_stack.top() == '{' && isStopLexeme(lexemes.back())){
+          PLACE_LEXEME(LexemeType::Newline);
+        }
         ++line;
         line_start = reader;
         continue;
@@ -187,16 +193,50 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       ">="  {PUT_LEXEME(LexemeType::Geq)}
       "<="  {PUT_LEXEME(LexemeType::Leq)}
       "<=>" {PUT_LEXEME(LexemeType::Cmp)}
-      "("   {PUT_LEXEME(LexemeType::LParen)}
-      ")"   {PUT_LEXEME(LexemeType::RParen)}
-      "{"   {PUT_LEXEME(LexemeType::LBrace)}
-      "}"   {PUT_LEXEME(LexemeType::RBrace)}
-      "["   {PUT_LEXEME(LexemeType::LBracket)}
-      "]"   {PUT_LEXEME(LexemeType::RBracket)}
       ","   {PUT_LEXEME(LexemeType::Comma)}
       //"@"   {PUT_LEXEME(LexemeType::Apply)}
       ";"   {PUT_LEXEME(LexemeType::Semicolon)}
       ":"   {PUT_LEXEME(LexemeType::Colon)}
+      
+      "("   {
+        br_stack.push('(');
+        PUT_LEXEME(LexemeType::LParen)
+      }
+      "{"   {
+        br_stack.push('{');
+        PUT_LEXEME(LexemeType::LBrace)
+      }
+      "["   {
+        br_stack.push('[');
+        PUT_LEXEME(LexemeType::LBracket)
+      }
+      ")"   {
+        if(br_stack.top() == '('){
+          br_stack.pop();
+          PUT_LEXEME(LexemeType::RParen)
+        }else{
+          errors->emplace_back(dynSprintf("line %d: Unexpected ')'.", line));
+          PUT_LEXEME(LexemeType::Error);
+        }
+      }
+      "}"   {
+        if(br_stack.top() == '{'){
+          br_stack.pop();
+          PUT_LEXEME(LexemeType::RBrace)
+        }else{
+          errors->emplace_back(dynSprintf("line %d: Unexpected '}'.", line));
+          PUT_LEXEME(LexemeType::Error);
+        }
+      }
+      "]"   {
+        if(br_stack.top() == '['){
+          br_stack.pop();
+          PUT_LEXEME(LexemeType::RBracket)
+        }else{
+          errors->emplace_back(dynSprintf("line %d: Unexpected ']'.", line));
+          PUT_LEXEME(LexemeType::Error);
+        }
+      }
       
       //keywords
       "null"  {PUT_LEXEME(LexemeType::Null)}
@@ -319,6 +359,9 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "\n" "\n" {
         ++line;
         line_start = reader;
+        if(br_stack.top() == '{' && isStopLexeme(lexemes.back())){
+          PLACE_LEXEME(LexemeType::Newline);
+        }
       }
     */
   }

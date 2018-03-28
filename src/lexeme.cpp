@@ -81,8 +81,6 @@ std::string Lexeme::toStrDebug() const {
     ret += "string: \""s + unquoteString_(this->value.s->str()) + "\""s; break;
   case LexemeType::Identifier:
     ret += "identifier: "s + std::string(this->value.s->str()); break;
-  case LexemeType::Newline:
-    ret += "newline"s; break;
   
   case LexemeType::Plus: ret += "+"s; break;
   case LexemeType::Minus: ret += "-"s; break;
@@ -113,6 +111,7 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::RBracket: ret += "]"s; break;
   case LexemeType::Comma: ret += ","s; break;
   case LexemeType::Semicolon: ret += ";"s; break;
+  case LexemeType::Newline: ret += "\\n"; break;
   case LexemeType::Colon: ret += ":"s; break;
   
   case LexemeType::Not: ret += "not"s; break;

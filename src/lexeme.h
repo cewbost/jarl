@@ -14,7 +14,6 @@ enum class LexemeType: unsigned {
   End = 0,
   
   StopSymbolClass = 0x10,
-  Newline,
   
   RParen,
   RBrace,
@@ -24,6 +23,7 @@ enum class LexemeType: unsigned {
   
   L20 = 0x20,
   Semicolon,
+  Newline,
   
   L30 = 0x30,
   Else,
@@ -114,5 +114,22 @@ struct Lexeme {
   std::string toStrDebug() const;
   #endif
 };
+
+inline bool isStopLexeme(const Lexeme& lex){
+  switch(lex.type){
+  case LexemeType::LParen:
+  case LexemeType::LBrace:
+  case LexemeType::LBracket:
+  case LexemeType::Int:
+  case LexemeType::Float:
+  case LexemeType::Bool:
+  case LexemeType::Identifier:
+  case LexemeType::String:
+  case LexemeType::Null:
+    return true;
+  default:
+    return false;
+  }
+}
 
 #endif
