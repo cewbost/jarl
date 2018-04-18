@@ -57,7 +57,7 @@ void jarl::execute(vm v, const char* code){
   std::cout << parse_tree->toStrDebug() << std::endl;
   #endif
   
-  Function* proc = new Function(parse_tree, &errors);
+  /*Function* proc = new Function(parse_tree, &errors);
   if(errors.size() > 0){
     for(auto& error: errors){
       v->print(error.get());
@@ -73,7 +73,7 @@ void jarl::execute(vm v, const char* code){
   
   return;
   
-  v->execute(*proc);
+  v->execute(*proc);*/
 }
 
 void jarl::set_print_func(vm v, void(*func)(const char*)){

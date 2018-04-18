@@ -13,6 +13,16 @@ namespace std{
   };
 }
 
+Function::Function(
+  std::vector<OpCodeType>&& code,
+  std::vector<TypedValue>&& values,
+  std::vector<std::pair<int, int>>&& code_positions
+):
+  code_(std::move(code)),
+  values_(std::move(values)),
+  code_positions_(std::move(code_positions))
+{}
+
 PartiallyApplied::PartiallyApplied(const Function* func)
 : func_(func), args_(func->arguments), nargs(func->arguments){}
 

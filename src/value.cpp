@@ -11,14 +11,14 @@
 
 namespace{
   
-  inline bool _toInt(String* s, Int* t){
+  inline bool toInt_(String* s, Int* t){
     if(sizeof(Int) == 8){
       return s->toInt64((int64_t*)t);
     }else{
       return s->toInt32((int32_t*)t);
     }
   }
-  inline bool _toFloat(String* s, Float* t){
+  inline bool toFloat_(String* s, Float* t){
     if(sizeof(Float) == 8){
       return s->toDouble((double*)t);
     }else{
@@ -26,13 +26,13 @@ namespace{
     }
   }
   
-  inline Int _add(Int a, Int b){
+  inline Int add_(Int a, Int b){
     return a + b;
   }
-  inline Float _add(Float a, Float b){
+  inline Float add_(Float a, Float b){
     return a + b;
   }
-  inline String* _add(const String* a, const String* b){
+  inline String* add_(const String* a, const String* b){
     return make_new<String>(a, b);
   }
 }
@@ -312,6 +312,7 @@ void TypedValue::sub(const TypedValue& rhs){
       break;
     case TypeTag::Float:
       this->value.float_v -= other->value.float_v;
+      break;
     default:
       goto error;
     }
@@ -1123,7 +1124,7 @@ void TypedValue::toInt(){
     break;
   case TypeTag::String: {
       Int i;
-      if(!_toInt(value->value.string_v, &i)){
+      if(!toInt_(value->value.string_v, &i)){
         goto bad_op_error;
       }
       value->value.string_v->decRefCount();
@@ -1174,7 +1175,7 @@ void TypedValue::toFloat(){
     break;
   case TypeTag::String: {
       Float f;
-      if(!_toFloat(value->value.string_v, &f)){
+      if(!toFloat_(value->value.string_v, &f)){
         goto bad_op_error;
       }
       value->value.string_v->decRefCount();

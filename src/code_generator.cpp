@@ -1,24 +1,50 @@
 #include "function.h"
 
-constexpr OpCodeType stack_pos_local_ = 0x8000;
-constexpr OpCodeType stack_pos_const_ = 0x4000;
+#include "code_generator.h"
 
-void Function::putInstruction_(OpCodeType op, int pos){
-  if(this->code_positions_.back().first != pos){
-    this->code_positions_.emplace_back(pos, this->code_.size());
+using namespace CodeGenerator;
+
+constexpr OpCodeType stack_pos_local = 0x8000;
+constexpr OpCodeType stack_pos_const = 0x4000;
+
+struct ThreadingContext {
+  std::vector<OpCodeType> code;
+  std::vector<std::pair<int, int>> code_positions;
+  
+  std::unique_ptr<VarAllocMap> var_allocs, context_var_allocs;
+  VectorSet<TypedValue> constants;
+  
+  int stack_size;
+  int arguments;
+  
+  std::vector<std::unique_ptr<char[]>> *errors;
+  
+  ThreadingContext(
+    decltype(errors) err,
+    decltype(var_allocs) va = nullptr,
+    decltype(context_var_allocs) cva = nullptr
+  )
+  : var_allocs(std::move(va)),
+    context_var_allocs(std::move(cva)),
+    errors(err),
+    stack_size(0),
+    arguments(0) {}
+  
+  void putInstruction(OpCodeType op, int pos);
+  
+  void threadAST(ASTNode*, ASTNode* = nullptr, bool = true);
+};
+
+void ThreadingContext::putInstruction(OpCodeType op, int pos){
+  if(this->code_positions.back().first != pos){
+    this->code_positions.emplace_back(pos, this->code.size());
   }
-  this->code_.push_back(op);
+  this->code.push_back(op);
 }
 
-void Function::threadAST_(
-  ASTNode* node,
-  std::vector<std::unique_ptr<char[]>>* errors,
-  VarAllocMap* va,
-  VarAllocMap* cva,
-  VectorSet<TypedValue>* vc,
-  int* ss,
-  bool ret
-){
+void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
+  #define D_putInstruction(ins) this->putInstruction(ins, node->pos.first)
+  
   switch(static_cast<ASTNodeType>(static_cast<unsigned>(node->type) & ~0xff)){
   case ASTNodeType::Error:
     assert(false);
@@ -29,46 +55,41 @@ void Function::threadAST_(
     switch(node->type){
     case ASTNodeType::Bool:
       if(node->bool_value){
-        this->putInstruction_(Op::PushTrue, node->pos.first);
+        D_putInstruction(Op::PushTrue);
       }else{
-        this->putInstruction_(Op::PushFalse, node->pos.first);
+        D_putInstruction(Op::PushFalse);
       }
       break;
     case ASTNodeType::Int:
       if(node->int_value <= std::numeric_limits<OpCodeSignedType>::max()
       && node->int_value >= std::numeric_limits<OpCodeSignedType>::min()){
-        this->putInstruction_(Op::Push | Op::Extended | Op::Int, node->pos.first);
-        this->putInstruction_(
-          static_cast<OpCodeType>(node->int_value), node->pos.first
-        );
+        D_putInstruction(Op::Push | Op::Extended | Op::Int);
+        D_putInstruction(static_cast<OpCodeType>(node->int_value));
       }else{
-        this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
-        this->putInstruction_(
-          (OpCodeType)(vc->emplace(node->int_value) | stack_pos_const_),
-          node->pos.first
+        D_putInstruction(Op::Push | Op::Extended);
+        D_putInstruction(
+          (OpCodeType)(constants.emplace(node->int_value) | stack_pos_const)
         );
       }
       break;
     case ASTNodeType::Float:
-      this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
-      this->putInstruction_(
-        (OpCodeType)(vc->emplace(node->float_value) | stack_pos_const_),
-        node->pos.first
+      D_putInstruction(Op::Push | Op::Extended);
+      D_putInstruction(
+        (OpCodeType)(constants.emplace(node->float_value) | stack_pos_const)
       );
       break;
     case ASTNodeType::String:
-      this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
-      this->putInstruction_(
-        (OpCodeType)(vc->emplace(node->string_value) | stack_pos_const_),
-        node->pos.first
+      D_putInstruction(Op::Push | Op::Extended);
+      D_putInstruction(
+        (OpCodeType)(constants.emplace(node->string_value) | stack_pos_const)
       );
       break;
     case ASTNodeType::Identifier:
       {
-        this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
-        auto it = va->find(node->string_value);
-        if(it == va->end()){
-          if(cva == nullptr){
+        D_putInstruction(Op::Push | Op::Extended);
+        auto it = var_allocs->find(node->string_value);
+        if(it == var_allocs->end()){
+          if(context_var_allocs == nullptr){
             errors->emplace_back(dynSprintf(
               "line %d: Undeclared identifier '%s'.",
               node->pos.first,
@@ -77,9 +98,9 @@ void Function::threadAST_(
             break;
           }
           
-          it = cva->find(node->string_value);
+          it = context_var_allocs->find(node->string_value);
           
-          if(it == cva->end()){
+          if(it == context_var_allocs->end()){
             errors->emplace_back(dynSprintf(
               "line %d: Undeclared identifier '%s'.",
               node->pos.first,
@@ -88,171 +109,162 @@ void Function::threadAST_(
             break;
           }
           
-          va->base()[node->string_value] = this->arguments;
-          this->putInstruction_(this->arguments, node->pos.first);
-          ++this->arguments;
+          var_allocs->base()[node->string_value] = arguments;
+          D_putInstruction(arguments);
+          ++arguments;
         }else{
-          this->putInstruction_(it->second, node->pos.first);
+          D_putInstruction(it->second);
         }
       }
       break;
     case ASTNodeType::Null:
-      this->putInstruction_(Op::Push, node->pos.first);
+      D_putInstruction(Op::Push);
       break;
     default:
       assert(false);
     }
-    ++(*ss);
+    ++stack_size;
     break;
     
   case ASTNodeType::UnaryExpr:
-    this->threadAST_(node->child, errors, va, cva, vc, ss);
+    threadAST(node->child, node);
     switch(node->type){
     case ASTNodeType::Neg:
-      this->putInstruction_(Op::Neg, node->pos.first);
+      D_putInstruction(Op::Neg);
       break;
     case ASTNodeType::Not:
-      this->putInstruction_(Op::Not, node->pos.first);
+      D_putInstruction(Op::Not);
       break;
     default:
       assert(false);
     }
     if(!ret){
-      this->putInstruction_(Op::Pop, node->pos.first);
-      --(*ss);
+      D_putInstruction(Op::Pop);
+      --stack_size;
     }
     break;
     
   case ASTNodeType::BinaryExpr:
-    this->threadAST_(node->children.first, errors, va, cva, vc, ss);
-    this->threadAST_(node->children.second, errors, va, cva, vc, ss);
+    threadAST(node->children.first, node);
+    threadAST(node->children.second, node);
     switch(node->type){
     case ASTNodeType::Apply:
-      this->putInstruction_(Op::Apply, node->pos.first);
+      D_putInstruction(Op::Apply);
       break;
       
     case ASTNodeType::Add:
-      this->putInstruction_(Op::Add, node->pos.first);
+      D_putInstruction(Op::Add);
       break;
     case ASTNodeType::Sub:
-      this->putInstruction_(Op::Sub, node->pos.first);
+      D_putInstruction(Op::Sub);
       break;
     case ASTNodeType::Mul:
-      this->putInstruction_(Op::Mul, node->pos.first);
+      D_putInstruction(Op::Mul);
       break;
     case ASTNodeType::Div:
-      this->putInstruction_(Op::Div, node->pos.first);
+      D_putInstruction(Op::Div);
       break;
     case ASTNodeType::Mod:
-      this->putInstruction_(Op::Mod, node->pos.first);
+      D_putInstruction(Op::Mod);
       break;
     case ASTNodeType::Append:
-      this->putInstruction_(Op::Append, node->pos.first);
+      D_putInstruction(Op::Append);
       break;
       
     case ASTNodeType::Cmp:
-      this->putInstruction_(Op::Cmp, node->pos.first);
+      D_putInstruction(Op::Cmp);
       break;
     case ASTNodeType::Eq:
-      this->putInstruction_(Op::Eq, node->pos.first);
+      D_putInstruction(Op::Eq);
       break;
     case ASTNodeType::Neq:
-      this->putInstruction_(Op::Neq, node->pos.first);
+      D_putInstruction(Op::Neq);
       break;
     case ASTNodeType::Gt:
-      this->putInstruction_(Op::Gt, node->pos.first);
+      D_putInstruction(Op::Gt);
       break;
     case ASTNodeType::Lt:
-      this->putInstruction_(Op::Lt, node->pos.first);
+      D_putInstruction(Op::Lt);
       break;
     case ASTNodeType::Geq:
-      this->putInstruction_(Op::Geq, node->pos.first);
+      D_putInstruction(Op::Geq);
       break;
     case ASTNodeType::Leq:
-      this->putInstruction_(Op::Leq, node->pos.first);
+      D_putInstruction(Op::Leq);
       break;
-      
+    
     default:
       assert(false);
     }
     if(!ret){
-      this->putInstruction_(Op::Pop, node->pos.first);
-      *ss -= 2;
-    }else --(*ss);
+      D_putInstruction(Op::Pop);
+      stack_size -= 2;
+    }else --stack_size;
     break;
     
   case ASTNodeType::BranchExpr:
     {
       unsigned jmp_addr;
-      this->threadAST_(node->children.first, errors, va, cva, vc, ss);
+      threadAST(node->children.first, node);
       
       switch(node->type){
       case ASTNodeType::And:
-        this->putInstruction_(Op::Jfsc | Op::Extended, node->pos.first);
-        jmp_addr = this->code_.size();
-        this->putInstruction_((OpCodeType)0, node->pos.first);
-        this->threadAST_(node->children.second, errors, va, cva, vc, ss);
-        this->code_[jmp_addr] = (OpCodeType)this->code_.size() - 1;
+        D_putInstruction(Op::Jfsc | Op::Extended);
+        jmp_addr = code.size();
+        D_putInstruction((OpCodeType)0);
+        threadAST(node->children.second, node);
+        code[jmp_addr] = (OpCodeType)code.size() - 1;
         
         if(!ret){
-          this->putInstruction_(Op::Pop, node->pos.first);
-          --(*ss);
+          D_putInstruction(Op::Pop);
+          --stack_size;
         }
         break;
       case ASTNodeType::Or:
-        this->putInstruction_(Op::Jtsc | Op::Extended, node->pos.first);
-        jmp_addr = this->code_.size();
-        this->putInstruction_((OpCodeType)0, node->pos.first);
-        this->threadAST_(node->children.second, errors, va, cva, vc, ss);
-        this->code_[jmp_addr] = (OpCodeType)this->code_.size() - 1;
+        D_putInstruction(Op::Jtsc | Op::Extended);
+        jmp_addr = code.size();
+        D_putInstruction((OpCodeType)0);
+        threadAST(node->children.second, node);
+        code[jmp_addr] = (OpCodeType)code.size() - 1;
         
         if(!ret){
-          this->putInstruction_(Op::Pop, node->pos.first);
-          --(*ss);
+          D_putInstruction(Op::Pop);
+          --stack_size;
         }
         break;
         
       case ASTNodeType::Conditional:
         assert(node->children.second->type == ASTNodeType::Branch);
         
-        this->putInstruction_(Op::Jf | Op::Extended, node->pos.first);
-        jmp_addr = this->code_.size();
-        this->putInstruction_((OpCodeType)0, node->pos.first);
-        --(*ss);
+        D_putInstruction(Op::Jf | Op::Extended);
+        jmp_addr = code.size();
+        D_putInstruction((OpCodeType)0);
+        --stack_size;
         
-        this->threadAST_(
-          node->children.second->children.first,
-          errors, va, cva, vc, ss, ret
-        );
-        --(*ss);
+        threadAST(node->children.second->children.first, node);
+        --stack_size;
         
-        this->code_[jmp_addr] = (OpCodeType)this->code_.size() + 1;
+        code[jmp_addr] = (OpCodeType)code.size() + 1;
         
         if(ret){
-          this->putInstruction_(Op::Jmp | Op::Extended, node->pos.first);
-          jmp_addr = this->code_.size();
-          this->putInstruction_((OpCodeType)0, node->pos.first);
+          D_putInstruction(Op::Jmp | Op::Extended);
+          jmp_addr = code.size();
+          D_putInstruction((OpCodeType)0);
           if(node->children.second->children.second->type == ASTNodeType::Nop){
-            this->putInstruction_(Op::Push, node->pos.first);
-            ++(*ss);
+            D_putInstruction(Op::Push);
+            ++stack_size;
           }else{
-            this->threadAST_(
-              node->children.second->children.second,
-              errors, va, cva, vc, ss
-            );
+            threadAST(node->children.second->children.second, node);
           }
-          this->code_[jmp_addr] = (OpCodeType)this->code_.size() + 1;
+          code[jmp_addr] = (OpCodeType)code.size() + 1;
         }else if(node->children.second->children.second->type != ASTNodeType::Nop){
-          this->putInstruction_(Op::Jmp | Op::Extended, node->pos.first);
-          jmp_addr = this->code_.size();
-          this->putInstruction_((OpCodeType)0, node->pos.first);
+          D_putInstruction(Op::Jmp | Op::Extended);
+          jmp_addr = code.size();
+          D_putInstruction((OpCodeType)0);
           
-          this->threadAST_(
-            node->children.second->children.second,
-            errors, va, cva, vc, ss, false
-          );
+          threadAST(node->children.second->children.second, node);
           
-          this->code_[jmp_addr] = (OpCodeType)this->code_.size() + 1;
+          code[jmp_addr] = (OpCodeType)code.size() + 1;
         }
         break;
         
@@ -270,23 +282,22 @@ void Function::threadAST_(
         );
       }
       
-      auto stack_size = *ss;
-      this->threadAST_(node->string_branch.next, errors, va, cva, vc, ss);
-      auto it = va->direct().find(node->string_branch.value);
-      if(it != va->direct().end()){
-        this->putInstruction_(Op::Write | Op::Extended | Op::Dest, node->pos.first);
-        this->putInstruction_(it->second, node->pos.first);
+      auto old_stack_size = stack_size;
+      threadAST(node->string_branch.next, node);
+      auto it = var_allocs->direct().find(node->string_branch.value);
+      if(it != var_allocs->direct().end()){
+        D_putInstruction(Op::Write | Op::Extended | Op::Dest);
+        D_putInstruction(it->second);
         if(ret){
-          this->putInstruction_(Op::Push | Op::Extended | Op::Dest, node->pos.first);
-          this->putInstruction_(it->second, node->pos.first);
-        }else{
-          --(*ss);
-        }
+          D_putInstruction(Op::Push | Op::Extended | Op::Dest);
+          D_putInstruction(it->second);
+        }else --stack_size;
       }else{
-        va->direct()[node->string_branch.value] = stack_size | stack_pos_local_;
+        var_allocs->direct()[node->string_branch.value] =
+          old_stack_size | stack_pos_local;
       }
     }
-  
+    
   case ASTNodeType::AssignExpr:
     {
       if(node->children.first->type != ASTNodeType::Identifier){
@@ -295,41 +306,41 @@ void Function::threadAST_(
         );
       }
       
-      auto stack_pos = (OpCodeType)(*va)[node->children.first->string_value];
-      this->threadAST_(node->children.second, errors, va, cva, vc, ss);
+      auto stack_pos = (OpCodeType)(*var_allocs)[node->children.first->string_value];
+      threadAST(node->children.second, node);
       switch(node->type){
       case ASTNodeType::Assign:
-        this->putInstruction_(Op::Write | Op::Extended | Op::Dest, node->pos.first);
+        D_putInstruction(Op::Write | Op::Extended | Op::Dest);
         break;
       case ASTNodeType::AddAssign:
-        this->putInstruction_(Op::Add | Op::Extended | Op::Dest, node->pos.first);
+        D_putInstruction(Op::Add | Op::Extended | Op::Dest);
         break;
       case ASTNodeType::SubAssign:
-        this->putInstruction_(Op::Sub | Op::Extended | Op::Dest, node->pos.first);
+        D_putInstruction(Op::Sub | Op::Extended | Op::Dest);
         break;
       case ASTNodeType::MulAssign:
-        this->putInstruction_(Op::Mul | Op::Extended | Op::Dest, node->pos.first);
+        D_putInstruction(Op::Mul | Op::Extended | Op::Dest);
         break;
       case ASTNodeType::DivAssign:
-        this->putInstruction_(Op::Div | Op::Extended | Op::Dest, node->pos.first);
+        D_putInstruction(Op::Div | Op::Extended | Op::Dest);
         break;
       case ASTNodeType::ModAssign:
-        this->putInstruction_(Op::Mod | Op::Extended | Op::Dest, node->pos.first);
+        D_putInstruction(Op::Mod | Op::Extended | Op::Dest);
         break;
       case ASTNodeType::AppendAssign:
-        this->putInstruction_(Op::Append | Op::Extended | Op::Dest, node->pos.first);
+        D_putInstruction(Op::Append | Op::Extended | Op::Dest);
         break;
         
       default:
         assert(false);
       }
       
-      this->putInstruction_(stack_pos, node->pos.first);
+      D_putInstruction(stack_pos);
       if(ret){
-        this->putInstruction_(Op::Push | Op::Extended | Op::Dest, node->pos.first);
-        this->putInstruction_(stack_pos, node->pos.first);
+        D_putInstruction(Op::Push | Op::Extended | Op::Dest);
+        D_putInstruction(stack_pos);
       }else{
-        --(*ss);
+        --stack_size;
       }
     }
     break;
@@ -337,106 +348,97 @@ void Function::threadAST_(
   default:
     switch(node->type){
     case ASTNodeType::CodeBlock:
-      {
-        VarAllocMap* var_allocs = new VarAllocMap(va);
-        this->threadAST_(node->children.first, errors, var_allocs, cva, vc, ss);
-        var_allocs->set_delegate(nullptr);
-        if(ret){
-          if(var_allocs->size() > 0){
-            if(var_allocs->size() == 1){
-              this->putInstruction_(Op::Reduce, node->pos.first);
-            }else{
-              this->putInstruction_(Op::Reduce | Op::Extended, node->pos.first);
-              this->putInstruction_(
-                static_cast<OpCodeType>(var_allocs->size()), node->pos.first
-              );
-            }
-            *ss -= var_allocs->size();
-          }
-        }else{
-          if(var_allocs->size() == 0){
-            this->putInstruction_(Op::Pop, node->pos.first);
+      
+      var_allocs.reset(new VarAllocMap(var_allocs.release()));
+      threadAST(node->children.first, node);
+      
+      if(auto size = var_allocs->direct().size(); ret){
+        if(size > 0){
+          if(size == 1){
+            D_putInstruction(Op::Reduce);
           }else{
-            this->putInstruction_(Op::Pop | Op::Extended, node->pos.first);
-            this->putInstruction_(
-              static_cast<OpCodeType>(var_allocs->size() + 1), node->pos.first
-            );
+            D_putInstruction(Op::Reduce | Op::Extended);
+            D_putInstruction(static_cast<OpCodeType>(size));
           }
+          stack_size -= size;
         }
-        delete var_allocs;
+      }else{
+        if(size == 0){
+          D_putInstruction(Op::Pop);
+        }else{
+          D_putInstruction(Op::Pop | Op::Extended);
+          D_putInstruction(static_cast<OpCodeType>(size + 1));
+        }
       }
+      
+      var_allocs.reset(var_allocs->get_delegate());
+      
       break;
       
     case ASTNodeType::Array:
-      {
-        if(!ret) break;
-        
-        if(node->child->type != ASTNodeType::Nop){
-          if(node->child->type == ASTNodeType::ExprList){
-            ASTNode* t = node->child;
-            OpCodeType elems = 0;
-            
-            for(;;){
-              this->threadAST_(t->children.first, errors, va, cva, vc, ss);
+      
+      if(!ret) break;
+      
+      if(node->child->type != ASTNodeType::Nop){
+        if(node->child->type == ASTNodeType::ExprList){
+          ASTNode* t = node->child;
+          OpCodeType elems = 0;
+          
+          for(;;){
+            threadAST(t->children.first, node);
+            ++elems;
+            if(t->children.second->type == ASTNodeType::ExprList){
+              t = t->children.second;
+            }else{
+              threadAST(t->children.second, node);
               ++elems;
-              if(t->children.second->type == ASTNodeType::ExprList){
-                t = t->children.second;
-              }else{
-                this->threadAST_(t->children.second, errors, va, cva, vc, ss);
-                ++elems;
-                break;
-              }
+              break;
             }
-            
-            this->putInstruction_(
-              Op::CreateArray | Op::Extended | Op::Int,
-              node->pos.first
-            );
-            this->putInstruction_(elems, node->pos.first);
-            *ss -= elems - 1;
-          }else if(node->child->type == ASTNodeType::Range){
-            this->threadAST_(node->child->children.first, errors, va, cva, vc, ss);
-            this->threadAST_(node->child->children.second, errors, va, cva, vc, ss);
-            this->putInstruction_(Op::CreateRange, node->pos.first);
-            --(*ss);
-          }else{
-            this->threadAST_(node->child, errors, va, cva, vc, ss);
-            this->putInstruction_(
-              Op::CreateArray | Op::Extended | Op::Int,
-              node->pos.first
-            );
-            this->putInstruction_(1, node->pos.first);
           }
+          
+          D_putInstruction(Op::CreateArray | Op::Extended | Op::Int);
+          D_putInstruction(elems);
+          stack_size -= elems - 1;
+        }else if(node->child->type == ASTNodeType::Range){
+          threadAST(node->child->children.first, node);
+          threadAST(node->child->children.second, node);
+          D_putInstruction(Op::CreateRange);
+          --stack_size;
         }else{
-          this->putInstruction_(Op::CreateArray, node->pos.first);
-          ++(*ss);
+          threadAST(node->child, node);
+          D_putInstruction(Op::CreateArray | Op::Extended | Op::Int);
+          D_putInstruction(1);
         }
+      }else{
+        D_putInstruction(Op::CreateArray);
+        ++stack_size;
       }
+      
       break;
       
     case ASTNodeType::While:
       {
         if(ret){
-          this->putInstruction_(Op::Push, node->pos.first);
-          ++(*ss);
+          D_putInstruction(Op::Push);
+          ++stack_size;
         }
-        unsigned begin_addr = this->code_.size() - 1;
+        unsigned begin_addr = code.size() - 1;
         
-        this->threadAST_(node->children.first, errors, va, cva, vc, ss);
+        threadAST(node->children.first, node);
         
-        this->putInstruction_(Op::Jf | Op::Extended, node->pos.first);
-        --(*ss);
-        unsigned end_jmp_addr = this->code_.size();
-        this->putInstruction_((OpCodeType)0, node->pos.first);
+        D_putInstruction(Op::Jf | Op::Extended);
+        --stack_size;
+        unsigned end_jmp_addr = code.size();
+        D_putInstruction((OpCodeType)0);
         
-        this->threadAST_(node->children.second, errors, va, cva, vc, ss, ret);
+        threadAST(node->children.second, node);
         if(ret){
-          this->putInstruction_(Op::Reduce, node->pos.first);
-          --(*ss);
+          D_putInstruction(Op::Reduce);
+          --stack_size;
         }
-        this->putInstruction_(Op::Jmp | Op::Extended, node->pos.first);
-        this->code_[end_jmp_addr] = (OpCodeType)this->code_.size();
-        this->putInstruction_((OpCodeType)begin_addr, node->pos.first);
+        D_putInstruction(Op::Jmp | Op::Extended);
+        code[end_jmp_addr] = (OpCodeType)code.size();
+        D_putInstruction((OpCodeType)begin_addr);
       }
       break;
       
@@ -445,6 +447,9 @@ void Function::threadAST_(
         //some checking might be nessecary for the function being well formed
         
         if(!ret) break;
+        
+        //Do something
+        /*if(!ret) break;
         
         VarAllocMap* var_alloc = new VarAllocMap(nullptr);
         
@@ -461,84 +466,70 @@ void Function::threadAST_(
         delete node->children.first;
         node->children.first = nullptr;
         
-        auto* func = new Function(node->children.second, errors, var_alloc, va);
+        auto* func = new Function(node->children.second, errors, var_alloc, var_allocs);
         
         node->children.second = nullptr;
         this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
         this->putInstruction_(
-          (OpCodeType)vc->emplace(func) | stack_pos_const_,
+          (OpCodeType)constants.emplace(func) | stack_pos_const_,
           node->pos.first
         );
-        ++(*ss);
+        ++(*stack_size);
         
         if(func->arguments > std_args){
           VectorMapBase& base = var_alloc->base();
           for(int i = std_args; i < func->arguments; ++i){
             this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
-            this->putInstruction_((*va)[base[i].first], node->pos.first);
+            this->putInstruction_((*var_allocs)[base[i].first], node->pos.first);
             this->putInstruction_(Op::Apply | Op::Extended | Op::Int, node->pos.first);
             this->putInstruction_((OpCodeType)std_args, node->pos.first);
           }
         }
-        delete var_alloc;
+        delete var_alloc;*/
       }
       break;
       
     case ASTNodeType::Seq:
-      this->threadAST_(node->children.first, errors, va, cva, vc, ss, false);
-      this->threadAST_(node->children.second, errors, va, cva, vc, ss);
+      threadAST(node->children.first, node, false);
+      threadAST(node->children.second);
       break;
       
     case ASTNodeType::VarDecl:
-      {
-        auto stack_size = *ss;
-        this->threadAST_(node->string_branch.next, errors, va, cva, vc, ss);
-        va->direct()[node->string_branch.value]
-          = stack_size | stack_pos_local_;
-      }
+      assert(false);
       break;
       
     case ASTNodeType::Print:
-      {
-        this->threadAST_(node->child, errors, va, cva, vc, ss);
-        this->putInstruction_(Op::Print, node->pos.first);
-      }
+      threadAST(node->child, node);
+      D_putInstruction(Op::Print);
       break;
       
     case ASTNodeType::Index:
       {
-        this->threadAST_(node->children.first, errors, va, cva, vc, ss);
+        threadAST(node->children.first, node);
         
         if(node->children.second->type == ASTNodeType::Range){
-          this->threadAST_(
-            node->children.second->children.first,
-            errors, va, cva, vc, ss
-          );
-          this->threadAST_(
-            node->children.second->children.second,
-            errors, va, cva, vc, ss
-          );
-          this->putInstruction_(Op::Slice, node->pos.first);
+          threadAST(node->children.second->children.first, node);
+          threadAST(node->children.second->children.second, node);
+          D_putInstruction(Op::Slice);
         }else{
-          this->threadAST_(node->children.second, errors, va, cva, vc, ss);
-          this->putInstruction_(Op::Get, node->pos.first);
+          threadAST(node->children.second, node);
+          D_putInstruction(Op::Get);
         }
         
         if(!ret){
-          this->putInstruction_(Op::Pop, node->pos.first);
-          *ss -= 2;
-        }else --(*ss);
+          D_putInstruction(Op::Pop);
+          stack_size -= 2;
+        }else --stack_size;
       }
       break;
       
     case ASTNodeType::Nop:
-      this->putInstruction_(Op::Push, node->pos.first);
+      D_putInstruction(Op::Push);
       break;
       
     case ASTNodeType::Range:
       errors->emplace_back(dynSprintf(
-        "line %d: Range generators not yet supported.",
-        node->pos.first
+        "line %d: Range generators not yet supported.", node->pos.first
       ));
       break;
       
@@ -546,57 +537,65 @@ void Function::threadAST_(
       assert(false);
     }
   }
+  
+  #undef D_putInstruction
 }
 
-Function::Function(
-  ASTNode* tree,
-  std::vector<std::unique_ptr<char[]>>* errors,
-  VarAllocMap* var_alloc,
-  VarAllocMap* context_vars
-){
-  //thread AST
-  bool var_allocs = false;
-  if(var_alloc){
-    this->arguments = var_alloc->size();
-    var_allocs = true;
-  }else{
-    this->arguments = 0;
-    var_alloc = new VarAllocMap(nullptr);
-  }
+namespace CodeGenerator {
   
-  VectorSet<TypedValue> constants;
-  int stack_size = 0;
-  
-  auto pos = tree->pos.first;
-  this->code_positions_.emplace_back(pos, 0);
-  this->threadAST_(tree, errors, var_alloc, context_vars, &constants, &stack_size);
-  this->putInstruction_(Op::Return, pos);
-  
-  delete tree;
-  if(!var_allocs) delete var_alloc;
-  
-  //correct stack positions
-  int extended = 0;
-  for(auto& op: this->code_){
-    if(extended == 0){
-      if(op & Op::Extended){
-        if(op & Op::Int){
-          extended = 1;
-        }else{
-          extended = 2;
+  Function* generate(
+    std::unique_ptr<ASTNode> parse_tree,
+    std::vector<std::unique_ptr<char[]>>* errors,
+    std::unique_ptr<VarAllocMap> var_allocs,
+    std::unique_ptr<VarAllocMap> context_var_allocs
+  ){
+    int args;
+    bool va = false;
+    
+    if(var_allocs){
+      args = var_allocs->size();
+      va = true;
+    }else{
+      args = 0;
+      var_allocs.reset(new VarAllocMap(nullptr));
+    }
+    
+    ThreadingContext context(
+      errors,
+      std::move(var_allocs),
+      std::move(context_var_allocs)
+    );
+    
+    auto pos = parse_tree->pos.first;
+    context.code_positions.emplace_back(pos, 0);
+    context.threadAST(parse_tree.get());
+    if(!errors->empty()) return nullptr;
+    context.putInstruction(Op::Return, pos);
+    
+    //correct stack positions
+    int extended = 0;
+    for(auto& op: context.code){
+      if(extended == 0){
+        if(op & Op::Extended){
+          if(op & Op::Int) extended = 1;
+          else extended = 2;
+        }
+      }else if(extended == 1){
+        extended = 0;
+      }else{
+        extended = 0;
+        if(op & stack_pos_local){
+          op = (op & ~stack_pos_local) + context.constants.size() + args;
+        }else if(op & stack_pos_const){
+          op = (op & ~stack_pos_const) + args;
         }
       }
-    }else if(extended == 1){
-      extended = 0;
-    }else{
-      extended = 0;
-      if(op & stack_pos_local_){
-        op = (op & ~stack_pos_local_) + constants.size() + this->arguments;
-      }else if(op & stack_pos_const_){
-        op = (op & ~stack_pos_const_) + this->arguments;
-      }
     }
+    
+    return new Function(
+      std::move(context.code),
+      std::move(context.constants),
+      std::move(context.code_positions)
+    );
   }
-  
-  this->values_ = std::move(constants);
 }
