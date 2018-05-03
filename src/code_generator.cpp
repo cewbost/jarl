@@ -11,7 +11,7 @@ struct ThreadingContext {
   std::vector<OpCodeType> code;
   std::vector<std::pair<int, int>> code_positions;
   
-  std::unique_ptr<VarAllocMap> var_allocs, context_var_allocs;
+  VarAllocMap *var_allocs, *context_var_allocs;
   VectorSet<TypedValue> constants;
   
   int stack_size;
@@ -25,7 +25,7 @@ struct ThreadingContext {
     decltype(context_var_allocs) cva = nullptr
   )
   : var_allocs(std::move(va)),
-    context_var_allocs(std::move(cva)),
+    context_var_allocs(cva),
     errors(err),
     stack_size(0),
     arguments(0) {}
@@ -349,7 +349,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
     switch(node->type){
     case ASTNodeType::CodeBlock:
       
-      var_allocs.reset(new VarAllocMap(var_allocs.release()));
+      var_allocs = new VarAllocMap(var_allocs);
       threadAST(node->children.first, node);
       
       if(auto size = var_allocs->direct().size(); ret){
@@ -371,7 +371,11 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
         }
       }
       
-      var_allocs.reset(var_allocs->get_delegate());
+      {
+        auto old_allocs = var_allocs;
+        var_allocs = var_allocs->get_delegate();
+        delete old_allocs;
+      }
       
       break;
       
@@ -448,44 +452,42 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
         
         if(!ret) break;
         
-        //Do something
-        /*if(!ret) break;
-        
-        VarAllocMap* var_alloc = new VarAllocMap(nullptr);
-        
+        auto var_alloc = new VarAllocMap(nullptr);
         OpCodeType std_args = 0;
-        if(node->children.first->type != ASTNodeType::Nop){
-          ASTNode* t = node->children.first;
-          do{
-            (*var_alloc)[t->string_branch.value] = std_args;
-            ++std_args;
-            t = t->string_branch.next;
-          }while(t->type != ASTNodeType::Nop);
-        }
-        
-        delete node->children.first;
-        node->children.first = nullptr;
-        
-        auto* func = new Function(node->children.second, errors, var_alloc, var_allocs);
-        
-        node->children.second = nullptr;
-        this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
-        this->putInstruction_(
-          (OpCodeType)constants.emplace(func) | stack_pos_const_,
-          node->pos.first
-        );
-        ++(*stack_size);
-        
-        if(func->arguments > std_args){
-          VectorMapBase& base = var_alloc->base();
-          for(int i = std_args; i < func->arguments; ++i){
-            this->putInstruction_(Op::Push | Op::Extended, node->pos.first);
-            this->putInstruction_((*var_allocs)[base[i].first], node->pos.first);
-            this->putInstruction_(Op::Apply | Op::Extended | Op::Int, node->pos.first);
-            this->putInstruction_((OpCodeType)std_args, node->pos.first);
+        for(
+          auto it = node->children.first->exprListIterator();
+          it != node->children.second->exprListIteratorEnd();
+          ++it
+        ){
+          if(it->type == ASTNodeType::Identifier){
+            (*var_alloc)[it->string_value] = std_args++;
+          }else{
+            errors->emplace_back(dynSprintf(
+              "line %d: Invalid function parameter",
+              node->pos.first
+            ));
+            break;
           }
         }
-        delete var_alloc;*/
+        
+        auto func = generate(node->children.second, errors, var_alloc, var_allocs);
+        
+        node->children.second = nullptr;
+        D_putInstruction(Op::Push | Op::Extended);
+        D_putInstruction((OpCodeType)constants.emplace(func) | stack_pos_const);
+        ++stack_size;
+        
+        if(func->arguments > std_args){
+          auto& base = static_cast<VectorMapBase&>(var_alloc->base());
+          for(int i = std_args; i < func->arguments; ++i){
+            D_putInstruction(Op::Push | Op::Extended);
+            D_putInstruction((*var_allocs)[base[i].first]);
+            D_putInstruction(Op::Apply | Op::Extended | Op::Int);
+            D_putInstruction((OpCodeType)std_args);
+          }
+        }
+        
+        delete var_alloc;
       }
       break;
       
@@ -544,31 +546,34 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
 namespace CodeGenerator {
   
   Function* generate(
-    std::unique_ptr<ASTNode> parse_tree,
-    std::vector<std::unique_ptr<char[]>>* errors,
-    std::unique_ptr<VarAllocMap> var_allocs,
-    std::unique_ptr<VarAllocMap> context_var_allocs
+    ASTNode* parse_tree,
+    std::vector<std::unique_ptr<char[]>>* errors
   ){
-    int args;
-    bool va = false;
+    VarAllocMap* var_allocs = new VarAllocMap(nullptr);
+    auto ret = generate(parse_tree, errors, var_allocs);
+    delete var_allocs;
+    return ret;
+  }
+  
+  Function* generate(
+    ASTNode* parse_tree,
+    std::vector<std::unique_ptr<char[]>>* errors,
+    VarAllocMap* var_allocs,
+    VarAllocMap* context_var_allocs
+  ){
+    assert(var_allocs != nullptr);
     
-    if(var_allocs){
-      args = var_allocs->size();
-      va = true;
-    }else{
-      args = 0;
-      var_allocs.reset(new VarAllocMap(nullptr));
-    }
+    int args = var_allocs->size();
     
     ThreadingContext context(
       errors,
       std::move(var_allocs),
-      std::move(context_var_allocs)
+      context_var_allocs
     );
     
     auto pos = parse_tree->pos.first;
     context.code_positions.emplace_back(pos, 0);
-    context.threadAST(parse_tree.get());
+    context.threadAST(parse_tree);
     if(!errors->empty()) return nullptr;
     context.putInstruction(Op::Return, pos);
     
@@ -591,6 +596,8 @@ namespace CodeGenerator {
         }
       }
     }
+    
+    delete parse_tree;
     
     return new Function(
       std::move(context.code),
