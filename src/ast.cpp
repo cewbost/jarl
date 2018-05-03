@@ -20,15 +20,6 @@ ASTNode::ASTNode(
   this->children.first = child1;
   this->children.second = child2;
 }
-ASTNode::ASTNode(
-  ASTNodeType type,
-  String* str,
-  ASTNode* nex,
-  std::pair<uint16_t, uint16_t> pos
-): type(type), pos(pos){
-  this->string_branch.value = str;
-  this->string_branch.next = nex;
-}
 
 ASTNode::ASTNode(ASTNodeType type, Int i, std::pair<uint16_t, uint16_t> pos)
 : type(type), pos(pos){
@@ -65,9 +56,6 @@ ASTNode::~ASTNode(){
   case ASTNodeType::TwoChildren:
     delete this->children.first;
     delete this->children.second;
-    break;
-  case ASTNodeType::StringBranch:
-    delete this->string_branch.next;
     break;
   default:
     assert(false);
@@ -137,8 +125,6 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "string"; break;
   case ASTNodeType::Identifier:
     ret += "identifier"; break;
-  case ASTNodeType::IdentifierList:
-    ret += "identifier list"; break;
   case ASTNodeType::Neg:
     ret += "-"; break;
   case ASTNodeType::Not:
@@ -201,8 +187,6 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "if"; break;
   case ASTNodeType::Else:
     ret += "else"; break;
-  case ASTNodeType::While:
-    ret += "while"; break;
   case ASTNodeType::For:
     ret += "for"; break;
   case ASTNodeType::CodeBlock:
@@ -269,12 +253,6 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "\n";
     ret += this->children.first->toStrDebug(indent + 1);
     ret += this->children.second->toStrDebug(indent + 1);
-    break;
-  case ASTNodeType::StringBranch:
-    ret += ": ";
-    ret += this->string_branch.value->str();
-    ret += "\n";
-    ret += this->string_branch.next->toStrDebug(indent + 1);
     break;
   default:
     assert(false);

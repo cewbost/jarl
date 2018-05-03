@@ -47,7 +47,6 @@ enum class ASTNodeType: unsigned {
   Seq,
   Branch,
   Else,
-  While,
   For,
   
   Index,
@@ -97,10 +96,6 @@ enum class ASTNodeType: unsigned {
   DivAssign,
   ModAssign,
   AppendAssign,
-  
-  StringBranch = 0x3000,
-  
-  IdentifierList
 };
 
 struct ASTNode {
@@ -118,17 +113,11 @@ struct ASTNode {
     String* string_value;
     bool bool_value;
     const char* c_str_value;
-    
-    struct {
-      ASTNode* next;
-      String* value;
-    } string_branch;
   };
   
   ASTNode(ASTNodeType, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, ASTNode*, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, ASTNode*, ASTNode*, std::pair<uint16_t, uint16_t>);
-  ASTNode(ASTNodeType, String*, ASTNode*, std::pair<uint16_t, uint16_t>);
   
   ASTNode(ASTNodeType, Int, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, Float, std::pair<uint16_t, uint16_t>);

@@ -115,9 +115,9 @@ struct Lexeme {
 
 inline bool isStopLexeme(const Lexeme& lex){
   switch(lex.type){
-  case LexemeType::LParen:
-  case LexemeType::LBrace:
-  case LexemeType::LBracket:
+  case LexemeType::RParen:
+  case LexemeType::RBrace:
+  case LexemeType::RBracket:
   case LexemeType::Int:
   case LexemeType::Float:
   case LexemeType::Bool:

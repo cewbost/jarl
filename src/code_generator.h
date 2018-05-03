@@ -14,12 +14,6 @@ namespace CodeGenerator {
     ASTNode* parse_tree,
     std::vector<std::unique_ptr<char[]>>* errors
   );
-  Function* generate(
-    ASTNode* parse_tree,
-    std::vector<std::unique_ptr<char[]>>* errors,
-    VarAllocMap* var_allocs,
-    VarAllocMap* context_var_allocs = nullptr
-  );
 }
 
 #endif

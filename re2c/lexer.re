@@ -222,6 +222,9 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "}"   {
         if(br_stack.top() == '{'){
           br_stack.pop();
+          if(lexemes.back().type == LexemeType::Newline){
+            lexemes.pop_back();
+          }
           PUT_LEXEME(LexemeType::RBrace)
         }else{
           errors->emplace_back(dynSprintf("line %d: Unexpected '}'.", line));
@@ -243,13 +246,29 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "true"  {PUT_LEXEME(true)}
       "false" {PUT_LEXEME(false)}
       "not"   {PUT_LEXEME(LexemeType::Not)}
-      "and"   {PUT_LEXEME(LexemeType::And)}
-      "or"    {PUT_LEXEME(LexemeType::Or)}
       "if"    {PUT_LEXEME(LexemeType::If)}
-      "else"  {PUT_LEXEME(LexemeType::Else)}
       "for"   {PUT_LEXEME(LexemeType::For)}
       "func"  {PUT_LEXEME(LexemeType::Func)}
       "print" {PUT_LEXEME(LexemeType::Print)}
+      
+      "and"   {
+        if(lexemes.back().type == LexemeType::Newline){
+          lexemes.pop_back();
+        }
+        PUT_LEXEME(LexemeType::And)
+      }
+      "or"    {
+        if(lexemes.back().type == LexemeType::Newline){
+          lexemes.pop_back();
+        }
+        PUT_LEXEME(LexemeType::Or)
+      }
+      "else"  {
+        if(lexemes.back().type == LexemeType::Newline){
+          lexemes.pop_back();
+        }
+        PUT_LEXEME(LexemeType::Else)
+      }
       
       //identifiers
       [a-zA-Z_\x80-\xff][0-9a-zA-Z_\x80-\xff]* {

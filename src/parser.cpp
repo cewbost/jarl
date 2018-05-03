@@ -116,12 +116,6 @@ ASTNode* Parser::nud_(const Lexeme& lex){
         );
       }
     }
-  /*case LexemeType::If:
-    return this->ifExpr_();
-  case LexemeType::Func:
-    return this->functionExpr_();
-  case LexemeType::While:
-    return this->whileExpr_();*/
   
   case LexemeType::LParen:
     {

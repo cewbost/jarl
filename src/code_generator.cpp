@@ -35,6 +35,60 @@ struct ThreadingContext {
   void threadAST(ASTNode*, ASTNode* = nullptr, bool = true);
 };
 
+namespace {
+  
+  Function* generate_(
+    ASTNode* parse_tree,
+    std::vector<std::unique_ptr<char[]>>* errors,
+    VarAllocMap* var_allocs,
+    VarAllocMap* context_var_allocs = nullptr
+  ){
+    assert(var_allocs != nullptr);
+    
+    int args = var_allocs->size();
+    
+    ThreadingContext context(
+      errors,
+      std::move(var_allocs),
+      context_var_allocs
+    );
+    
+    auto pos = parse_tree->pos.first;
+    context.code_positions.emplace_back(pos, 0);
+    context.threadAST(parse_tree);
+    if(!errors->empty()) return nullptr;
+    context.putInstruction(Op::Return, pos);
+    
+    //correct stack positions
+    int extended = 0;
+    for(auto& op: context.code){
+      if(extended == 0){
+        if(op & Op::Extended){
+          if(op & Op::Int) extended = 1;
+          else extended = 2;
+        }
+      }else if(extended == 1){
+        extended = 0;
+      }else{
+        extended = 0;
+        if(op & stack_pos_local){
+          op = (op & ~stack_pos_local) + context.constants.size() + args;
+        }else if(op & stack_pos_const){
+          op = (op & ~stack_pos_const) + args;
+        }
+      }
+    }
+    
+    delete parse_tree;
+    
+    return new Function(
+      std::move(context.code),
+      std::move(context.constants),
+      std::move(context.code_positions)
+    );
+  }
+}
+
 void ThreadingContext::putInstruction(OpCodeType op, int pos){
   if(this->code_positions.back().first != pos){
     this->code_positions.emplace_back(pos, this->code.size());
@@ -87,6 +141,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
     case ASTNodeType::Identifier:
       {
         D_putInstruction(Op::Push | Op::Extended);
+        
         auto it = var_allocs->find(node->string_value);
         if(it == var_allocs->end()){
           if(context_var_allocs == nullptr){
@@ -234,36 +289,31 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
         break;
         
       case ASTNodeType::Conditional:
-        assert(node->children.second->type == ASTNodeType::Branch);
+      
+      case ASTNodeType::If:
         
         D_putInstruction(Op::Jf | Op::Extended);
         jmp_addr = code.size();
         D_putInstruction((OpCodeType)0);
         --stack_size;
         
-        threadAST(node->children.second->children.first, node);
-        --stack_size;
-        
-        code[jmp_addr] = (OpCodeType)code.size() + 1;
-        
-        if(ret){
-          D_putInstruction(Op::Jmp | Op::Extended);
-          jmp_addr = code.size();
-          D_putInstruction((OpCodeType)0);
-          if(node->children.second->children.second->type == ASTNodeType::Nop){
-            D_putInstruction(Op::Push);
-            ++stack_size;
-          }else{
-            threadAST(node->children.second->children.second, node);
-          }
+        if(node->children.second->type == ASTNodeType::Else){
+          threadAST(node->children.second->children.first, node);
           code[jmp_addr] = (OpCodeType)code.size() + 1;
-        }else if(node->children.second->children.second->type != ASTNodeType::Nop){
+          --stack_size;
           D_putInstruction(Op::Jmp | Op::Extended);
           jmp_addr = code.size();
           D_putInstruction((OpCodeType)0);
-          
           threadAST(node->children.second->children.second, node);
-          
+          code[jmp_addr] = (OpCodeType)code.size() + 1;
+        }else{
+          threadAST(node->children.second, node);
+          code[jmp_addr] = (OpCodeType)code.size() + 1;
+          --stack_size;
+          D_putInstruction(Op::Jmp | Op::Extended);
+          jmp_addr = code.size();
+          D_putInstruction((OpCodeType)0);
+          D_putInstruction(Op::Push);
           code[jmp_addr] = (OpCodeType)code.size() + 1;
         }
         break;
@@ -275,28 +325,35 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
     break;
     
   case ASTNodeType::DefineExpr:
-    {
-      if(node->children.first->type != ASTNodeType::Identifier){
-        errors->emplace_back(
-          dynSprintf("line %d: Definition of rvalue", node->pos.first)
-        );
-      }
-      
-      auto old_stack_size = stack_size;
-      threadAST(node->string_branch.next, node);
-      auto it = var_allocs->direct().find(node->string_branch.value);
-      if(it != var_allocs->direct().end()){
-        D_putInstruction(Op::Write | Op::Extended | Op::Dest);
-        D_putInstruction(it->second);
-        if(ret){
-          D_putInstruction(Op::Push | Op::Extended | Op::Dest);
+    switch(node->type){
+    case ASTNodeType::Define:
+      {
+        if(node->children.first->type != ASTNodeType::Identifier){
+          errors->emplace_back(
+            dynSprintf("line %d: Definition of rvalue", node->pos.first)
+          );
+        }
+        
+        auto old_stack_size = stack_size;
+        threadAST(node->children.second, node);
+        auto it = var_allocs->direct().find(node->children.first->string_value);
+        if(it != var_allocs->direct().end()){
+          D_putInstruction(Op::Write | Op::Extended | Op::Dest);
           D_putInstruction(it->second);
-        }else --stack_size;
-      }else{
-        var_allocs->direct()[node->string_branch.value] =
-          old_stack_size | stack_pos_local;
+          if(ret){
+            D_putInstruction(Op::Push | Op::Extended | Op::Dest);
+            D_putInstruction(it->second);
+          }else --stack_size;
+        }else{
+          var_allocs->direct()[node->children.first->string_value] =
+            old_stack_size | stack_pos_local;
+        }
       }
+      break;
+    default:
+      assert(false);
     }
+    break;
     
   case ASTNodeType::AssignExpr:
     {
@@ -420,7 +477,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
       
       break;
       
-    case ASTNodeType::While:
+    case ASTNodeType::For:
       {
         if(ret){
           D_putInstruction(Op::Push);
@@ -470,7 +527,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
           }
         }
         
-        auto func = generate(node->children.second, errors, var_alloc, var_allocs);
+        auto func = generate_(node->children.second, errors, var_alloc, var_allocs);
         
         node->children.second = nullptr;
         D_putInstruction(Op::Push | Op::Extended);
@@ -526,7 +583,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node, bool ret){
       break;
       
     case ASTNodeType::Nop:
-      D_putInstruction(Op::Push);
+      if(ret) D_putInstruction(Op::Push);
       break;
       
     case ASTNodeType::Range:
@@ -550,59 +607,8 @@ namespace CodeGenerator {
     std::vector<std::unique_ptr<char[]>>* errors
   ){
     VarAllocMap* var_allocs = new VarAllocMap(nullptr);
-    auto ret = generate(parse_tree, errors, var_allocs);
+    auto ret = generate_(parse_tree, errors, var_allocs);
     delete var_allocs;
     return ret;
-  }
-  
-  Function* generate(
-    ASTNode* parse_tree,
-    std::vector<std::unique_ptr<char[]>>* errors,
-    VarAllocMap* var_allocs,
-    VarAllocMap* context_var_allocs
-  ){
-    assert(var_allocs != nullptr);
-    
-    int args = var_allocs->size();
-    
-    ThreadingContext context(
-      errors,
-      std::move(var_allocs),
-      context_var_allocs
-    );
-    
-    auto pos = parse_tree->pos.first;
-    context.code_positions.emplace_back(pos, 0);
-    context.threadAST(parse_tree);
-    if(!errors->empty()) return nullptr;
-    context.putInstruction(Op::Return, pos);
-    
-    //correct stack positions
-    int extended = 0;
-    for(auto& op: context.code){
-      if(extended == 0){
-        if(op & Op::Extended){
-          if(op & Op::Int) extended = 1;
-          else extended = 2;
-        }
-      }else if(extended == 1){
-        extended = 0;
-      }else{
-        extended = 0;
-        if(op & stack_pos_local){
-          op = (op & ~stack_pos_local) + context.constants.size() + args;
-        }else if(op & stack_pos_const){
-          op = (op & ~stack_pos_const) + args;
-        }
-      }
-    }
-    
-    delete parse_tree;
-    
-    return new Function(
-      std::move(context.code),
-      std::move(context.constants),
-      std::move(context.code_positions)
-    );
   }
 }
