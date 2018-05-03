@@ -29,10 +29,10 @@ enum class LexemeType: unsigned {
   Else,
   Print,
   
-  L50 = 0x50,
+  RightAssocClass = 0x50,
   Comma,
   
-  RightAssocClass = 0x60,
+  L60 = 0x60,
   Define,
   Assign,
   AddAssign,
@@ -99,8 +99,6 @@ struct Lexeme {
     bool b;
     String* s;
   } value;
-  
-  
   
   Lexeme(LexemeType, std::pair<uint16_t, uint16_t>);
   Lexeme(Int, std::pair<uint16_t, uint16_t>);

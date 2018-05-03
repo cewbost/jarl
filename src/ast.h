@@ -141,6 +141,25 @@ struct ASTNode {
   ASTNode(const ASTNode&) = delete;
   ASTNode& operator=(const ASTNode&) = delete;
   
+  //iteration
+  struct ExprListIterator {
+    const ASTNode* current;
+    
+    ExprListIterator(ASTNode*);
+    bool operator!=(const ExprListIterator&);
+    const ASTNode* operator*();
+    const ASTNode* operator->();
+    ExprListIterator operator++();
+    ExprListIterator operator++(int);
+  };
+  
+  ExprListIterator exprListIterator(){
+    return ExprListIterator(this);
+  }
+  ExprListIterator exprListIteratorEnd(){
+    return ExprListIterator(nullptr);
+  }
+  
   #ifndef NDEBUG
   std::string toStrDebug() const;
   std::string toStrDebug(int) const;
