@@ -84,7 +84,8 @@ namespace {
     return new Function(
       std::move(context.code),
       std::move(context.constants),
-      std::move(context.code_positions)
+      std::move(context.code_positions),
+      context.arguments
     );
   }
 }

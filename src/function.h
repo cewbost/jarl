@@ -97,7 +97,8 @@ public:
   Function(
     std::vector<OpCodeType>&& code,
     std::vector<TypedValue>&& values,
-    std::vector<std::pair<int, int>>&& code_positions
+    std::vector<std::pair<int, int>>&& code_positions,
+    int arguments
   );
   
   const std::vector<OpCodeType>& getVCode()const{return this->code_;}
