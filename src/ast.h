@@ -45,7 +45,6 @@ enum class ASTNodeType: unsigned {
   TwoChildren = 0x2000,
   
   Seq,
-  Branch,
   Else,
   For,
   
@@ -81,7 +80,6 @@ enum class ASTNodeType: unsigned {
   Or,
   
   If,
-  Conditional,
 
   DefineExpr = 0x2300,
   

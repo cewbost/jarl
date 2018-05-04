@@ -179,10 +179,6 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "apply"; break;
   case ASTNodeType::Seq:
     ret += "seq"; break;
-  case ASTNodeType::Conditional:
-    ret += "conditional"; break;
-  case ASTNodeType::Branch:
-    ret += "branch"; break;
   case ASTNodeType::If:
     ret += "if"; break;
   case ASTNodeType::Else:
