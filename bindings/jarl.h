@@ -17,6 +17,7 @@ namespace jarl{
   void destroy_vm(vm);
   void execute(vm, const char*);
   void set_print_func(vm, void(*)(const char*));
+  void set_error_print_func(vm, void(*)(const char*));
 }
 
 #endif

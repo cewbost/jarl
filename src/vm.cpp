@@ -8,8 +8,8 @@
 
 #ifndef NDEBUG
 #include <cstdio>
-#define PRINT_STACK
-#define PRINT_OP
+//#define PRINT_STACK
+//#define PRINT_OP
 #endif
 
 namespace {
@@ -117,7 +117,7 @@ bool VM::popFunction_(){
 }
 
 VM::VM(int stack_size)
-: stack_(stack_size), print_func_(nullptr){}
+: stack_(stack_size), print_func_(nullptr), error_print_func_(nullptr){}
 
 void VM::execute(const Function& func){
   
@@ -337,7 +337,7 @@ void VM::execute(const Function& func){
                 this->getFrame()->func->getLine(this->getFrame()->ip),
                 bind_pos
               );
-              this->print(msg);
+              this->errPrint(msg);
               delete[] msg;
               this->errorJmp(1);
             }
@@ -359,7 +359,7 @@ void VM::execute(const Function& func){
                 this->getFrame()->func->getLine(this->getFrame()->ip),
                 bind_pos
               );
-              this->print(msg);
+              this->errPrint(msg);
               delete[] msg;
               this->errorJmp(1);
             }
@@ -378,7 +378,7 @@ void VM::execute(const Function& func){
               this->getFrame()->func->getLine(this->getFrame()->ip),
               callee.typeStr()
             );
-            this->print(msg);
+            this->errPrint(msg);
             delete[] msg;
             this->errorJmp(1);
           }
@@ -417,7 +417,7 @@ void VM::execute(const Function& func){
               int_1.typeStr(),
               int_2.typeStr()
             );
-            this->print(msg);
+            this->errPrint(msg);
             delete[] msg;
             this->errorJmp(1);
           }
@@ -451,7 +451,7 @@ void VM::execute(const Function& func){
         {
           #ifndef NDEBUG
           auto msg = this->stack_.back().toStrDebug();
-          this->print_func_(msg.c_str());
+          this->print(msg.c_str());
           #endif
         }
         break;
@@ -471,8 +471,14 @@ void VM::execute(const Function& func){
 void VM::setPrintFunc(void(*func)(const char*)){
   this->print_func_ = func;
 }
+void VM::setErrorPrintFunc(void(*func)(const char*)){
+  this->error_print_func_ = func;
+}
 void VM::print(const char* msg){
   this->print_func_(msg);
+}
+void VM::errPrint(const char* msg){
+  this->error_print_func_(msg);
 }
 
 VM::StackFrame* VM::getFrame(){

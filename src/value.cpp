@@ -281,7 +281,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -330,7 +330,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -379,7 +379,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -432,7 +432,7 @@ type_error:
       this->typeStr(),
       other->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }
@@ -443,7 +443,7 @@ div_zero_error:
       "%d: Division by zero error.",
       vm->getFrame()->func->getLine(vm->getFrame()->ip)
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(2);
   }
@@ -498,7 +498,7 @@ type_error:
       this->typeStr(),
       other->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }
@@ -509,7 +509,7 @@ div_zero_error:
       "%d: Division by zero error.",
       vm->getFrame()->func->getLine(vm->getFrame()->ip)
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(2);
   }
@@ -631,7 +631,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -759,7 +759,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -786,7 +786,7 @@ error:
     vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -841,7 +841,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -902,7 +902,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -954,7 +954,7 @@ type_error:
       this->typeStr(),
       other->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }
@@ -966,7 +966,7 @@ index_error:
       vm->getFrame()->func->getLine(vm->getFrame()->ip),
       (long long)index
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(3);
   }
@@ -1045,7 +1045,7 @@ error:
     rhs1.typeStr(),
     rhs2.typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -1075,7 +1075,7 @@ error:
     vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -1105,7 +1105,7 @@ error:
     vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -1144,7 +1144,7 @@ type_error:
       vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }
@@ -1155,7 +1155,7 @@ bad_op_error:
       "%d: Bad conversion error.",
       vm->getFrame()->func->getLine(vm->getFrame()->ip)
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(4);
   }
@@ -1195,7 +1195,7 @@ type_error:
       vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }
@@ -1206,7 +1206,7 @@ bad_op_error:
       "%d: Bad conversion error.",
       vm->getFrame()->func->getLine(vm->getFrame()->ip)
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(4);
   }
@@ -1242,7 +1242,7 @@ error:
     vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -1255,7 +1255,7 @@ void TypedValue::toPartial(){
       vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }

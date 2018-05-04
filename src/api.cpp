@@ -8,9 +8,9 @@
 #ifndef NDEBUG
 #include <cstdio>
 //#define PRINT_LEXEMES
-#define PRINT_AST
-#define PRINT_CODE
-#define EXECUTE
+//#define PRINT_AST
+//#define PRINT_CODE
+//#undef NO_EXECUTE
 #endif
 
 using jarl::vm;
@@ -32,7 +32,7 @@ void jarl::execute(vm v, const char* code){
   
   if(errors.size() > 0){
     for(auto& error: errors){
-      v->print(error.get());
+      v->errPrint(error.get());
     }
     return;
   }
@@ -49,7 +49,7 @@ void jarl::execute(vm v, const char* code){
   
   if(errors.size() > 0){
     for(auto& error: errors){
-      v->print(error.get());
+      v->errPrint(error.get());
     }
     return;
   }
@@ -63,7 +63,7 @@ void jarl::execute(vm v, const char* code){
   
   if(errors.size() > 0){
     for(auto& error: errors){
-      v->print(error.get());
+      v->errPrint(error.get());
     }
     delete proc;
     return;
@@ -74,13 +74,16 @@ void jarl::execute(vm v, const char* code){
   fprintf(stderr, "%s\n", proc->opcodesToStrDebug().c_str());
   #endif
   
-  #ifdef EXECUTE
-  v->execute(*proc);
-  #else
+  #ifdef NO_EXECUTE
   delete proc;
+  #else
+  v->execute(*proc);
   #endif
 }
 
 void jarl::set_print_func(vm v, void(*func)(const char*)){
   v->setPrintFunc(func);
+}
+void jarl::set_error_print_func(vm v, void(*func)(const char*)){
+  v->setErrorPrintFunc(func);
 }

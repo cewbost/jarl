@@ -287,7 +287,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction((OpCodeType)0);
         threadAST(node->children.second, node);
         code[jmp_addr] = (OpCodeType)code.size();
-        
         break;
       
       case ASTNodeType::If:
