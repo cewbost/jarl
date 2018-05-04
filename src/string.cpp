@@ -270,16 +270,16 @@ String* make_new<String, const String*, double>(const String* st, double val){
 AllocMonitor<String> string_alloc_monitor([](AllocMsg msg, const String* str){
   switch(msg){
   //case AllocMsg::Allocation:
-  //  std::cout << "allocated string at " << str << std::endl;
+  //  std::cerr << "allocated string at " << str << std::endl;
   //  break;
   //case AllocMsg::Deallocation:
-  //  std::cout << "deallocated string at " << str << ": " << str->str() << std::endl;
+  //  std::cerr << "deallocated string at " << str << ": " << str->str() << std::endl;
   //  break;
   case AllocMsg::DoubleAllocation:
-    std::cout << "double allocated string at " << str << std::endl;
+    std::cerr << "double allocated string at " << str << std::endl;
     break;
   case AllocMsg::InvalidFree:
-    std::cout << "invalid free of string at " << str << std::endl;
+    std::cerr << "invalid free of string at " << str << std::endl;
     break;
   }
 });

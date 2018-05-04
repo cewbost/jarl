@@ -132,18 +132,18 @@ void VM::execute(const Function& func){
       
       #ifdef PRINT_STACK
       for(auto& val: stack_){
-        std::cout << "\t" << val.toStrDebug() << std::endl;
+        std::cerr << "\t" << val.toStrDebug() << std::endl;
       }
       #endif
       #ifdef PRINT_OP
       if(*this->frame_.ip & Op::Extended){
-        std::cout
+        std::cerr
           << opCodeToStrDebug(*this->frame_.ip)
           << " "
           << *(this->frame_.ip + 1)
           << std::endl;
       }else{
-        std::cout << opCodeToStrDebug(*this->frame_.ip) << std::endl;
+        std::cerr << opCodeToStrDebug(*this->frame_.ip) << std::endl;
       }
       #endif
       

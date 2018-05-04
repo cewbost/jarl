@@ -37,9 +37,9 @@ void jarl::execute(vm v, const char* code){
   }
   
   #ifdef PRINT_LEXEMES
-  std::cout << "::lexemes::" << std::endl;
+  std::cerr << "::lexemes::" << std::endl;
   for(auto& lex: lexemes){
-    std::cout << lex.toStrDebug() << std::endl;
+    std::cerr << lex.toStrDebug() << std::endl;
   }
   #endif
   
@@ -54,8 +54,8 @@ void jarl::execute(vm v, const char* code){
   }
   
   #ifdef PRINT_AST
-  std::cout << "::AST::" << std::endl;
-  std::cout << parse_tree->toStrDebug() << std::endl;
+  std::cerr << "::AST::" << std::endl;
+  std::cerr << parse_tree->toStrDebug() << std::endl;
   #endif
   
   Function* proc = CodeGenerator::generate(parse_tree, &errors);
@@ -69,8 +69,8 @@ void jarl::execute(vm v, const char* code){
   }
   
   #ifdef PRINT_CODE
-  std::cout << "::proc::\n";
-  std::cout << proc->opcodesToStrDebug() << std::endl;
+  std::cerr << "::proc::\n";
+  std::cerr << proc->opcodesToStrDebug() << std::endl;
   #endif
   
   v->execute(*proc);
