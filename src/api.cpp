@@ -6,10 +6,11 @@
 #include "code_generator.h"
 
 #ifndef NDEBUG
-#include <iostream>
+#include <cstdio>
 //#define PRINT_LEXEMES
 #define PRINT_AST
 #define PRINT_CODE
+#define EXECUTE
 #endif
 
 using jarl::vm;
@@ -37,9 +38,9 @@ void jarl::execute(vm v, const char* code){
   }
   
   #ifdef PRINT_LEXEMES
-  std::cerr << "::lexemes::" << std::endl;
+  fprintf(stderr, "::lexemes::\n");
   for(auto& lex: lexemes){
-    std::cerr << lex.toStrDebug() << std::endl;
+    fprintf(stderr, "%s\n", lex.toStrDebug().c_str());
   }
   #endif
   
@@ -54,8 +55,8 @@ void jarl::execute(vm v, const char* code){
   }
   
   #ifdef PRINT_AST
-  std::cerr << "::AST::" << std::endl;
-  std::cerr << parse_tree->toStrDebug() << std::endl;
+  fprintf(stderr, "::AST::\n");
+  fprintf(stderr, "%s\n", parse_tree->toStrDebug().c_str());
   #endif
   
   Function* proc = CodeGenerator::generate(parse_tree, &errors);
@@ -69,12 +70,15 @@ void jarl::execute(vm v, const char* code){
   }
   
   #ifdef PRINT_CODE
-  std::cerr << "::proc::\n";
-  std::cerr << proc->opcodesToStrDebug() << std::endl;
+  fprintf(stderr, "::proc::\n");
+  fprintf(stderr, "%s\n", proc->opcodesToStrDebug().c_str());
   #endif
   
+  #ifdef EXECUTE
   v->execute(*proc);
+  #else
   delete proc;
+  #endif
 }
 
 void jarl::set_print_func(vm v, void(*func)(const char*)){

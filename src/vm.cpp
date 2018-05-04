@@ -7,7 +7,7 @@
 #include <cassert>
 
 #ifndef NDEBUG
-#include <iostream>
+#include <cstdio>
 #define PRINT_STACK
 #define PRINT_OP
 #endif
@@ -131,19 +131,26 @@ void VM::execute(const Function& func){
     while(this->frame_.ip != end_it){
       
       #ifdef PRINT_STACK
-      for(auto& val: stack_){
-        std::cerr << "\t" << val.toStrDebug() << std::endl;
+      {
+        auto it = stack_.begin();
+        int s_pos = 0;
+        if(it != stack_.end()){
+          fprintf(stderr, "stack [%2d] %s\n", s_pos, it->toStrDebug().c_str());
+          for(++it, ++s_pos; it != stack_.end(); ++it, ++s_pos){
+            fprintf(stderr, "      [%2d] %s\n", s_pos, it->toStrDebug().c_str());
+          }
+        }
       }
       #endif
       #ifdef PRINT_OP
+      fprintf(stderr, "op%5d: ", this->frame_.ip - this->frame_.func->getCode());
       if(*this->frame_.ip & Op::Extended){
-        std::cerr
-          << opCodeToStrDebug(*this->frame_.ip)
-          << " "
-          << *(this->frame_.ip + 1)
-          << std::endl;
+        fprintf(stderr, "%s %d\n",
+          opCodeToStrDebug(*this->frame_.ip).c_str(),
+          *(this->frame_.ip + 1)
+        );
       }else{
-        std::cerr << opCodeToStrDebug(*this->frame_.ip) << std::endl;
+        fprintf(stderr, "%s\n", opCodeToStrDebug(*this->frame_.ip).c_str());
       }
       #endif
       

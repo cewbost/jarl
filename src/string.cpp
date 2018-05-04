@@ -2,7 +2,7 @@
 
 #ifndef NDEBUG
 #include "alloc_monitor.h"
-#include <iostream>
+#include <cstdio>
 #endif
 
 namespace{
@@ -270,16 +270,16 @@ String* make_new<String, const String*, double>(const String* st, double val){
 AllocMonitor<String> string_alloc_monitor([](AllocMsg msg, const String* str){
   switch(msg){
   //case AllocMsg::Allocation:
-  //  std::cerr << "allocated string at " << str << std::endl;
+  //  fprintf(stderr, "allocaed string at %p\n", str);
   //  break;
   //case AllocMsg::Deallocation:
-  //  std::cerr << "deallocated string at " << str << ": " << str->str() << std::endl;
+  //  fprintf(stderr, "deallocated string at %p\n", str);
   //  break;
   case AllocMsg::DoubleAllocation:
-    std::cerr << "double allocated string at " << str << std::endl;
+    fprintf(stderr, "double allocated string at %p\n", str);
     break;
   case AllocMsg::InvalidFree:
-    std::cerr << "invalid free of string at " << str << std::endl;
+    fprintf(stderr, "invalid free of string at %p\n", str);
     break;
   }
 });

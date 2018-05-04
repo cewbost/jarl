@@ -2,10 +2,6 @@
 
 #include <cassert>
 
-#ifndef NDEBUG
-#include <iostream>
-#endif
-
 constexpr int def_expr_bindp      = 0x31;
 constexpr int def_statement_bindp = 0x21;
 constexpr int def_block_bindp     = 0x11;
