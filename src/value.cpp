@@ -1288,6 +1288,26 @@ const char* TypedValue::typeStr() const {
   }
 }
 
+std::unique_ptr<char[]> TypedValue::toCStr() const {
+  switch(this->type){
+  case TypeTag::Bool:
+    return std::unique_ptr<char[]>
+      (dynSprintf("%s", this->value.bool_v? "true" : "false"));
+  case TypeTag::Int:
+    return std::unique_ptr<char[]>
+      (dynSprintf("%lld", (long long)this->value.int_v));
+  case TypeTag::Float:
+    return std::unique_ptr<char[]>
+      (dynSprintf("%f", (double)this->value.float_v));
+  case TypeTag::String:
+    return std::unique_ptr<char[]>
+      (dynSprintf("%s", this->value.string_v->str()));
+  default:
+    return std::unique_ptr<char[]>
+      (dynSprintf("%s: %p", this->typeStr(), this->value.ptr_v));
+  }
+}
+
 #ifndef NDEBUG
 std::string TypedValue::toStrDebug()const{
   using namespace std::string_literals;

@@ -10,7 +10,7 @@
 //#define PRINT_LEXEMES
 //#define PRINT_AST
 //#define NO_GENERATE
-#define PRINT_CODE
+//#define PRINT_CODE
 //#define NO_EXECUTE
 #endif
 

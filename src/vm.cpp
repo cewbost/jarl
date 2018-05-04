@@ -455,13 +455,17 @@ void VM::execute(const Function& func){
             ++this->frame_.ip;
             num = *this->frame_.ip;
           }else num = 1;
-          #ifndef NDEBUG
-          std::string msg = "";
-          for(int it = stack_.size() - num; it < stack_.size(); ++it){
-            msg += this->stack_[it].toStrDebug();
+          
+          int it = stack_.size() - num;
+          auto msg = stack_[it].toCStr();
+          for(++it; it < stack_.size(); ++it){
+            char* new_msg = dynSprintf("%s%s",
+              msg.get(),
+              stack_[it].toCStr().release()
+            );
+            msg.reset(new_msg);
           }
-          this->print(msg.c_str());
-          #endif
+          this->print(msg.get());
           stack_.resize(stack_.size() - num);
         }
         break;
