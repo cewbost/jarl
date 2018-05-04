@@ -8,6 +8,8 @@
 
 #ifndef NDEBUG
 #include <iostream>
+#define PRINT_STACK
+#define PRINT_OP
 #endif
 
 namespace {
@@ -128,20 +130,22 @@ void VM::execute(const Function& func){
   if(setjmp(this->error_jmp_env_) == 0){
     while(this->frame_.ip != end_it){
       
-      /*#ifndef NDEBUG
+      #ifdef PRINT_STACK
       for(auto& val: stack_){
         std::cout << "\t" << val.toStrDebug() << std::endl;
       }
+      #endif
+      #ifdef PRINT_OP
       if(*this->frame_.ip & Op::Extended){
         std::cout
-          << opCodeToStr(*this->frame_.ip)
+          << opCodeToStrDebug(*this->frame_.ip)
           << " "
           << *(this->frame_.ip + 1)
           << std::endl;
       }else{
-        std::cout << opCodeToStr(*this->frame_.ip) << std::endl;
+        std::cout << opCodeToStrDebug(*this->frame_.ip) << std::endl;
       }
-      #endif*/
+      #endif
       
       switch(*this->frame_.ip & ~Op::Head){
       case Op::Nop:

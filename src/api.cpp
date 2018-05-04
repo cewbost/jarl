@@ -7,7 +7,7 @@
 
 #ifndef NDEBUG
 #include <iostream>
-#define PRINT_LEXEMES
+//#define PRINT_LEXEMES
 #define PRINT_AST
 #define PRINT_CODE
 #endif
