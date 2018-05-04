@@ -8,7 +8,6 @@
 #include <new>
 #include <cstring>
 #include <functional>
-#include <iostream>
 
 #ifndef NDEBUG
 #include "alloc_monitor.h"

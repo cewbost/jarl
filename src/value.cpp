@@ -11,14 +11,14 @@
 
 namespace{
   
-  inline bool _toInt(String* s, Int* t){
+  inline bool toInt_(String* s, Int* t){
     if(sizeof(Int) == 8){
       return s->toInt64((int64_t*)t);
     }else{
       return s->toInt32((int32_t*)t);
     }
   }
-  inline bool _toFloat(String* s, Float* t){
+  inline bool toFloat_(String* s, Float* t){
     if(sizeof(Float) == 8){
       return s->toDouble((double*)t);
     }else{
@@ -26,13 +26,13 @@ namespace{
     }
   }
   
-  inline Int _add(Int a, Int b){
+  inline Int add_(Int a, Int b){
     return a + b;
   }
-  inline Float _add(Float a, Float b){
+  inline Float add_(Float a, Float b){
     return a + b;
   }
-  inline String* _add(const String* a, const String* b){
+  inline String* add_(const String* a, const String* b){
     return make_new<String>(a, b);
   }
 }
@@ -281,7 +281,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -312,6 +312,7 @@ void TypedValue::sub(const TypedValue& rhs){
       break;
     case TypeTag::Float:
       this->value.float_v -= other->value.float_v;
+      break;
     default:
       goto error;
     }
@@ -329,7 +330,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -378,7 +379,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -431,7 +432,7 @@ type_error:
       this->typeStr(),
       other->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }
@@ -442,7 +443,7 @@ div_zero_error:
       "%d: Division by zero error.",
       vm->getFrame()->func->getLine(vm->getFrame()->ip)
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(2);
   }
@@ -497,7 +498,7 @@ type_error:
       this->typeStr(),
       other->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }
@@ -508,7 +509,7 @@ div_zero_error:
       "%d: Division by zero error.",
       vm->getFrame()->func->getLine(vm->getFrame()->ip)
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(2);
   }
@@ -630,7 +631,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -758,7 +759,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -785,7 +786,7 @@ error:
     vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -840,7 +841,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -901,7 +902,7 @@ error:
     this->typeStr(),
     other->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -953,7 +954,7 @@ type_error:
       this->typeStr(),
       other->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }
@@ -965,7 +966,7 @@ index_error:
       vm->getFrame()->func->getLine(vm->getFrame()->ip),
       (long long)index
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(3);
   }
@@ -1044,7 +1045,7 @@ error:
     rhs1.typeStr(),
     rhs2.typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -1074,7 +1075,7 @@ error:
     vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -1104,7 +1105,7 @@ error:
     vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -1123,7 +1124,7 @@ void TypedValue::toInt(){
     break;
   case TypeTag::String: {
       Int i;
-      if(!_toInt(value->value.string_v, &i)){
+      if(!toInt_(value->value.string_v, &i)){
         goto bad_op_error;
       }
       value->value.string_v->decRefCount();
@@ -1143,7 +1144,7 @@ type_error:
       vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }
@@ -1154,7 +1155,7 @@ bad_op_error:
       "%d: Bad conversion error.",
       vm->getFrame()->func->getLine(vm->getFrame()->ip)
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(4);
   }
@@ -1174,7 +1175,7 @@ void TypedValue::toFloat(){
     break;
   case TypeTag::String: {
       Float f;
-      if(!_toFloat(value->value.string_v, &f)){
+      if(!toFloat_(value->value.string_v, &f)){
         goto bad_op_error;
       }
       value->value.string_v->decRefCount();
@@ -1194,7 +1195,7 @@ type_error:
       vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }
@@ -1205,7 +1206,7 @@ bad_op_error:
       "%d: Bad conversion error.",
       vm->getFrame()->func->getLine(vm->getFrame()->ip)
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(4);
   }
@@ -1241,7 +1242,7 @@ error:
     vm->getFrame()->func->getLine(vm->getFrame()->ip),
     this->typeStr()
   );
-  vm->print(msg);
+  vm->errPrint(msg);
   delete[] msg;
   vm->errorJmp(1);
 }
@@ -1254,7 +1255,7 @@ void TypedValue::toPartial(){
       vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr()
     );
-    vm->print(msg);
+    vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(1);
   }

@@ -81,8 +81,6 @@ std::string Lexeme::toStrDebug() const {
     ret += "string: \""s + unquoteString_(this->value.s->str()) + "\""s; break;
   case LexemeType::Identifier:
     ret += "identifier: "s + std::string(this->value.s->str()); break;
-  case LexemeType::Newline:
-    ret += "newline"s; break;
   
   case LexemeType::Plus: ret += "+"s; break;
   case LexemeType::Minus: ret += "-"s; break;
@@ -90,6 +88,7 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::Div: ret += "/"s; break;
   case LexemeType::Mod: ret += "%"s; break;
   case LexemeType::Append: ret += "++"s; break;
+  case LexemeType::Define: ret += ":="s; break;
   case LexemeType::Assign: ret += "="s; break;
   case LexemeType::AddAssign: ret += "+="s; break;
   case LexemeType::SubAssign: ret += "-="s; break;
@@ -112,17 +111,17 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::RBracket: ret += "]"s; break;
   case LexemeType::Comma: ret += ","s; break;
   case LexemeType::Semicolon: ret += ";"s; break;
+  case LexemeType::Newline: ret += "\\n"; break;
   case LexemeType::Colon: ret += ":"s; break;
   
   case LexemeType::Not: ret += "not"s; break;
   case LexemeType::And: ret += "and"s; break;
   case LexemeType::Or: ret += "or"s; break;
   
-  case LexemeType::Var: ret += "var"s; break;
   case LexemeType::Null: ret += "null"s; break;
   case LexemeType::If: ret += "if"s; break;
+  case LexemeType::For: ret += "for"s; break;
   case LexemeType::Else: ret += "else"s; break;
-  case LexemeType::While: ret += "while"s; break;
   case LexemeType::Func: ret += "func"s; break;
   case LexemeType::Print: ret += "print"s; break;
   

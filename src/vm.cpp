@@ -7,7 +7,9 @@
 #include <cassert>
 
 #ifndef NDEBUG
-#include <iostream>
+#include <cstdio>
+//#define PRINT_STACK
+//#define PRINT_OP
 #endif
 
 namespace {
@@ -115,7 +117,7 @@ bool VM::popFunction_(){
 }
 
 VM::VM(int stack_size)
-: stack_(stack_size), print_func_(nullptr){}
+: stack_(stack_size), print_func_(nullptr), error_print_func_(nullptr){}
 
 void VM::execute(const Function& func){
   
@@ -126,22 +128,33 @@ void VM::execute(const Function& func){
   const OpCodeType* end_it = func.getCode() + func.getCodeSize();
   
   if(setjmp(this->error_jmp_env_) == 0){
+    
+    loop_start:
     while(this->frame_.ip != end_it){
       
-      /*#ifndef NDEBUG
-      for(auto& val: stack_){
-        std::cout << "\t" << val.toStrDebug() << std::endl;
+      #ifdef PRINT_STACK
+      {
+        auto it = stack_.begin();
+        int s_pos = 0;
+        if(it != stack_.end()){
+          fprintf(stderr, "stack [%2d] %s\n", s_pos, it->toStrDebug().c_str());
+          for(++it, ++s_pos; it != stack_.end(); ++it, ++s_pos){
+            fprintf(stderr, "      [%2d] %s\n", s_pos, it->toStrDebug().c_str());
+          }
+        }
       }
+      #endif
+      #ifdef PRINT_OP
+      fprintf(stderr, "op%5d: ", this->frame_.ip - this->frame_.func->getCode());
       if(*this->frame_.ip & Op::Extended){
-        std::cout
-          << opCodeToStr(*this->frame_.ip)
-          << " "
-          << *(this->frame_.ip + 1)
-          << std::endl;
+        fprintf(stderr, "%s %d\n",
+          opCodeToStrDebug(*this->frame_.ip).c_str(),
+          *(this->frame_.ip + 1)
+        );
       }else{
-        std::cout << opCodeToStr(*this->frame_.ip) << std::endl;
+        fprintf(stderr, "%s\n", opCodeToStrDebug(*this->frame_.ip).c_str());
       }
-      #endif*/
+      #endif
       
       switch(*this->frame_.ip & ~Op::Head){
       case Op::Nop:
@@ -260,13 +273,15 @@ void VM::execute(const Function& func){
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
         this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
-        break;
+        goto loop_start;
       case Op::Jt:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
         stack_.back().toBool();
         if(stack_.back().value.bool_v){
           this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          stack_.pop_back();
+          goto loop_start;
         }
         stack_.pop_back();
         break;
@@ -275,6 +290,8 @@ void VM::execute(const Function& func){
         ++this->frame_.ip;
         if(!stack_.back().value.bool_v){
           this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          stack_.pop_back();
+          goto loop_start;
         }
         stack_.pop_back();
         break;
@@ -284,20 +301,22 @@ void VM::execute(const Function& func){
         stack_.back().toBool();
         if(stack_.back().value.bool_v){
           this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          goto loop_start;
         }else{
           stack_.pop_back();
+          break;
         }
-        break;
       case Op::Jfsc:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
         stack_.back().toBool();
         if(!stack_.back().value.bool_v){
           this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          goto loop_start;
         }else{
           stack_.pop_back();
+          break;
         }
-        break;
       
       case Op::Apply:
         {
@@ -318,7 +337,7 @@ void VM::execute(const Function& func){
                 this->getFrame()->func->getLine(this->getFrame()->ip),
                 bind_pos
               );
-              this->print(msg);
+              this->errPrint(msg);
               delete[] msg;
               this->errorJmp(1);
             }
@@ -340,7 +359,7 @@ void VM::execute(const Function& func){
                 this->getFrame()->func->getLine(this->getFrame()->ip),
                 bind_pos
               );
-              this->print(msg);
+              this->errPrint(msg);
               delete[] msg;
               this->errorJmp(1);
             }
@@ -359,7 +378,7 @@ void VM::execute(const Function& func){
               this->getFrame()->func->getLine(this->getFrame()->ip),
               callee.typeStr()
             );
-            this->print(msg);
+            this->errPrint(msg);
             delete[] msg;
             this->errorJmp(1);
           }
@@ -398,7 +417,7 @@ void VM::execute(const Function& func){
               int_1.typeStr(),
               int_2.typeStr()
             );
-            this->print(msg);
+            this->errPrint(msg);
             delete[] msg;
             this->errorJmp(1);
           }
@@ -432,7 +451,7 @@ void VM::execute(const Function& func){
         {
           #ifndef NDEBUG
           auto msg = this->stack_.back().toStrDebug();
-          this->print_func_(msg.c_str());
+          this->print(msg.c_str());
           #endif
         }
         break;
@@ -452,8 +471,14 @@ void VM::execute(const Function& func){
 void VM::setPrintFunc(void(*func)(const char*)){
   this->print_func_ = func;
 }
+void VM::setErrorPrintFunc(void(*func)(const char*)){
+  this->error_print_func_ = func;
+}
 void VM::print(const char* msg){
   this->print_func_(msg);
+}
+void VM::errPrint(const char* msg){
+  this->error_print_func_(msg);
 }
 
 VM::StackFrame* VM::getFrame(){

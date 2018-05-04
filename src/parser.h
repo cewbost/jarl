@@ -17,24 +17,17 @@ class Parser{
   std::vector<std::unique_ptr<char[]>>* errors_;
   
   const Lexeme& next_();
-  const Lexeme& nextNoNewline_();
   bool checkNext_(LexemeType);
-  void skipNewlines_();
   
   static int bindp_(LexemeType);
   
   ASTNode* nud_(const Lexeme&);
   ASTNode* led_(const Lexeme&, ASTNode*);
   
-  ASTNode* statement_(int);
   ASTNode* expression_(int);
   ASTNode* ifExpr_();
   ASTNode* whileExpr_();
-  ASTNode* identifierList_();
   ASTNode* functionExpr_();
-  ASTNode* varDecl_();
-  ASTNode* printExpr_();
-  ASTNode* codeBlock_();
   
 public:
   

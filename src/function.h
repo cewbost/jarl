@@ -15,7 +15,6 @@
 
 #ifndef NDEBUG
 #include <string>
-#include <iostream>
 #endif
 
 /*
@@ -81,46 +80,25 @@ struct Op{
   };
 };
 
-/*enum class Op: OpCodeType{
-  
-};*/
-
-template<class Key, class Val>
-using VectorMapDefault = VectorMap<Key, Val>;
-using VarAllocMap = DelegateMap<VectorMapDefault, String*, OpCodeType>;
-using VectorMapBase = std::vector<std::pair<String* const, OpCodeType>>;
-
 class Function: public RcTraitDirect<Function>{
   
   std::vector<OpCodeType> code_;
   std::vector<TypedValue> values_;
   std::vector<std::pair<int, int>> code_positions_;
   
-  void putInstruction_(OpCodeType, int);
-  
-  void threadAST_(
-    ASTNode*,
-    std::vector<std::unique_ptr<char[]>>*,
-    VarAllocMap*,
-    VarAllocMap*,
-    VectorSet<TypedValue>*,
-    int*,
-    bool = true
-  );
-  
 public:
   
   int arguments;
   
-  Function(
-    ASTNode*,
-    std::vector<std::unique_ptr<char[]>>*,
-    VarAllocMap* = nullptr,
-    VarAllocMap* = nullptr
-  );
-  
   Function(const Function&) = delete;
   Function(Function&&) = delete;
+  
+  Function(
+    std::vector<OpCodeType>&& code,
+    std::vector<TypedValue>&& values,
+    std::vector<std::pair<int, int>>&& code_positions,
+    int arguments
+  );
   
   const std::vector<OpCodeType>& getVCode()const{return this->code_;}
   const OpCodeType* getCode()const{return this->code_.data();}

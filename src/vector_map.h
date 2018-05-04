@@ -17,6 +17,8 @@ public:
   typedef typename std::vector<std::pair<const Key, Val>>::const_iterator
     const_iterator;
   
+  typedef typename std::vector<std::pair<const Key, Val>> base_type;
+  
 private:
   
   Comp comp_;

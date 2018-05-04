@@ -44,13 +44,14 @@ enum class ASTNodeType: unsigned {
   TwoChildren = 0x2000,
   
   Seq,
-  Branch,
-  While,
+  Else,
+  For,
   
   Index,
   
   ExprList,
   Range,
+  Then,
   Function,
   
   BinaryExpr = 0x2100,
@@ -77,9 +78,13 @@ enum class ASTNodeType: unsigned {
   And,
   Or,
   
-  Conditional,
+  If,
+
+  DefineExpr = 0x2300,
   
-  AssignExpr = 0x2300,
+  Define,
+  
+  AssignExpr = 0x2400,
   
   Assign,
   AddAssign,
@@ -88,11 +93,6 @@ enum class ASTNodeType: unsigned {
   DivAssign,
   ModAssign,
   AppendAssign,
-  
-  StringBranch = 0x3000,
-  
-  IdentifierList,
-  VarDecl
 };
 
 struct ASTNode {
@@ -110,17 +110,11 @@ struct ASTNode {
     String* string_value;
     bool bool_value;
     const char* c_str_value;
-    
-    struct {
-      ASTNode* next;
-      String* value;
-    } string_branch;
   };
   
   ASTNode(ASTNodeType, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, ASTNode*, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, ASTNode*, ASTNode*, std::pair<uint16_t, uint16_t>);
-  ASTNode(ASTNodeType, String*, ASTNode*, std::pair<uint16_t, uint16_t>);
   
   ASTNode(ASTNodeType, Int, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, Float, std::pair<uint16_t, uint16_t>);
@@ -132,6 +126,25 @@ struct ASTNode {
   
   ASTNode(const ASTNode&) = delete;
   ASTNode& operator=(const ASTNode&) = delete;
+  
+  //iteration
+  struct ExprListIterator {
+    const ASTNode* current;
+    
+    ExprListIterator(ASTNode*);
+    bool operator!=(const ExprListIterator&);
+    const ASTNode* operator*();
+    const ASTNode* operator->();
+    ExprListIterator operator++();
+    ExprListIterator operator++(int);
+  };
+  
+  ExprListIterator exprListIterator(){
+    return ExprListIterator(this);
+  }
+  ExprListIterator exprListIteratorEnd(){
+    return ExprListIterator(nullptr);
+  }
   
   #ifndef NDEBUG
   std::string toStrDebug() const;

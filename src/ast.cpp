@@ -20,15 +20,6 @@ ASTNode::ASTNode(
   this->children.first = child1;
   this->children.second = child2;
 }
-ASTNode::ASTNode(
-  ASTNodeType type,
-  String* str,
-  ASTNode* nex,
-  std::pair<uint16_t, uint16_t> pos
-): type(type), pos(pos){
-  this->string_branch.value = str;
-  this->string_branch.next = nex;
-}
 
 ASTNode::ASTNode(ASTNodeType type, Int i, std::pair<uint16_t, uint16_t> pos)
 : type(type), pos(pos){
@@ -66,12 +57,48 @@ ASTNode::~ASTNode(){
     delete this->children.first;
     delete this->children.second;
     break;
-  case ASTNodeType::StringBranch:
-    delete this->string_branch.next;
-    break;
   default:
     assert(false);
   }
+}
+
+//ExprListIterator
+ASTNode::ExprListIterator::ExprListIterator(ASTNode* c){
+  if(c->type == ASTNodeType::Nop)
+    this->current = nullptr;
+  else
+    this->current = c;
+}
+
+bool ASTNode::ExprListIterator::operator!=(const ExprListIterator& other){
+  return this->current != other.current;
+}
+const ASTNode* ASTNode::ExprListIterator::operator*(){
+  if(this->current->type == ASTNodeType::ExprList)
+    return this->current->children.first;
+  else
+    return this->current;
+}
+const ASTNode* ASTNode::ExprListIterator::operator->(){
+  if(this->current->type == ASTNodeType::ExprList)
+    return this->current->children.first;
+  else
+    return this->current;
+}
+ASTNode::ExprListIterator ASTNode::ExprListIterator::operator++(){
+  if(this->current->type == ASTNodeType::ExprList)
+    this->current = this->current->children.second;
+  else
+    this->current = nullptr;
+  return *this;
+}
+ASTNode::ExprListIterator ASTNode::ExprListIterator::operator++(int){
+  auto temp = *this;
+  if(this->current->type == ASTNodeType::ExprList)
+    this->current = this->current->children.second;
+  else
+    this->current = nullptr;
+  return temp;
 }
 
 #ifndef NDEBUG
@@ -98,8 +125,6 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "string"; break;
   case ASTNodeType::Identifier:
     ret += "identifier"; break;
-  case ASTNodeType::IdentifierList:
-    ret += "identifier list"; break;
   case ASTNodeType::Neg:
     ret += "-"; break;
   case ASTNodeType::Not:
@@ -108,6 +133,8 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "and"; break;
   case ASTNodeType::Or:
     ret += "or"; break;
+  case ASTNodeType::Define:
+    ret += ":="; break;
   case ASTNodeType::Assign:
     ret += "="; break;
   case ASTNodeType::AddAssign:
@@ -152,12 +179,12 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "apply"; break;
   case ASTNodeType::Seq:
     ret += "seq"; break;
-  case ASTNodeType::Conditional:
-    ret += "conditional"; break;
-  case ASTNodeType::Branch:
-    ret += "branch"; break;
-  case ASTNodeType::While:
-    ret += "while"; break;
+  case ASTNodeType::If:
+    ret += "if"; break;
+  case ASTNodeType::Else:
+    ret += "else"; break;
+  case ASTNodeType::For:
+    ret += "for"; break;
   case ASTNodeType::CodeBlock:
     ret += "code block"; break;
   case ASTNodeType::Index:
@@ -170,8 +197,6 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "range"; break;
   case ASTNodeType::Function:
     ret += "function"; break;
-  case ASTNodeType::VarDecl:
-    ret += "var"; break;
   case ASTNodeType::Print:
     ret += "print"; break;
   case ASTNodeType::LexError:
@@ -222,12 +247,6 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "\n";
     ret += this->children.first->toStrDebug(indent + 1);
     ret += this->children.second->toStrDebug(indent + 1);
-    break;
-  case ASTNodeType::StringBranch:
-    ret += ": ";
-    ret += this->string_branch.value->str();
-    ret += "\n";
-    ret += this->string_branch.next->toStrDebug(indent + 1);
     break;
   default:
     assert(false);

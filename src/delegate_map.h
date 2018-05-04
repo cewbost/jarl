@@ -101,6 +101,9 @@ public:
   void set_delegate(DelegateMap* del){
     this->delegate_ = del;
   }
+  DelegateMap* get_delegate(){
+    return this->delegate_;
+  }
   
   typename map_type::iterator begin(){return this->map_.begin();}
   typename map_type::iterator end(){return this->map_.end();}

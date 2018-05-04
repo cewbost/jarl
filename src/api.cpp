@@ -3,12 +3,14 @@
 #include "lexer.h"
 #include "parser.h"
 #include "vm.h"
+#include "code_generator.h"
 
 #ifndef NDEBUG
-#include <iostream>
+#include <cstdio>
 //#define PRINT_LEXEMES
 //#define PRINT_AST
 //#define PRINT_CODE
+//#undef NO_EXECUTE
 #endif
 
 using jarl::vm;
@@ -30,15 +32,15 @@ void jarl::execute(vm v, const char* code){
   
   if(errors.size() > 0){
     for(auto& error: errors){
-      v->print(error.get());
+      v->errPrint(error.get());
     }
     return;
   }
   
   #ifdef PRINT_LEXEMES
-  std::cout << "::lexemes::" << std::endl;
+  fprintf(stderr, "::lexemes::\n");
   for(auto& lex: lexemes){
-    std::cout << lex.toStrDebug() << std::endl;
+    fprintf(stderr, "%s\n", lex.toStrDebug().c_str());
   }
   #endif
   
@@ -47,33 +49,41 @@ void jarl::execute(vm v, const char* code){
   
   if(errors.size() > 0){
     for(auto& error: errors){
-      v->print(error.get());
+      v->errPrint(error.get());
     }
     return;
   }
   
   #ifdef PRINT_AST
-  std::cout << "::AST::" << std::endl;
-  std::cout << parse_tree->toStrDebug() << std::endl;
+  fprintf(stderr, "::AST::\n");
+  fprintf(stderr, "%s\n", parse_tree->toStrDebug().c_str());
   #endif
   
-  Function* proc = new Function(parse_tree, &errors);
+  Function* proc = CodeGenerator::generate(parse_tree, &errors);
+  
   if(errors.size() > 0){
     for(auto& error: errors){
-      v->print(error.get());
+      v->errPrint(error.get());
     }
     delete proc;
     return;
   }
   
   #ifdef PRINT_CODE
-  std::cout << "::proc::\n";
-  std::cout << proc->opcodesToStrDebug() << std::endl;
+  fprintf(stderr, "::proc::\n");
+  fprintf(stderr, "%s\n", proc->opcodesToStrDebug().c_str());
   #endif
   
+  #ifdef NO_EXECUTE
+  delete proc;
+  #else
   v->execute(*proc);
+  #endif
 }
 
 void jarl::set_print_func(vm v, void(*func)(const char*)){
   v->setPrintFunc(func);
+}
+void jarl::set_error_print_func(vm v, void(*func)(const char*)){
+  v->setErrorPrintFunc(func);
 }

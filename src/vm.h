@@ -39,6 +39,7 @@ private:
   > global_table_;
   
   void (*print_func_)(const char*);
+  void (*error_print_func_)(const char*);
   
   FixedVector<TypedValue> stack_;
   std::vector<StackFrame> call_stack_;
@@ -58,7 +59,9 @@ public:
   void execute(const Function&);
   
   void setPrintFunc(void(*)(const char*));
+  void setErrorPrintFunc(void(*)(const char*));
   void print(const char*);
+  void errPrint(const char*);
   
   StackFrame* getFrame();
   
