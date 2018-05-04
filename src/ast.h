@@ -35,7 +35,6 @@ enum class ASTNodeType: unsigned {
   CodeBlock,
   Array,
   Print,
-  VarDecl,
   
   UnaryExpr = 0x1100,
   

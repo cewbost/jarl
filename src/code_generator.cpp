@@ -31,6 +31,7 @@ struct ThreadingContext {
     arguments(0) {}
   
   void putInstruction(OpCodeType op, int pos);
+  void removeStackTop(int pos);
   
   void threadAST(ASTNode*, ASTNode* = nullptr);
 };
@@ -97,8 +98,24 @@ void ThreadingContext::putInstruction(OpCodeType op, int pos){
   this->code.push_back(op);
 }
 
+void ThreadingContext::removeStackTop(int pos){
+  if(code.size() >= 2
+  && (code[code.size() - 2] & ~(Op::Head & ~Op::Extended))
+  == (Op::Push | Op::Extended)){
+    code.pop_back();
+    code.pop_back();
+  }else if(code.back() == Op::Push
+  || code.back() == Op::PushFalse
+  || code.back() == Op::PushTrue){
+    code.pop_back();
+  }else{
+    putInstruction(Op::Pop, pos);
+  }
+}
+
 void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
   #define D_putInstruction(ins) this->putInstruction(ins, node->pos.first)
+  #define D_removeStackTop() this->removeStackTop(node->pos.first)
   
   switch(static_cast<ASTNodeType>(static_cast<unsigned>(node->type) & ~0xff)){
   case ASTNodeType::Error:
@@ -261,7 +278,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         jmp_addr = code.size();
         D_putInstruction((OpCodeType)0);
         threadAST(node->children.second, node);
-        code[jmp_addr] = (OpCodeType)code.size() - 1;
+        code[jmp_addr] = (OpCodeType)code.size();
         break;
         
       case ASTNodeType::Or:
@@ -269,7 +286,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         jmp_addr = code.size();
         D_putInstruction((OpCodeType)0);
         threadAST(node->children.second, node);
-        code[jmp_addr] = (OpCodeType)code.size() - 1;
+        code[jmp_addr] = (OpCodeType)code.size();
         
         break;
       
@@ -282,22 +299,22 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         
         if(node->children.second->type == ASTNodeType::Else){
           threadAST(node->children.second->children.first, node);
-          code[jmp_addr] = (OpCodeType)code.size() + 1;
+          code[jmp_addr] = (OpCodeType)code.size();
           --stack_size;
           D_putInstruction(Op::Jmp | Op::Extended);
           jmp_addr = code.size();
           D_putInstruction((OpCodeType)0);
           threadAST(node->children.second->children.second, node);
-          code[jmp_addr] = (OpCodeType)code.size() + 1;
+          code[jmp_addr] = (OpCodeType)code.size();
         }else{
           threadAST(node->children.second, node);
-          code[jmp_addr] = (OpCodeType)code.size() + 1;
+          code[jmp_addr] = (OpCodeType)code.size();
           --stack_size;
           D_putInstruction(Op::Jmp | Op::Extended);
           jmp_addr = code.size();
           D_putInstruction((OpCodeType)0);
           D_putInstruction(Op::Push);
-          code[jmp_addr] = (OpCodeType)code.size() + 1;
+          code[jmp_addr] = (OpCodeType)code.size();
         }
         break;
         
@@ -328,6 +345,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         }else{
           var_allocs->direct()[node->children.first->string_value] =
             old_stack_size | stack_pos_local;
+          D_putInstruction(Op::Push);
         }
       }
       break;
@@ -444,7 +462,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       
     case ASTNodeType::For:
       {
-        unsigned begin_addr = code.size() - 1;
+        unsigned begin_addr = code.size();
         
         threadAST(node->children.first, node);
         
@@ -454,11 +472,11 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction((OpCodeType)0);
         
         threadAST(node->children.second, node);
-        D_putInstruction(Op::Pop);
+        D_removeStackTop();
         --stack_size;
         D_putInstruction(Op::Jmp | Op::Extended);
-        code[end_jmp_addr] = (OpCodeType)code.size();
         D_putInstruction((OpCodeType)begin_addr);
+        code[end_jmp_addr] = (OpCodeType)code.size();
         
         D_putInstruction(Op::Push);
         ++stack_size;
@@ -510,13 +528,13 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       
     case ASTNodeType::Seq:
       threadAST(node->children.first, node);
-      D_putInstruction(Op::Pop);
+      if(node->children.first->type != ASTNodeType::If){
+        D_removeStackTop();
+      }else{
+        D_putInstruction(Op::Pop);
+      }
       --stack_size;
       threadAST(node->children.second, node);
-      break;
-      
-    case ASTNodeType::VarDecl:
-      assert(false);
       break;
       
     case ASTNodeType::Print:
@@ -557,6 +575,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
   }
   
   #undef D_putInstruction
+  #undef D_removeStackTop
 }
 
 namespace CodeGenerator {

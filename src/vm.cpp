@@ -128,6 +128,8 @@ void VM::execute(const Function& func){
   const OpCodeType* end_it = func.getCode() + func.getCodeSize();
   
   if(setjmp(this->error_jmp_env_) == 0){
+    
+    loop_start:
     while(this->frame_.ip != end_it){
       
       #ifdef PRINT_STACK
@@ -271,13 +273,15 @@ void VM::execute(const Function& func){
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
         this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
-        break;
+        goto loop_start;
       case Op::Jt:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
         stack_.back().toBool();
         if(stack_.back().value.bool_v){
           this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          stack_.pop_back();
+          goto loop_start;
         }
         stack_.pop_back();
         break;
@@ -286,6 +290,8 @@ void VM::execute(const Function& func){
         ++this->frame_.ip;
         if(!stack_.back().value.bool_v){
           this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          stack_.pop_back();
+          goto loop_start;
         }
         stack_.pop_back();
         break;
@@ -295,20 +301,22 @@ void VM::execute(const Function& func){
         stack_.back().toBool();
         if(stack_.back().value.bool_v){
           this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          goto loop_start;
         }else{
           stack_.pop_back();
+          break;
         }
-        break;
       case Op::Jfsc:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
         stack_.back().toBool();
         if(!stack_.back().value.bool_v){
           this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          goto loop_start;
         }else{
           stack_.pop_back();
+          break;
         }
-        break;
       
       case Op::Apply:
         {

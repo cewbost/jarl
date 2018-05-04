@@ -197,8 +197,6 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "range"; break;
   case ASTNodeType::Function:
     ret += "function"; break;
-  case ASTNodeType::VarDecl:
-    ret += "var"; break;
   case ASTNodeType::Print:
     ret += "print"; break;
   case ASTNodeType::LexError:
