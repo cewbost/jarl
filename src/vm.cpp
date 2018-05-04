@@ -449,10 +449,20 @@ void VM::execute(const Function& func){
       
       case Op::Print:
         {
+          int num;
+          if(*this->frame_.ip & Op::Extended){
+            assert(*this->frame_.ip & Op::Int);
+            ++this->frame_.ip;
+            num = *this->frame_.ip;
+          }else num = 1;
           #ifndef NDEBUG
-          auto msg = this->stack_.back().toStrDebug();
+          std::string msg = "";
+          for(int it = stack_.size() - num; it < stack_.size(); ++it){
+            msg += this->stack_[it].toStrDebug();
+          }
           this->print(msg.c_str());
           #endif
+          stack_.resize(stack_.size() - num);
         }
         break;
       

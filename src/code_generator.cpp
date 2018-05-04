@@ -537,8 +537,24 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       break;
       
     case ASTNodeType::Print:
-      threadAST(node->child, node);
-      D_putInstruction(Op::Print);
+      {
+        int num = 0;
+        for(
+          auto it = node->child->exprListIterator();
+          it != node->child->exprListIteratorEnd();
+          ++it
+        ){
+          threadAST(*it, node);
+          ++num;
+        }
+        if(num == 1){
+          D_putInstruction(Op::Print);
+        }else if(num > 1){
+          D_putInstruction(Op::Print | Op::Extended | Op::Int);
+          D_putInstruction((OpCodeType)num);
+        }else /*nop*/;
+        D_putInstruction(Op::Push);
+      }
       break;
       
     case ASTNodeType::Index:

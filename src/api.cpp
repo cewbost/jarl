@@ -9,8 +9,9 @@
 #include <cstdio>
 //#define PRINT_LEXEMES
 //#define PRINT_AST
-//#define PRINT_CODE
-//#undef NO_EXECUTE
+//#define NO_GENERATE
+#define PRINT_CODE
+//#define NO_EXECUTE
 #endif
 
 using jarl::vm;
@@ -57,6 +58,10 @@ void jarl::execute(vm v, const char* code){
   #ifdef PRINT_AST
   fprintf(stderr, "::AST::\n");
   fprintf(stderr, "%s\n", parse_tree->toStrDebug().c_str());
+  #endif
+  
+  #ifdef NO_GENERATE
+  return;
   #endif
   
   Function* proc = CodeGenerator::generate(parse_tree, &errors);

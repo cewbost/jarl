@@ -28,6 +28,7 @@ enum class LexemeType: unsigned {
   L30 = 0x30,
   Else,
   Print,
+  Assert,
   
   RightAssocClass = 0x50,
   Comma,
@@ -124,6 +125,8 @@ inline bool isStopLexeme(const Lexeme& lex){
   case LexemeType::Identifier:
   case LexemeType::String:
   case LexemeType::Null:
+  case LexemeType::Print:
+  case LexemeType::Assert:
     return true;
   default:
     return false;

@@ -166,6 +166,12 @@ ASTNode* Parser::nud_(const Lexeme& lex){
       this->expression_(def_expr_bindp),
       lex.pos
     );
+  case LexemeType::Assert:
+    return new ASTNode(
+      ASTNodeType::Assert,
+      this->expression_(def_expr_bindp),
+      lex.pos
+    );
   
   default:
     this->errors_->emplace_back(dynSprintf(

@@ -64,7 +64,7 @@ ASTNode::~ASTNode(){
 
 //ExprListIterator
 ASTNode::ExprListIterator::ExprListIterator(ASTNode* c){
-  if(c->type == ASTNodeType::Nop)
+  if(c && c->type == ASTNodeType::Nop)
     this->current = nullptr;
   else
     this->current = c;
@@ -73,13 +73,13 @@ ASTNode::ExprListIterator::ExprListIterator(ASTNode* c){
 bool ASTNode::ExprListIterator::operator!=(const ExprListIterator& other){
   return this->current != other.current;
 }
-const ASTNode* ASTNode::ExprListIterator::operator*(){
+ASTNode* ASTNode::ExprListIterator::operator*(){
   if(this->current->type == ASTNodeType::ExprList)
     return this->current->children.first;
   else
     return this->current;
 }
-const ASTNode* ASTNode::ExprListIterator::operator->(){
+ASTNode* ASTNode::ExprListIterator::operator->(){
   if(this->current->type == ASTNodeType::ExprList)
     return this->current->children.first;
   else
@@ -199,6 +199,8 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "function"; break;
   case ASTNodeType::Print:
     ret += "print"; break;
+  case ASTNodeType::Assert:
+    ret += "assert"; break;
   case ASTNodeType::LexError:
     ret += "lex error"; break;
   case ASTNodeType::ParseError:
