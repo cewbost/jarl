@@ -557,6 +557,33 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       }
       break;
       
+    case ASTNodeType::Assert:
+      {
+        if(node->child->type == ASTNodeType::ExprList){
+          if(node->child->children.second->type == ASTNodeType::ExprList){
+            goto num_params_error;
+          }
+          threadAST(node->child->children.second, node);
+          threadAST(node->child->children.first, node);
+          D_putInstruction(Op::Assert | Op::Bool);
+          --stack_size;
+        }else{
+          if(node->child->type == ASTNodeType::Nop){
+            goto num_params_error;
+          }
+          threadAST(node->child, node);
+          D_putInstruction(Op::Assert);
+        }
+        break;
+      
+      num_params_error:
+        errors->emplace_back(dynSprintf(
+          "line %d: Wrong number of parameters to assertion",
+          node->pos.first
+        ));
+        break;
+      }
+      
     case ASTNodeType::Index:
       {
         threadAST(node->children.first, node);

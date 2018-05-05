@@ -129,7 +129,7 @@ void VM::execute(const Function& func){
   
   if(setjmp(this->error_jmp_env_) == 0){
     
-    loop_start:
+  loop_start:
     while(this->frame_.ip != end_it){
       
       #ifdef PRINT_STACK
@@ -288,6 +288,7 @@ void VM::execute(const Function& func){
       case Op::Jf:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
+        stack_.back().toBool();
         if(!stack_.back().value.bool_v){
           this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
           stack_.pop_back();
