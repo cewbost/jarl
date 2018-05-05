@@ -470,6 +470,39 @@ void VM::execute(const Function& func){
           stack_.resize(stack_.size() - num);
         }
         break;
+        
+      case Op::Assert:
+        stack_.back().toBool();
+        if(*this->frame_.ip & Op::Bool){
+          if(!stack_.back().value.bool_v){
+            auto str = stack_[stack_.size() - 2].toCStr();
+            VM* vm = VM::getCurrentVM();
+            char* msg = dynSprintf(
+              "%d: Assertion failed. %s.",
+              vm->getFrame()->func->getLine(vm->getFrame()->ip),
+              str.get()
+            );
+            str = nullptr;
+            vm->errPrint(msg);
+            delete[] msg;
+            vm->errorJmp(1);
+          }else{
+            stack_[stack_.size() - 2] = std::move(stack_.back());
+            stack_.pop_back();
+          }
+        }else{
+          if(!stack_.back().value.bool_v){
+            VM* vm = VM::getCurrentVM();
+            char* msg = dynSprintf(
+              "%d: Assertion failed.",
+              vm->getFrame()->func->getLine(vm->getFrame()->ip)
+            );
+            vm->errPrint(msg);
+            delete[] msg;
+            vm->errorJmp(1);
+          }
+        }
+        break;
       
       default:
         assert(false);

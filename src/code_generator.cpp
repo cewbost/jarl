@@ -167,6 +167,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
               node->pos.first,
               node->string_value->str()
             ));
+            D_putInstruction(Op::Nop);
             break;
           }
           
@@ -178,6 +179,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
               node->pos.first,
               node->string_value->str()
             ));
+            D_putInstruction(Op::Nop);
             break;
           }
           
@@ -331,6 +333,8 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           errors->emplace_back(
             dynSprintf("line %d: Definition of rvalue", node->pos.first)
           );
+          D_putInstruction(Op::Nop);
+          break;
         }
         
         auto old_stack_size = stack_size;
@@ -359,6 +363,8 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         errors->emplace_back(
           dynSprintf("line %d: Assignment to rvalue.", node->pos.first)
         );
+        D_putInstruction(Op::Nop);
+        break;
       }
       
       auto stack_pos = (OpCodeType)(*var_allocs)[node->children.first->string_value];
@@ -500,6 +506,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
               "line %d: Invalid function parameter",
               node->pos.first
             ));
+            D_putInstruction(Op::Nop);
             break;
           }
         }
@@ -581,6 +588,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           "line %d: Wrong number of parameters to assertion",
           node->pos.first
         ));
+        D_putInstruction(Op::Nop);
         break;
       }
       
@@ -609,6 +617,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       errors->emplace_back(dynSprintf(
         "line %d: Range generators not yet supported.", node->pos.first
       ));
+      D_putInstruction(Op::Nop);
       break;
       
     default:
