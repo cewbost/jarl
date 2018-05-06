@@ -23,10 +23,10 @@ full:
 	@./$(shell) $@
 
 $(runner): $(runner).cpp libjarl.a
-	$(CC) $(cc_flags) -L./ -o $@ $< -ljarl
+	$(CXX) $(cc_flags) -L./ -o $@ $< -ljarl
 
 $(runner).o: $(runner).cpp
-	$(CC) $(cc_flags) -c -o $@ $<
+	$(CXX) $(cc_flags) -c -o $@ $<
 
 libjarl.a: $(jarl_source_files)
 	cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
