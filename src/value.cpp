@@ -861,7 +861,10 @@ void TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
     cmp = this->value.int_v - other->value.int_v;
     break;
   case TypeTag::Float:
-    cmp = this->value.float_v - other->value.float_v;
+    {
+      float fcmp = this->value.float_v - other->value.float_v;
+      cmp = fcmp < 0.? -1 : (fcmp > 0.? 1 : 0);
+    }
     break;
   case TypeTag::String:
     cmp = this->value.string_v->cmp(*other->value.string_v);
