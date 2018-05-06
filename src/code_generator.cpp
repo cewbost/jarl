@@ -343,13 +343,12 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         if(it != var_allocs->direct().end()){
           D_putInstruction(Op::Write | Op::Extended | Op::Dest);
           D_putInstruction(it->second);
-          D_putInstruction(Op::Push | Op::Extended);
-          D_putInstruction(it->second);
         }else{
           var_allocs->direct()[node->children.first->string_value] =
             old_stack_size | stack_pos_local;
-          D_putInstruction(Op::Push);
         }
+        D_putInstruction(Op::Push);
+        ++stack_size;
       }
       break;
     default:

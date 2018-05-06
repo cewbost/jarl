@@ -98,8 +98,4 @@ public:
   #endif
 };
 
-#ifndef NDEBUG
-std::string opCodeToStrDebug(OpCodeType);
-#endif
-
 #endif

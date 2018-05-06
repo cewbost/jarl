@@ -1,6 +1,12 @@
 #ifndef OP_CODES_H_INCLUDED
 #define OP_CODES_H_INCLUDED
 
+#include <cstdint>
+
+#ifndef NDEBUG
+#include <string>
+#endif
+
 using OpCodeType        = uint16_t;
 using OpCodeSignedType  = int16_t;
 
@@ -57,5 +63,9 @@ struct Op{
     Head     = 0xf000
   };
 };
+
+#ifndef NDEBUG
+std::string opCodeToStrDebug(OpCodeType);
+#endif
 
 #endif

@@ -1,0 +1,8 @@
+x := 8
+y := 5
+
+assert x + y == 13, "x + y should work"
+assert x - y == 3, "x - y should work"
+assert x * y == 40, "x * y should work"
+assert x / y == 1, "x / y should work"
+assert x % y == 3, "x % y should work"
