@@ -797,6 +797,12 @@ void TypedValue::cmp(const TypedValue& rhs){
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
   switch(this->type){
+  case TypeTag::Null:
+    if(other->type == TypeTag::Null){
+      this->type = TypeTag::Int;
+      this->value.int_v = 0;
+    }else goto error;
+    break;
   case TypeTag::Bool:
     if(other->type == TypeTag::Bool){
       this->type = TypeTag::Int;
@@ -857,6 +863,9 @@ void TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
   
   int cmp;
   switch(this->type){
+  case TypeTag::Null:
+    cmp = 0;
+    break;
   case TypeTag::Bool:
     cmp = this->value.bool_v - other->value.bool_v;
     break;
