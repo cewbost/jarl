@@ -1,0 +1,10 @@
+a := "Hello"
+b := "World!"
+c := a ++ ", " ++ b
+d := "abc"
+e := "def"
+
+assert c == "Hello, World!", "addition should work"
+assert d < e, "comparison should work"
+assert c > a, "comparison should work by length"
+assert e <=> d == 3, "two way comparison should work"
