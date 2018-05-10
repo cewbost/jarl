@@ -825,7 +825,9 @@ void TypedValue::cmp(const TypedValue& rhs){
   case TypeTag::String:
     if(other->type == TypeTag::String){
       this->type = TypeTag::Int;
-      this->value.int_v = this->value.string_v->cmp(*other->value.string_v);
+      auto val = this->value.string_v->cmp(*other->value.string_v);
+      this->value.string_v->decRefCount();
+      this->value.int_v = val;
     }else goto error;
     break;
   default:
