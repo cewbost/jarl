@@ -533,10 +533,12 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       
     case ASTNodeType::Seq:
       threadAST(node->children.first, node);
-      if(node->children.first->type != ASTNodeType::If){
-        D_removeStackTop();
-      }else{
+      if(node->children.first->type == ASTNodeType::If
+      || (node->children.first->type == ASTNodeType::Seq
+      && node->children.first->children.second->type == ASTNodeType::If)){
         D_putInstruction(Op::Pop);
+      }else{
+        D_removeStackTop();
       }
       --stack_size;
       threadAST(node->children.second, node);

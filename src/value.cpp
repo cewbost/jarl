@@ -1070,6 +1070,9 @@ void TypedValue::toBool(){
   TypedValue* value = this->type == TypeTag::Rvalue? this->value.rvalue_v : this;
   
   switch(value->type){
+  case TypeTag::Null:
+    value->value.bool_v = false;
+    break;
   case TypeTag::Bool:
     break;
   case TypeTag::Int:
@@ -1100,6 +1103,9 @@ void TypedValue::toBool(bool* ret){
   TypedValue* value = this->type == TypeTag::Rvalue? this->value.rvalue_v : this;
   
   switch(value->type){
+  case TypeTag::Null:
+    *ret = false;
+    break;
   case TypeTag::Bool:
     *ret = value->value.bool_v;
     break;
