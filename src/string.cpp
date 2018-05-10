@@ -1,5 +1,7 @@
 #include "string.h"
 
+#include <cstring>
+
 #ifndef NDEBUG
 #include "alloc_monitor.h"
 #include <cstdio>
@@ -75,6 +77,17 @@ String::String(const char* cs, int csl, const String* st)
   memcpy(this->mut_str_(), cs, csl);
   memcpy(this->mut_str_() + csl, st->str(), st->len());
   this->mut_str_()[this->len_] = '\0';
+}
+
+int String::cmp(const String& other)const{
+  return this->cmp(other.str());
+}
+int String::cmp(const char* other)const{
+  const char* this_str = this->str();
+  for(int i = 0;; ++i){
+    int diff = this_str[i] - other[i];
+    if(diff != 0 || this_str[i] == 0) return diff;
+  }
 }
 
 size_t String::hash()const{

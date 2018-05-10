@@ -7,6 +7,7 @@
 #include <iterator>
 
 #include <cmath>
+#include <cstring>
 #include <cassert>
 
 namespace{
