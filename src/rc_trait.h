@@ -44,6 +44,11 @@
 #include <new>
 #include <type_traits>
 
+#ifndef NDEBUG
+#include <cstdio>
+#define PRINT_REFCOUNTS
+#endif
+
 template<class T>
 class rc_ptr;
 template<class T>
@@ -63,9 +68,15 @@ protected:
 
   void incRefCount()const{
     ++refcount_;
+    #ifdef PRINT_REFCOUNTS
+    fprintf(stderr, "incRefCount: %p -> %d\n", this, refcount_);
+    #endif
   }
   void decRefCount()const{
     --refcount_;
+    #ifdef PRINT_REFCOUNTS
+    fprintf(stderr, "decRefCount: %p -> %d\n", this, refcount_);
+    #endif
     if(refcount_ == 0){
       static_cast<const T*>(this)->~T();
       if(weakrefcount_ == 0){
@@ -80,9 +91,15 @@ protected:
   
   void incWeakRefCount()const{
     ++weakrefcount_;
+    #ifdef PRINT_REFCOUNTS
+    fprintf(stderr, "incWeakRefCount: %p -> %d\n", this, weakrefcount_);
+    #endif
   }
   void decWeakRefCount()const{
     --weakrefcount_;
+    #ifdef PRINT_REFCOUNTS
+    fprintf(stderr, "decWeakRefCount: %p -> %d\n", this, weakrefcount_);
+    #endif
     if(refcount_ + weakrefcount_ == 0){
       T::operator delete(
         const_cast<typename std::remove_const<T>::type*>(

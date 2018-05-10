@@ -8,8 +8,9 @@
 
 #ifndef NDEBUG
 #include <cstdio>
-//#define PRINT_STACK
-//#define PRINT_OP
+#define PRINT_STACK
+#define PRINT_OP
+#define PRINT_ERROR_JUMPS
 #endif
 
 namespace {
@@ -534,6 +535,9 @@ VM::StackFrame* VM::getFrame(){
 }
 
 void VM::errorJmp(int val){
+  #ifdef PRINT_ERROR_JUMPS
+  fprintf(stderr, "error jump!\n");
+  #endif
   longjmp(this->error_jmp_env_, val);
 }
 

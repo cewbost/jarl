@@ -868,6 +868,7 @@ void TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
     break;
   case TypeTag::String:
     cmp = this->value.string_v->cmp(*other->value.string_v);
+    this->value.string_v->decRefCount();
     break;
   default:
     goto error;
@@ -1288,6 +1289,7 @@ const char* TypedValue::typeStr() const {
     return "array";
   default:
     assert(false);
+    return nullptr;
   }
 }
 

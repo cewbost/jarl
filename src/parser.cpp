@@ -178,6 +178,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
       "line %d: Expected expression.",
       (this->lcurrent_ - 1)->pos.first
     ));
+    return new ASTNode(ASTNodeType::ParseError, lex.pos);
   }
 }
 
