@@ -46,7 +46,7 @@
 
 #ifndef NDEBUG
 #include <cstdio>
-#define PRINT_REFCOUNTS
+//#define PRINT_REFCOUNTS
 #endif
 
 template<class T>

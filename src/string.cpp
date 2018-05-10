@@ -4,7 +4,7 @@
 #include "alloc_monitor.h"
 #include <cstdio>
 
-#define MONITOR_ALL_ALLOCS
+//#define MONITOR_ALL_ALLOCS
 #endif
 
 namespace{
