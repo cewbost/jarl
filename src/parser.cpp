@@ -298,7 +298,7 @@ ASTNode* Parser::expression_(int bindp){
 }
 
 Parser::Parser(const std::vector<Lexeme>& lexes)
-: lbegin_(lexes.cbegin()), lend_(lexes.cend()) {
+: lbegin_(lexes.cbegin() + 1), lend_(lexes.cend()) {
   this->lcurrent_ = this->lbegin_;
 }
 

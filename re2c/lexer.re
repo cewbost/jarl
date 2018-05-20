@@ -100,7 +100,7 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
   
   std::vector<Lexeme> lexemes;
   std::stack<char> br_stack;
-  br_stack.push('{');
+  br_stack.push('#');
   
   uint16_t line = 1;
   const char* line_start = reader;
@@ -110,6 +110,8 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
   #define PUT_LEXEME(params) \
     lexemes.emplace_back(params, std::make_pair(line, token - line_start)); \
     continue;
+  
+  PLACE_LEXEME(LexemeType::Semicolon);
   
   for(;;){
     token = reader;
@@ -136,7 +138,9 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       [ \t\r\v\f]         {continue;}
       
       "\n" {
-        if(br_stack.top() == '{' && isStopLexeme(lexemes.back())){
+        if((br_stack.top() == '{'
+        || br_stack.top() == '#')
+        && isStopLexeme(lexemes.back())){
           PLACE_LEXEME(LexemeType::Newline);
         }
         ++line;
