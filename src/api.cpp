@@ -8,7 +8,7 @@
 #ifndef NDEBUG
 #include <cstdio>
 //#define PRINT_LEXEMES
-//#define PRINT_AST
+#define PRINT_AST
 //#define NO_GENERATE
 #define PRINT_CODE
 //#define NO_EXECUTE
@@ -64,7 +64,7 @@ void jarl::execute(vm v, const char* code){
   return;
   #endif
   
-  Function* proc = CodeGenerator::generate(parse_tree, &errors);
+  Function* proc = CodeGenerator::generate(std::move(parse_tree), &errors);
   
   if(errors.size() > 0){
     for(auto& error: errors){

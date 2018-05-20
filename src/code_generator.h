@@ -11,7 +11,7 @@ namespace CodeGenerator {
   using VectorMapBase = VectorMapDefault<String*, OpCodeType>::base_type;
   
   Function* generate(
-    ASTNode* parse_tree,
+    std::unique_ptr<ASTNode>&& parse_tree,
     std::vector<std::unique_ptr<char[]>>* errors
   );
 }

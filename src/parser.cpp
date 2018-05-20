@@ -302,7 +302,7 @@ Parser::Parser(const std::vector<Lexeme>& lexes)
   this->lcurrent_ = this->lbegin_;
 }
 
-ASTNode* Parser::parse(std::vector<std::unique_ptr<char[]>>* errors){
+std::unique_ptr<ASTNode> Parser::parse(std::vector<std::unique_ptr<char[]>>* errors){
   this->errors_ = errors;
-  return this->expression_(def_block_bindp);
+  return std::unique_ptr<ASTNode>(this->expression_(def_block_bindp));
 }

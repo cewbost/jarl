@@ -39,7 +39,7 @@ struct ThreadingContext {
 namespace {
   
   Function* generate_(
-    ASTNode* parse_tree,
+    std::unique_ptr<ASTNode>&& parse_tree,
     std::vector<std::unique_ptr<char[]>>* errors,
     VarAllocMap* var_allocs,
     VarAllocMap* context_var_allocs = nullptr
@@ -56,7 +56,7 @@ namespace {
     
     auto pos = parse_tree->pos.first;
     context.code_positions.emplace_back(pos, 0);
-    context.threadAST(parse_tree);
+    context.threadAST(parse_tree.get());
     if(!errors->empty()) return nullptr;
     context.putInstruction(Op::Return, pos);
     
@@ -79,8 +79,6 @@ namespace {
         }
       }
     }
-    
-    delete parse_tree;
     
     return new Function(
       std::move(context.code),
@@ -510,7 +508,10 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           }
         }
         
-        auto func = generate_(node->children.second, errors, var_alloc, var_allocs);
+        auto func = generate_(
+          std::unique_ptr<ASTNode>(node->children.second),
+          errors, var_alloc, var_allocs
+        );
         
         node->children.second = nullptr;
         D_putInstruction(Op::Push | Op::Extended);
@@ -633,11 +634,11 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
 namespace CodeGenerator {
   
   Function* generate(
-    ASTNode* parse_tree,
+    std::unique_ptr<ASTNode>&& parse_tree,
     std::vector<std::unique_ptr<char[]>>* errors
   ){
     VarAllocMap* var_allocs = new VarAllocMap(nullptr);
-    auto ret = generate_(parse_tree, errors, var_allocs);
+    auto ret = generate_(std::move(parse_tree), errors, var_allocs);
     delete var_allocs;
     return ret;
   }
