@@ -29,7 +29,7 @@ $(runner).o: $(runner).cpp
 	$(CXX) $(cc_flags) -c -o $@ $<
 
 libjarl.a: $(jarl_source_files)
-	cmake -DCMAKE_BUILD_TYPE=RelWithDebugInfo ..
+	cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
 	$(MAKE) --no-print-directory -f Makefile
 
 clean:
