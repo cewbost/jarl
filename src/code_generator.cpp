@@ -313,6 +313,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           jmp_addr = code.size();
           D_putInstruction((OpCodeType)0);
           D_putInstruction(Op::Push);
+          ++stack_size;
           code[jmp_addr] = (OpCodeType)code.size();
         }
         break;

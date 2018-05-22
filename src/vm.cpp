@@ -8,9 +8,9 @@
 
 #ifndef NDEBUG
 #include <cstdio>
-#define PRINT_STACK
-#define PRINT_OP
-#define PRINT_ERROR_JUMPS
+//#define PRINT_STACK
+//#define PRINT_OP
+//#define PRINT_ERROR_JUMPS
 #endif
 
 namespace {
