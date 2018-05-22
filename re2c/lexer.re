@@ -111,7 +111,7 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
     lexemes.emplace_back(params, std::make_pair(line, token - line_start)); \
     continue;
   
-  PLACE_LEXEME(LexemeType::Semicolon);
+  lexemes.emplace_back(LexemeType::Semicolon, std::make_pair(0, 0));
   
   for(;;){
     token = reader;
@@ -379,12 +379,15 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       *       {goto lex_block_comment;}
       "/""*"  {++counter; goto lex_block_comment;}
       "*""/"  {if(--counter) goto lex_block_comment; else continue;}
-      "\n" "\n" {
+      "\n" {
         ++line;
         line_start = reader;
-        if(br_stack.top() == '{' && isStopLexeme(lexemes.back())){
+        if((br_stack.top() == '{'
+        || br_stack.top() == '#')
+        && isStopLexeme(lexemes.back())){
           PLACE_LEXEME(LexemeType::Newline);
         }
+        goto lex_block_comment;
       }
     */
   }
