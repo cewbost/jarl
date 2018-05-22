@@ -1,7 +1,7 @@
 cc_flags = -Wall -std=c++17 -g -O3
 
-runner = test_runner
-shell = test.sh
+test_bin = test_runner
+test_runner = test_runner.sh
 test_out = test.out
 
 srcdir = ../src
@@ -13,19 +13,19 @@ test_targets = $(subst .jarl,.out,$(tests))
 .PHONY: all full clean
 
 all: $(test_targets)
-	@./$(shell) new_tests
+	@./$(test_runner) new_tests
 
 full:
 	@touch *.jarl
 	@$(MAKE) --no-print-directory
 
-%.out: %.jarl $(runner)
-	@./$(shell) $@
+%.out: %.jarl $(test_bin) $(test_runner)
+	@./$(test_runner) $@
 
-$(runner): $(runner).cpp libjarl.a
+$(test_bin): $(test_bin).cpp libjarl.a
 	$(CXX) $(cc_flags) -L./ -o $@ $< -ljarl
 
-$(runner).o: $(runner).cpp
+$(test_bin).o: $(test_bin).cpp
 	$(CXX) $(cc_flags) -c -o $@ $<
 
 libjarl.a: $(jarl_source_files)
@@ -33,6 +33,6 @@ libjarl.a: $(jarl_source_files)
 	$(MAKE) --no-print-directory -f Makefile
 
 clean:
-	rm $(runner)
+	rm $(test_bin)
 	$(MAKE) --no-print-directory -f Makefile clean
 

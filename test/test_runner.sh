@@ -1,5 +1,10 @@
 #!/usr/bin/bash
 
+green_c='\033[1;32m'
+blue_c='\033[1;34m'
+red_c='\033[1;31m'
+no_c='\033[0m'
+
 runner=test_runner
 results_file=test.out
 
@@ -10,19 +15,25 @@ function run_test {
     ${1/%.out/.jarl} 1>$1 2>${1/%.out/.grind}
   case $? in
   0)
-    echo "Success!" >>$1
+    echo -e "Success!" >>$1
+    success=true
     ;;
   1)
-    echo "Failed!" >>$1
+    echo -e "Failed!" >>$1
     ;;
   2)
     echo "Valgrind caught errors." >>$1
     cat ${1/%.out/.grind} >>$1
-    echo "Failed!" >>$1
+    echo -e "Failed!" >>$1
     ;;
   esac
   rm ${1/%.out/.grind}
+  if [ -z $success ]
+  then echo -ne $red_c
+  else echo -ne $green_c
+  fi
   cat $1
+  echo -en $no_c
 }
 
 function compile_test_results {
@@ -52,14 +63,23 @@ function compile_test_results {
     fi
   done
   
-  final_line="tests: $((good+bad)), success: $good, fail: $bad"
-  echo $final_line >>"$results_file.temp"
+  echo "tests: $((good+bad)), success: $good, fail: $bad" >>"$results_file.temp"
   mv "$results_file.temp" $results_file
   
-  if [ "$1" = "new_tests" ]
-  then echo "tests: $((new_good+new_bad)), success: $new_good, fail: $new_bad"
-  else echo $final_line
+  if [ "$1" = "new_tests" ]; then
+    if [ $new_bad -ne 0 ]
+    then echo -ne $red_c
+    else echo -ne $blue_c
+    fi
+    echo -e "tests: $((new_good+new_bad)), success: $new_good, fail: $new_bad"
+  else
+    if [ $bad -ne 0 ]
+    then echo -ne $red_c
+    else echo -ne $blue_c
+    fi
+    echo -e "tests: $((good+bad)), success: $good, fail: $bad"
   fi
+  echo -ne $no_c
 }
 
 if [ "$1" = "" ];
