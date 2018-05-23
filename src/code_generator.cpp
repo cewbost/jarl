@@ -365,7 +365,18 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         break;
       }
       
-      auto stack_pos = (OpCodeType)(*var_allocs)[node->children.first->string_value];
+      auto it = var_allocs->find(node->children.first->string_value);
+      if(it == var_allocs->end()){
+        errors->emplace_back(dynSprintf(
+          "line %d: Undeclared identifier '%s'.",
+          node->children.first->pos.first,
+          node->children.first->string_value->str()
+        ));
+        D_putInstruction(Op::Nop);
+        break;
+      }
+      auto stack_pos = it->second;
+      
       threadAST(node->children.second, node);
       switch(node->type){
       case ASTNodeType::Assign:
