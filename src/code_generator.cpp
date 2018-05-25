@@ -628,6 +628,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       
     case ASTNodeType::Nop:
       D_putInstruction(Op::Push);
+      ++stack_size;
       break;
       
     case ASTNodeType::Range:

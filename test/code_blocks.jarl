@@ -18,3 +18,13 @@ a = {
   a + b;
 }
 assert a == null, "code blocks ending on semicolon should evaluate to null"
+
+a = {
+  b := 3
+  c := {
+    d := b + 2
+    d + 2
+  }
+  b * c
+}
+assert a == 21, "nested code blocks should work"

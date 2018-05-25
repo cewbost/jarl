@@ -1,0 +1,19 @@
+acc := 0
+n := 0
+for n <= 10: {
+  acc += n
+  n += 1
+}
+assert acc == 55, "loops should work"
+
+acc = 0
+n = 1
+for n <= 5: {
+  m := 1
+  for m <= 5: {
+    acc += n * m
+    m += 1
+  }
+  n += 1
+}
+assert acc == 225, "nested loops should work"
