@@ -97,18 +97,21 @@ void ThreadingContext::putInstruction(OpCodeType op, int pos){
 }
 
 void ThreadingContext::removeStackTop(int pos){
-  if(code.size() >= 2
-  && (code[code.size() - 2] & ~(Op::Head & ~Op::Extended))
-  == (Op::Push | Op::Extended)){
-    code.pop_back();
-    code.pop_back();
-  }else if(code.back() == Op::Push
-  || code.back() == Op::PushFalse
-  || code.back() == Op::PushTrue){
-    code.pop_back();
+  if(code.size() >= 2 && (code[code.size() - 2] & Op::Extended) == Op::Extended){
+    if((code[code.size() - 2] & ~Op::Head) == Op::Push){
+      code.pop_back();
+      code.pop_back();
+      return;
+    }
   }else{
-    putInstruction(Op::Pop, pos);
+    if(code.back() == Op::Push
+    || code.back() == Op::PushFalse
+    || code.back() == Op::PushTrue){
+      code.pop_back();
+      return;
+    }
   }
+  putInstruction(Op::Pop, pos);
 }
 
 void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
