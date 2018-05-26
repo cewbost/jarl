@@ -625,16 +625,25 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       {
         threadAST(node->children.first, node);
         
-        if(node->children.second->type == ASTNodeType::Range){
+        if(node->children.second->type == ASTNodeType::ExprList){
+          if(node->children.second->children.first->type == ASTNodeType::ExprList
+          || node->children.second->children.second->type == ASTNodeType::ExprList){
+            errors->emplace_back(dynSprintf(
+              "line %d: too many parameters in index",
+              node->pos.first
+            ));
+            D_putInstruction(Op::Nop);
+            break;
+          }
           threadAST(node->children.second->children.first, node);
           threadAST(node->children.second->children.second, node);
           D_putInstruction(Op::Slice);
+          stack_size -= 2;
         }else{
           threadAST(node->children.second, node);
           D_putInstruction(Op::Get);
+          --stack_size;
         }
-        
-        --stack_size;
       }
       break;
       
