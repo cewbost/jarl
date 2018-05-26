@@ -292,6 +292,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction(Op::Jfsc | Op::Extended);
         jmp_addr = code.size();
         D_putInstruction((OpCodeType)0);
+        --stack_size;
         threadAST(node->children.second, node);
         code[jmp_addr] = (OpCodeType)code.size();
         break;
@@ -300,6 +301,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction(Op::Jtsc | Op::Extended);
         jmp_addr = code.size();
         D_putInstruction((OpCodeType)0);
+        --stack_size;
         threadAST(node->children.second, node);
         code[jmp_addr] = (OpCodeType)code.size();
         break;
