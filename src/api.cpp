@@ -74,11 +74,6 @@ void jarl::execute(vm v, const char* code){
     return;
   }
   
-  #ifdef PRINT_CODE
-  fprintf(stderr, "::proc::\n");
-  fprintf(stderr, "%s\n", proc->opcodesToStrDebug().c_str());
-  #endif
-  
   #ifdef NO_EXECUTE
   delete proc;
   #else

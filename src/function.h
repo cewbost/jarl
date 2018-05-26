@@ -79,8 +79,8 @@ public:
   
   PartiallyApplied(const Function*);
   
-  bool apply(const TypedValue&, int);
-  bool apply(TypedValue&&, int);
+  void apply(const TypedValue&, int);
+  void apply(TypedValue&&, int);
   
   const Function* getFunc()const{return this->func_.get();}
   

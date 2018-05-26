@@ -28,7 +28,7 @@ Function::Function(
 PartiallyApplied::PartiallyApplied(const Function* func)
 : func_(func), args_(func->arguments), nargs(func->arguments){}
 
-bool PartiallyApplied::apply(const TypedValue& val, int bind_pos){
+void PartiallyApplied::apply(const TypedValue& val, int bind_pos){
   assert(this->nargs > 0);
   for(auto& slot: this->args_){
     if(slot.type == TypeTag::None){
@@ -38,9 +38,9 @@ bool PartiallyApplied::apply(const TypedValue& val, int bind_pos){
       }
     }
   }
-  return --this->nargs == 0;
+  --this->nargs;
 }
-bool PartiallyApplied::apply(TypedValue&& val, int bind_pos){
+void PartiallyApplied::apply(TypedValue&& val, int bind_pos){
   assert(this->nargs > 0);
   for(auto& slot: this->args_){
     if(slot.type == TypeTag::None){
@@ -50,7 +50,7 @@ bool PartiallyApplied::apply(TypedValue&& val, int bind_pos){
       }
     }
   }
-  return --this->nargs == 0;
+  --this->nargs;
 }
 
 int Function::getLine(const OpCodeType* iit) const {
@@ -98,14 +98,18 @@ std::string Function::opcodesToStrDebug()const{
 }
 
 std::string Function::toStrDebug()const{
-  char buffer[20] = "";
-  std::sprintf(buffer, "%p", (const void*)this);
+  char buffer[32] = "";
+  std::sprintf(buffer, "function %p", this);
   return buffer;
 }
 
 std::string PartiallyApplied::toStrDebug()const{
-  char buffer[20] = "";
-  std::sprintf(buffer, "%p", (const void*)this);
-  return buffer;
+  auto it = this->args_.begin();
+  std::unique_ptr<char[]> buffer(dynSprintf("%s", it->toStrDebug().c_str()));
+  for(++it; it != this->args_.end(); ++it){
+    buffer.reset(dynSprintf("%s, %s", buffer.get(), it->toStrDebug().c_str()));
+  }
+  buffer.reset(dynSprintf("function %p (%s)", this->getFunc(), buffer.get()));
+  return buffer.get();
 }
 #endif

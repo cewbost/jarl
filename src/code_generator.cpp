@@ -2,6 +2,11 @@
 
 #include "code_generator.h"
 
+#ifndef NDEBUG
+#include <cstdio>
+//#define PRINT_CODE
+#endif
+
 using namespace CodeGenerator;
 
 constexpr OpCodeType stack_pos_local = 0x8000;
@@ -22,13 +27,14 @@ struct ThreadingContext {
   ThreadingContext(
     decltype(errors) err,
     decltype(var_allocs) va = nullptr,
-    decltype(context_var_allocs) cva = nullptr
+    decltype(context_var_allocs) cva = nullptr,
+    int args = 0
   )
   : var_allocs(std::move(va)),
     context_var_allocs(cva),
     errors(err),
     stack_size(0),
-    arguments(0) {}
+    arguments(args) {}
   
   void putInstruction(OpCodeType op, int pos);
   void removeStackTop(int pos);
@@ -46,12 +52,11 @@ namespace {
   ){
     assert(var_allocs != nullptr);
     
-    int args = var_allocs->size();
-    
     ThreadingContext context(
       errors,
       std::move(var_allocs),
-      context_var_allocs
+      context_var_allocs,
+      var_allocs->size()
     );
     
     auto pos = parse_tree->pos.first;
@@ -73,19 +78,26 @@ namespace {
       }else{
         extended = 0;
         if(op & stack_pos_local){
-          op = (op & ~stack_pos_local) + context.constants.size() + args;
+          op = (op & ~stack_pos_local) + context.constants.size() + context.arguments;
         }else if(op & stack_pos_const){
-          op = (op & ~stack_pos_const) + args;
+          op = (op & ~stack_pos_const) + context.arguments;
         }
       }
     }
     
-    return new Function(
+    auto func = new Function(
       std::move(context.code),
       std::move(context.constants),
       std::move(context.code_positions),
       context.arguments
     );
+    
+    #ifdef PRINT_CODE
+    fprintf(stderr, "::proc %p::\n", func);
+    fprintf(stderr, "%s\n", func->opcodesToStrDebug().c_str());
+    #endif
+    
+    return func;
   }
 }
 

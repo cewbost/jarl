@@ -61,6 +61,10 @@ void VM::doCmpOp_(const OpCodeType** iptr, CmpMode mode){
 }
 
 void VM::pushFunction_(const Function& func){
+  #ifdef PRINT_OP
+  fprintf(stderr, "entering function %p\n", &func);
+  #endif
+  
   if(this->frame_.func){
     this->call_stack_.push_back(std::move(this->frame_));
   }
@@ -76,6 +80,10 @@ void VM::pushFunction_(const Function& func){
 }
 
 void VM::pushFunction_(const PartiallyApplied& part){
+  #ifdef PRINT_OP
+  fprintf(stderr, "entering function %p\n", part.getFunc());
+  #endif
+  
   assert(part.nargs == 0);
   
   if(this->frame_.func){
@@ -99,6 +107,10 @@ void VM::pushFunction_(const PartiallyApplied& part){
 }
 
 bool VM::popFunction_(){
+  #ifdef PRINT_OP
+  fprintf(stderr, "leaving function %p\n", this->frame_.func);
+  #endif
+  
   if(!this->call_stack_.empty()){
     if(this->stack_.size() > this->frame_.bp){
       this->stack_[this->frame_.bp - 1] = std::move(this->stack_.back());
@@ -366,6 +378,7 @@ void VM::execute(const Function& func){
               this->errorJmp(1);
             }
             
+            callee = new PartiallyApplied(*callee.value.partial_v);
             callee.value.partial_v->apply(std::move(stack_.back()), bind_pos);
             this->stack_.pop_back();
             if(callee.value.partial_v->nargs == 0){
