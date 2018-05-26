@@ -602,6 +602,7 @@ void TypedValue::append(const TypedValue& rhs){
   case TypeTag::Array:
     switch(other->type){
     case TypeTag::Array:
+      *this = new Array(*this->value.array_v);
       std::copy(
         other->value.array_v->begin(),
         other->value.array_v->end(),
