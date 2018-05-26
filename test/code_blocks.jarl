@@ -1,0 +1,30 @@
+a := 5
+{
+  b := 3
+  assert a == 5, "variables should be accessible from lower scope"
+  a := 7
+  assert a == 7, "shadowing should work"
+}
+assert a == 5, "shadowed variables should remain unaltered by being shadowed"
+
+a = {
+  b := 3
+  b + a
+}
+assert a == 8, "codeblocks as expressions should work"
+
+a = {
+  b := 4
+  a + b;
+}
+assert a == null, "code blocks ending on semicolon should evaluate to null"
+
+a = {
+  b := 3
+  c := {
+    d := b + 2
+    d + 2
+  }
+  b * c
+}
+assert a == 21, "nested code blocks should work"

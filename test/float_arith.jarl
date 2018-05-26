@@ -1,0 +1,14 @@
+x := 6.5
+y := 3.5
+eps := 1.0e-6
+
+res := x + y
+assert res < 10.0 + eps and res > 10.0 - eps, "x + y should work"
+res = x - y
+assert res < 3.0 + eps and res > 3.0 - eps, "x - y should work"
+res = x * y
+assert res < 22.75 + eps and res > 22.75 - eps, "x * y should work"
+res = x / y
+assert res < 1.857142857 + eps and res > 1.857142857 - eps, "x / y should work"
+res = x % y
+assert res < 3.0 + eps and res > 3.0 - eps, "x % y should work"

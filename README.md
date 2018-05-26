@@ -1,6 +1,6 @@
 # Jarl
 
-A functional, reactive scripting language, born out of a frustration with more
+A simple functional, reactive scripting language, born out of a frustration with more
 conventional languages like Lua and Squirrel.
 
 The main goal is to make it easier and safer to manage persistent state across several
@@ -34,76 +34,15 @@ The lexer code is generated using re2c. The generated file is included in the sr
 folder, but if you want to generate it again, or modify the lexer, make the changes
 to re2c/lexer.re and run re2c/Makefile.
 
+## Testing
+
+The unit tests are run by GNU make and bash scripts, and depend on valgrind.
+
+To run the tests under linux, make sure you have GCC, GNU Make, CMake and Valgrind
+installed, go to the test directory and run make.
+
 ## Documentation
 
 Todo.
 
-## Examples
-
-Everything is an expression:
-
-```
-//if statements are expressions
-var x = if 1 == 2: "Yes" else "No"
-print x
-//prints "No"
-
-//code blocks are expressions
-x = {
-  var y = 0
-  var z = 5
-  while z > 0: {
-    y = y * 3 + 7
-    z -= 1
-  }
-  y
-}
-print x
-//prints "847"
-
-print (if {
-  var y = 0
-  var z = 5
-  while z > 0: {
-    y = y * 3 + 7
-    z -= 1
-  }
-  y
-} % 2 == 0: "Goodby" else "Hello") ++ ", World!"
-//prints "Hello, World!"
-```
-
-Arrays and slices:
-
-```
-var x = [1:6]
-print x
-//[1, 2, 3, 4, 5]
-print x[1:-1]
-//[2, 3, 4]
-print x[2:] ++ x[:2]
-//[3, 4, 5, 1, 2]
-```
-
-Lambdas, higher order functions, partial application and currying:
-
-```
-var x = 5
-var f = func a: x * a
-print f 2
-//10
-
-f = func a, b, f: f a b
-print f 3 4 (func a * b)
-//12
-
-f = func a, b: a * b
-var g = f 10
-var h = f 2
-print (g 5) + (h 2)
-//54
-
-f = func a: func b: a * b
-print f 3 4
-//12
-```
+For examples of how the language works, check the unit tests.

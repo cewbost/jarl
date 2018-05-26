@@ -9,6 +9,8 @@
 #include "delegate_map.h"
 #include "sso_vector.h"
 
+#include "op_codes.h"
+
 #include <vector>
 #include <memory>
 #include <cstdint>
@@ -23,62 +25,6 @@
 */
 
 class TypedValue;
-
-using OpCodeType        = uint16_t;
-using OpCodeSignedType  = int16_t;
-
-struct Op{
-  enum{
-    Return = 0,
-    Nop,
-    
-    Push,
-    PushTrue,
-    PushFalse,
-    Pop,
-    Reduce,
-    Write,
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Mod,
-    Append,
-    Apply,
-    
-    Neg,
-    Not,
-    
-    Cmp,
-    Eq,
-    Neq,
-    Gt,
-    Lt,
-    Geq,
-    Leq,
-    
-    Get,
-    Slice,
-    
-    Jmp,
-    Jt,
-    Jf,
-    Jtsc,
-    Jfsc,
-    
-    CreateArray,
-    CreateRange,
-    
-    Print,
-    
-    Extended = 0x8000,
-    Dest     = 0x4000,
-    Int      = 0x2000,
-    Bool     = 0x1000,
-    
-    Head     = 0xf000
-  };
-};
 
 class Function: public RcTraitDirect<Function>{
   
@@ -133,8 +79,8 @@ public:
   
   PartiallyApplied(const Function*);
   
-  bool apply(const TypedValue&, int);
-  bool apply(TypedValue&&, int);
+  void apply(const TypedValue&, int);
+  void apply(TypedValue&&, int);
   
   const Function* getFunc()const{return this->func_.get();}
   
@@ -151,9 +97,5 @@ public:
   std::string toStrDebug()const;
   #endif
 };
-
-#ifndef NDEBUG
-std::string opCodeToStrDebug(OpCodeType);
-#endif
 
 #endif

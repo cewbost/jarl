@@ -100,7 +100,7 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
   
   std::vector<Lexeme> lexemes;
   std::stack<char> br_stack;
-  br_stack.push('{');
+  br_stack.push('#');
   
   uint16_t line = 1;
   const char* line_start = reader;
@@ -110,6 +110,8 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
   #define PUT_LEXEME(params) \
     lexemes.emplace_back(params, std::make_pair(line, token - line_start)); \
     continue;
+  
+  lexemes.emplace_back(LexemeType::Semicolon, std::make_pair(0, 0));
   
   for(;;){
     token = reader;
@@ -136,7 +138,9 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       [ \t\r\v\f]         {continue;}
       
       "\n" {
-        if(br_stack.top() == '{' && isStopLexeme(lexemes.back())){
+        if((br_stack.top() == '{'
+        || br_stack.top() == '#')
+        && isStopLexeme(lexemes.back())){
           PLACE_LEXEME(LexemeType::Newline);
         }
         ++line;
@@ -241,14 +245,15 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       }
       
       //keywords
-      "null"  {PUT_LEXEME(LexemeType::Null)}
-      "true"  {PUT_LEXEME(true)}
-      "false" {PUT_LEXEME(false)}
-      "not"   {PUT_LEXEME(LexemeType::Not)}
-      "if"    {PUT_LEXEME(LexemeType::If)}
-      "for"   {PUT_LEXEME(LexemeType::For)}
-      "func"  {PUT_LEXEME(LexemeType::Func)}
-      "print" {PUT_LEXEME(LexemeType::Print)}
+      "null"    {PUT_LEXEME(LexemeType::Null)}
+      "true"    {PUT_LEXEME(true)}
+      "false"   {PUT_LEXEME(false)}
+      "not"     {PUT_LEXEME(LexemeType::Not)}
+      "if"      {PUT_LEXEME(LexemeType::If)}
+      "for"     {PUT_LEXEME(LexemeType::For)}
+      "func"    {PUT_LEXEME(LexemeType::Func)}
+      "print"   {PUT_LEXEME(LexemeType::Print)}
+      "assert"  {PUT_LEXEME(LexemeType::Assert)}
       
       "and"   {
         if(lexemes.back().type == LexemeType::Newline){
@@ -374,12 +379,15 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       *       {goto lex_block_comment;}
       "/""*"  {++counter; goto lex_block_comment;}
       "*""/"  {if(--counter) goto lex_block_comment; else continue;}
-      "\n" "\n" {
+      "\n" {
         ++line;
         line_start = reader;
-        if(br_stack.top() == '{' && isStopLexeme(lexemes.back())){
+        if((br_stack.top() == '{'
+        || br_stack.top() == '#')
+        && isStopLexeme(lexemes.back())){
           PLACE_LEXEME(LexemeType::Newline);
         }
+        goto lex_block_comment;
       }
     */
   }

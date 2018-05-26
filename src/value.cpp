@@ -7,6 +7,7 @@
 #include <iterator>
 
 #include <cmath>
+#include <cstring>
 #include <cassert>
 
 namespace{
@@ -601,6 +602,7 @@ void TypedValue::append(const TypedValue& rhs){
   case TypeTag::Array:
     switch(other->type){
     case TypeTag::Array:
+      *this = new Array(*this->value.array_v);
       std::copy(
         other->value.array_v->begin(),
         other->value.array_v->end(),
@@ -796,6 +798,12 @@ void TypedValue::cmp(const TypedValue& rhs){
   const TypedValue* other = rhs.type == TypeTag::Rvalue? rhs.value.rvalue_v : &rhs;
   
   switch(this->type){
+  case TypeTag::Null:
+    if(other->type == TypeTag::Null){
+      this->type = TypeTag::Int;
+      this->value.int_v = 0;
+    }else goto error;
+    break;
   case TypeTag::Bool:
     if(other->type == TypeTag::Bool){
       this->type = TypeTag::Int;
@@ -825,7 +833,9 @@ void TypedValue::cmp(const TypedValue& rhs){
   case TypeTag::String:
     if(other->type == TypeTag::String){
       this->type = TypeTag::Int;
-      this->value.int_v = this->value.string_v->cmp(*other->value.string_v);
+      auto val = this->value.string_v->cmp(*other->value.string_v);
+      this->value.string_v->decRefCount();
+      this->value.int_v = val;
     }else goto error;
     break;
   default:
@@ -854,6 +864,9 @@ void TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
   
   int cmp;
   switch(this->type){
+  case TypeTag::Null:
+    cmp = 0;
+    break;
   case TypeTag::Bool:
     cmp = this->value.bool_v - other->value.bool_v;
     break;
@@ -861,10 +874,14 @@ void TypedValue::cmp(const TypedValue& rhs, CmpMode mode){
     cmp = this->value.int_v - other->value.int_v;
     break;
   case TypeTag::Float:
-    cmp = this->value.float_v - other->value.float_v;
+    {
+      float fcmp = this->value.float_v - other->value.float_v;
+      cmp = fcmp < 0.? -1 : (fcmp > 0.? 1 : 0);
+    }
     break;
   case TypeTag::String:
     cmp = this->value.string_v->cmp(*other->value.string_v);
+    this->value.string_v->decRefCount();
     break;
   default:
     goto error;
@@ -1054,6 +1071,9 @@ void TypedValue::toBool(){
   TypedValue* value = this->type == TypeTag::Rvalue? this->value.rvalue_v : this;
   
   switch(value->type){
+  case TypeTag::Null:
+    value->value.bool_v = false;
+    break;
   case TypeTag::Bool:
     break;
   case TypeTag::Int:
@@ -1084,6 +1104,9 @@ void TypedValue::toBool(bool* ret){
   TypedValue* value = this->type == TypeTag::Rvalue? this->value.rvalue_v : this;
   
   switch(value->type){
+  case TypeTag::Null:
+    *ret = false;
+    break;
   case TypeTag::Bool:
     *ret = value->value.bool_v;
     break;
@@ -1285,6 +1308,27 @@ const char* TypedValue::typeStr() const {
     return "array";
   default:
     assert(false);
+    return nullptr;
+  }
+}
+
+std::unique_ptr<char[]> TypedValue::toCStr() const {
+  switch(this->type){
+  case TypeTag::Bool:
+    return std::unique_ptr<char[]>
+      (dynSprintf("%s", this->value.bool_v? "true" : "false"));
+  case TypeTag::Int:
+    return std::unique_ptr<char[]>
+      (dynSprintf("%lld", (long long)this->value.int_v));
+  case TypeTag::Float:
+    return std::unique_ptr<char[]>
+      (dynSprintf("%f", (double)this->value.float_v));
+  case TypeTag::String:
+    return std::unique_ptr<char[]>
+      (dynSprintf("%s", this->value.string_v->str()));
+  default:
+    return std::unique_ptr<char[]>
+      (dynSprintf("%s: %p", this->typeStr(), this->value.ptr_v));
   }
 }
 

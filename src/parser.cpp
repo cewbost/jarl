@@ -166,12 +166,19 @@ ASTNode* Parser::nud_(const Lexeme& lex){
       this->expression_(def_expr_bindp),
       lex.pos
     );
+  case LexemeType::Assert:
+    return new ASTNode(
+      ASTNodeType::Assert,
+      this->expression_(def_expr_bindp),
+      lex.pos
+    );
   
   default:
     this->errors_->emplace_back(dynSprintf(
       "line %d: Expected expression.",
       (this->lcurrent_ - 1)->pos.first
     ));
+    return new ASTNode(ASTNodeType::ParseError, lex.pos);
   }
 }
 
@@ -291,11 +298,11 @@ ASTNode* Parser::expression_(int bindp){
 }
 
 Parser::Parser(const std::vector<Lexeme>& lexes)
-: lbegin_(lexes.cbegin()), lend_(lexes.cend()) {
+: lbegin_(lexes.cbegin() + 1), lend_(lexes.cend()) {
   this->lcurrent_ = this->lbegin_;
 }
 
-ASTNode* Parser::parse(std::vector<std::unique_ptr<char[]>>* errors){
+std::unique_ptr<ASTNode> Parser::parse(std::vector<std::unique_ptr<char[]>>* errors){
   this->errors_ = errors;
-  return this->expression_(def_block_bindp);
+  return std::unique_ptr<ASTNode>(this->expression_(def_block_bindp));
 }

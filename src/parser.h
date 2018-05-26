@@ -33,7 +33,7 @@ public:
   
   Parser(const std::vector<Lexeme>&);
   
-  ASTNode* parse(std::vector<std::unique_ptr<char[]>>*);
+  std::unique_ptr<ASTNode> parse(std::vector<std::unique_ptr<char[]>>*);
 };
 
 #endif

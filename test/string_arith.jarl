@@ -1,0 +1,16 @@
+a := "Hello"
+b := "World!"
+c := a ++ ", " ++ b
+d := "abc"
+e := "def"
+
+assert d < e, "comparison should work"
+assert c > a, "comparison should work by length"
+assert e <=> d == 3, "two way comparison should work"
+
+assert c == "Hello, World!", "appending should work"
+assert c[2] == "l", "getting should work"
+assert c[7,] == b, "head slicing should work"
+assert c[,5] == a, "tail slicing should work"
+assert c[2,6] == "llo,", "full slicing should work"
+assert c[-6,-2] == "Worl", "negative slicing should work"

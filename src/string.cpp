@@ -1,8 +1,12 @@
 #include "string.h"
 
+#include <cstring>
+
 #ifndef NDEBUG
 #include "alloc_monitor.h"
 #include <cstdio>
+
+//#define MONITOR_ALL_ALLOCS
 #endif
 
 namespace{
@@ -73,6 +77,17 @@ String::String(const char* cs, int csl, const String* st)
   memcpy(this->mut_str_(), cs, csl);
   memcpy(this->mut_str_() + csl, st->str(), st->len());
   this->mut_str_()[this->len_] = '\0';
+}
+
+int String::cmp(const String& other)const{
+  return this->cmp(other.str());
+}
+int String::cmp(const char* other)const{
+  const char* this_str = this->str();
+  for(int i = 0;; ++i){
+    int diff = this_str[i] - other[i];
+    if(diff != 0 || this_str[i] == 0) return diff;
+  }
 }
 
 size_t String::hash()const{
@@ -269,17 +284,19 @@ String* make_new<String, const String*, double>(const String* st, double val){
 #ifndef NDEBUG
 AllocMonitor<String> string_alloc_monitor([](AllocMsg msg, const String* str){
   switch(msg){
-  //case AllocMsg::Allocation:
-  //  fprintf(stderr, "allocaed string at %p\n", str);
-  //  break;
-  //case AllocMsg::Deallocation:
-  //  fprintf(stderr, "deallocated string at %p\n", str);
-  //  break;
+  #ifdef MONITOR_ALL_ALLOCS
+  case AllocMsg::Allocation:
+    fprintf(stderr, "allocated String at %p\n", str);
+    break;
+  case AllocMsg::Deallocation:
+    fprintf(stderr, "deallocated String at %p\n", str);
+    break;
+  #endif
   case AllocMsg::DoubleAllocation:
-    fprintf(stderr, "double allocated string at %p\n", str);
+    fprintf(stderr, "double allocated String at %p\n", str);
     break;
   case AllocMsg::InvalidFree:
-    fprintf(stderr, "invalid free of string at %p\n", str);
+    fprintf(stderr, "invalid free of String at %p\n", str);
     break;
   }
 });

@@ -2,6 +2,11 @@
 
 #include "code_generator.h"
 
+#ifndef NDEBUG
+#include <cstdio>
+//#define PRINT_CODE
+#endif
+
 using namespace CodeGenerator;
 
 constexpr OpCodeType stack_pos_local = 0x8000;
@@ -22,13 +27,14 @@ struct ThreadingContext {
   ThreadingContext(
     decltype(errors) err,
     decltype(var_allocs) va = nullptr,
-    decltype(context_var_allocs) cva = nullptr
+    decltype(context_var_allocs) cva = nullptr,
+    int args = 0
   )
   : var_allocs(std::move(va)),
     context_var_allocs(cva),
     errors(err),
     stack_size(0),
-    arguments(0) {}
+    arguments(args) {}
   
   void putInstruction(OpCodeType op, int pos);
   void removeStackTop(int pos);
@@ -39,24 +45,23 @@ struct ThreadingContext {
 namespace {
   
   Function* generate_(
-    ASTNode* parse_tree,
+    std::unique_ptr<ASTNode>&& parse_tree,
     std::vector<std::unique_ptr<char[]>>* errors,
     VarAllocMap* var_allocs,
     VarAllocMap* context_var_allocs = nullptr
   ){
     assert(var_allocs != nullptr);
     
-    int args = var_allocs->size();
-    
     ThreadingContext context(
       errors,
       std::move(var_allocs),
-      context_var_allocs
+      context_var_allocs,
+      var_allocs->size()
     );
     
     auto pos = parse_tree->pos.first;
     context.code_positions.emplace_back(pos, 0);
-    context.threadAST(parse_tree);
+    context.threadAST(parse_tree.get());
     if(!errors->empty()) return nullptr;
     context.putInstruction(Op::Return, pos);
     
@@ -73,21 +78,26 @@ namespace {
       }else{
         extended = 0;
         if(op & stack_pos_local){
-          op = (op & ~stack_pos_local) + context.constants.size() + args;
+          op = (op & ~stack_pos_local) + context.constants.size() + context.arguments;
         }else if(op & stack_pos_const){
-          op = (op & ~stack_pos_const) + args;
+          op = (op & ~stack_pos_const) + context.arguments;
         }
       }
     }
     
-    delete parse_tree;
-    
-    return new Function(
+    auto func = new Function(
       std::move(context.code),
       std::move(context.constants),
       std::move(context.code_positions),
       context.arguments
     );
+    
+    #ifdef PRINT_CODE
+    fprintf(stderr, "::proc %p::\n", func);
+    fprintf(stderr, "%s\n", func->opcodesToStrDebug().c_str());
+    #endif
+    
+    return func;
   }
 }
 
@@ -99,18 +109,21 @@ void ThreadingContext::putInstruction(OpCodeType op, int pos){
 }
 
 void ThreadingContext::removeStackTop(int pos){
-  if(code.size() >= 2
-  && (code[code.size() - 2] & ~(Op::Head & ~Op::Extended))
-  == (Op::Push | Op::Extended)){
-    code.pop_back();
-    code.pop_back();
-  }else if(code.back() == Op::Push
-  || code.back() == Op::PushFalse
-  || code.back() == Op::PushTrue){
-    code.pop_back();
+  if(code.size() >= 2 && (code[code.size() - 2] & Op::Extended) == Op::Extended){
+    if((code[code.size() - 2] & ~Op::Head) == Op::Push){
+      code.pop_back();
+      code.pop_back();
+      return;
+    }
   }else{
-    putInstruction(Op::Pop, pos);
+    if(code.back() == Op::Push
+    || code.back() == Op::PushFalse
+    || code.back() == Op::PushTrue){
+      code.pop_back();
+      return;
+    }
   }
+  putInstruction(Op::Pop, pos);
 }
 
 void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
@@ -167,6 +180,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
               node->pos.first,
               node->string_value->str()
             ));
+            D_putInstruction(Op::Nop);
             break;
           }
           
@@ -178,6 +192,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
               node->pos.first,
               node->string_value->str()
             ));
+            D_putInstruction(Op::Nop);
             break;
           }
           
@@ -277,6 +292,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction(Op::Jfsc | Op::Extended);
         jmp_addr = code.size();
         D_putInstruction((OpCodeType)0);
+        --stack_size;
         threadAST(node->children.second, node);
         code[jmp_addr] = (OpCodeType)code.size();
         break;
@@ -285,6 +301,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction(Op::Jtsc | Op::Extended);
         jmp_addr = code.size();
         D_putInstruction((OpCodeType)0);
+        --stack_size;
         threadAST(node->children.second, node);
         code[jmp_addr] = (OpCodeType)code.size();
         break;
@@ -313,6 +330,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           jmp_addr = code.size();
           D_putInstruction((OpCodeType)0);
           D_putInstruction(Op::Push);
+          ++stack_size;
           code[jmp_addr] = (OpCodeType)code.size();
         }
         break;
@@ -331,6 +349,8 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           errors->emplace_back(
             dynSprintf("line %d: Definition of rvalue", node->pos.first)
           );
+          D_putInstruction(Op::Nop);
+          break;
         }
         
         auto old_stack_size = stack_size;
@@ -339,13 +359,12 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         if(it != var_allocs->direct().end()){
           D_putInstruction(Op::Write | Op::Extended | Op::Dest);
           D_putInstruction(it->second);
-          D_putInstruction(Op::Push | Op::Extended);
-          D_putInstruction(it->second);
         }else{
           var_allocs->direct()[node->children.first->string_value] =
             old_stack_size | stack_pos_local;
-          D_putInstruction(Op::Push);
         }
+        D_putInstruction(Op::Push);
+        ++stack_size;
       }
       break;
     default:
@@ -359,9 +378,22 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         errors->emplace_back(
           dynSprintf("line %d: Assignment to rvalue.", node->pos.first)
         );
+        D_putInstruction(Op::Nop);
+        break;
       }
       
-      auto stack_pos = (OpCodeType)(*var_allocs)[node->children.first->string_value];
+      auto it = var_allocs->find(node->children.first->string_value);
+      if(it == var_allocs->end()){
+        errors->emplace_back(dynSprintf(
+          "line %d: Undeclared identifier '%s'.",
+          node->children.first->pos.first,
+          node->children.first->string_value->str()
+        ));
+        D_putInstruction(Op::Nop);
+        break;
+      }
+      auto stack_pos = it->second;
+      
       threadAST(node->children.second, node);
       switch(node->type){
       case ASTNodeType::Assign:
@@ -500,11 +532,15 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
               "line %d: Invalid function parameter",
               node->pos.first
             ));
+            D_putInstruction(Op::Nop);
             break;
           }
         }
         
-        auto func = generate_(node->children.second, errors, var_alloc, var_allocs);
+        auto func = generate_(
+          std::unique_ptr<ASTNode>(node->children.second),
+          errors, var_alloc, var_allocs
+        );
         
         node->children.second = nullptr;
         D_putInstruction(Op::Push | Op::Extended);
@@ -527,45 +563,102 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       
     case ASTNodeType::Seq:
       threadAST(node->children.first, node);
-      if(node->children.first->type != ASTNodeType::If){
-        D_removeStackTop();
-      }else{
+      if(node->children.first->type == ASTNodeType::If
+      || (node->children.first->type == ASTNodeType::Seq
+      && node->children.first->children.second->type == ASTNodeType::If)){
         D_putInstruction(Op::Pop);
+      }else{
+        D_removeStackTop();
       }
       --stack_size;
       threadAST(node->children.second, node);
       break;
       
     case ASTNodeType::Print:
-      threadAST(node->child, node);
-      D_putInstruction(Op::Print);
+      {
+        int num = 0;
+        for(
+          auto it = node->child->exprListIterator();
+          it != node->child->exprListIteratorEnd();
+          ++it
+        ){
+          threadAST(*it, node);
+          ++num;
+        }
+        if(num == 1){
+          D_putInstruction(Op::Print);
+        }else if(num > 1){
+          D_putInstruction(Op::Print | Op::Extended | Op::Int);
+          D_putInstruction((OpCodeType)num);
+        }else /*nop*/;
+        D_putInstruction(Op::Push);
+      }
       break;
+      
+    case ASTNodeType::Assert:
+      {
+        if(node->child->type == ASTNodeType::ExprList){
+          if(node->child->children.second->type == ASTNodeType::ExprList){
+            goto num_params_error;
+          }
+          threadAST(node->child->children.second, node);
+          threadAST(node->child->children.first, node);
+          D_putInstruction(Op::Assert | Op::Bool);
+          --stack_size;
+        }else{
+          if(node->child->type == ASTNodeType::Nop){
+            goto num_params_error;
+          }
+          threadAST(node->child, node);
+          D_putInstruction(Op::Assert);
+        }
+        break;
+      
+      num_params_error:
+        errors->emplace_back(dynSprintf(
+          "line %d: Wrong number of parameters to assertion",
+          node->pos.first
+        ));
+        D_putInstruction(Op::Nop);
+        break;
+      }
       
     case ASTNodeType::Index:
       {
         threadAST(node->children.first, node);
         
-        if(node->children.second->type == ASTNodeType::Range){
+        if(node->children.second->type == ASTNodeType::ExprList){
+          if(node->children.second->children.first->type == ASTNodeType::ExprList
+          || node->children.second->children.second->type == ASTNodeType::ExprList){
+            errors->emplace_back(dynSprintf(
+              "line %d: too many parameters in index",
+              node->pos.first
+            ));
+            D_putInstruction(Op::Nop);
+            break;
+          }
           threadAST(node->children.second->children.first, node);
           threadAST(node->children.second->children.second, node);
           D_putInstruction(Op::Slice);
+          stack_size -= 2;
         }else{
           threadAST(node->children.second, node);
           D_putInstruction(Op::Get);
+          --stack_size;
         }
-        
-        --stack_size;
       }
       break;
       
     case ASTNodeType::Nop:
       D_putInstruction(Op::Push);
+      ++stack_size;
       break;
       
     case ASTNodeType::Range:
       errors->emplace_back(dynSprintf(
         "line %d: Range generators not yet supported.", node->pos.first
       ));
+      D_putInstruction(Op::Nop);
       break;
       
     default:
@@ -580,11 +673,11 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
 namespace CodeGenerator {
   
   Function* generate(
-    ASTNode* parse_tree,
+    std::unique_ptr<ASTNode>&& parse_tree,
     std::vector<std::unique_ptr<char[]>>* errors
   ){
     VarAllocMap* var_allocs = new VarAllocMap(nullptr);
-    auto ret = generate_(parse_tree, errors, var_allocs);
+    auto ret = generate_(std::move(parse_tree), errors, var_allocs);
     delete var_allocs;
     return ret;
   }

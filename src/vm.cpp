@@ -10,6 +10,7 @@
 #include <cstdio>
 //#define PRINT_STACK
 //#define PRINT_OP
+//#define PRINT_ERROR_JUMPS
 #endif
 
 namespace {
@@ -60,6 +61,10 @@ void VM::doCmpOp_(const OpCodeType** iptr, CmpMode mode){
 }
 
 void VM::pushFunction_(const Function& func){
+  #ifdef PRINT_OP
+  fprintf(stderr, "entering function %p\n", &func);
+  #endif
+  
   if(this->frame_.func){
     this->call_stack_.push_back(std::move(this->frame_));
   }
@@ -75,6 +80,10 @@ void VM::pushFunction_(const Function& func){
 }
 
 void VM::pushFunction_(const PartiallyApplied& part){
+  #ifdef PRINT_OP
+  fprintf(stderr, "entering function %p\n", part.getFunc());
+  #endif
+  
   assert(part.nargs == 0);
   
   if(this->frame_.func){
@@ -98,6 +107,10 @@ void VM::pushFunction_(const PartiallyApplied& part){
 }
 
 bool VM::popFunction_(){
+  #ifdef PRINT_OP
+  fprintf(stderr, "leaving function %p\n", this->frame_.func);
+  #endif
+  
   if(!this->call_stack_.empty()){
     if(this->stack_.size() > this->frame_.bp){
       this->stack_[this->frame_.bp - 1] = std::move(this->stack_.back());
@@ -129,7 +142,7 @@ void VM::execute(const Function& func){
   
   if(setjmp(this->error_jmp_env_) == 0){
     
-    loop_start:
+  loop_start:
     while(this->frame_.ip != end_it){
       
       #ifdef PRINT_STACK
@@ -288,6 +301,7 @@ void VM::execute(const Function& func){
       case Op::Jf:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
+        stack_.back().toBool();
         if(!stack_.back().value.bool_v){
           this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
           stack_.pop_back();
@@ -364,6 +378,7 @@ void VM::execute(const Function& func){
               this->errorJmp(1);
             }
             
+            callee = new PartiallyApplied(*callee.value.partial_v);
             callee.value.partial_v->apply(std::move(stack_.back()), bind_pos);
             this->stack_.pop_back();
             if(callee.value.partial_v->nargs == 0){
@@ -449,10 +464,57 @@ void VM::execute(const Function& func){
       
       case Op::Print:
         {
-          #ifndef NDEBUG
-          auto msg = this->stack_.back().toStrDebug();
-          this->print(msg.c_str());
-          #endif
+          int num;
+          if(*this->frame_.ip & Op::Extended){
+            assert(*this->frame_.ip & Op::Int);
+            ++this->frame_.ip;
+            num = *this->frame_.ip;
+          }else num = 1;
+          
+          int it = stack_.size() - num;
+          auto msg = stack_[it].toCStr();
+          for(++it; it < stack_.size(); ++it){
+            char* new_msg = dynSprintf("%s%s",
+              msg.get(),
+              stack_[it].toCStr().release()
+            );
+            msg.reset(new_msg);
+          }
+          this->print(msg.get());
+          stack_.resize(stack_.size() - num);
+        }
+        break;
+        
+      case Op::Assert:
+        stack_.back().toBool();
+        if(*this->frame_.ip & Op::Bool){
+          if(!stack_.back().value.bool_v){
+            auto str = stack_[stack_.size() - 2].toCStr();
+            VM* vm = VM::getCurrentVM();
+            char* msg = dynSprintf(
+              "%d: Assertion failed. %s.",
+              vm->getFrame()->func->getLine(vm->getFrame()->ip),
+              str.get()
+            );
+            str = nullptr;
+            vm->errPrint(msg);
+            delete[] msg;
+            vm->errorJmp(1);
+          }else{
+            stack_[stack_.size() - 2] = std::move(stack_.back());
+            stack_.pop_back();
+          }
+        }else{
+          if(!stack_.back().value.bool_v){
+            VM* vm = VM::getCurrentVM();
+            char* msg = dynSprintf(
+              "%d: Assertion failed.",
+              vm->getFrame()->func->getLine(vm->getFrame()->ip)
+            );
+            vm->errPrint(msg);
+            delete[] msg;
+            vm->errorJmp(1);
+          }
         }
         break;
       
@@ -486,6 +548,9 @@ VM::StackFrame* VM::getFrame(){
 }
 
 void VM::errorJmp(int val){
+  #ifdef PRINT_ERROR_JUMPS
+  fprintf(stderr, "error jump!\n");
+  #endif
   longjmp(this->error_jmp_env_, val);
 }
 

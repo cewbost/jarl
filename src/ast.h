@@ -35,6 +35,7 @@ enum class ASTNodeType: unsigned {
   CodeBlock,
   Array,
   Print,
+  Assert,
   
   UnaryExpr = 0x1100,
   
@@ -129,12 +130,12 @@ struct ASTNode {
   
   //iteration
   struct ExprListIterator {
-    const ASTNode* current;
+    ASTNode* current;
     
     ExprListIterator(ASTNode*);
     bool operator!=(const ExprListIterator&);
-    const ASTNode* operator*();
-    const ASTNode* operator->();
+    ASTNode* operator*();
+    ASTNode* operator->();
     ExprListIterator operator++();
     ExprListIterator operator++(int);
   };

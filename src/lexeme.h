@@ -28,6 +28,7 @@ enum class LexemeType: unsigned {
   L30 = 0x30,
   Else,
   Print,
+  Assert,
   
   RightAssocClass = 0x50,
   Comma,
@@ -53,26 +54,29 @@ enum class LexemeType: unsigned {
   Lt,
   Geq,
   Leq,
-  Cmp,
   
   L90 = 0x90,
   Append,
   
   LA0 = 0xA0,
+  
+  Cmp,
+  
+  LB0 = 0xB0,
   Plus,
   Minus,
   
-  LB0 = 0xB0,
+  LC0 = 0xC0,
   Mul,
   Div,
   Mod,
   
-  ExprClass = 0xC0,
+  ExprClass = 0xD0,
   LParen,
   LBrace,
   LBracket,
   
-  LD0 = 0xD0,
+  LE0 = 0xE0,
   Not,
   Int,
   Float,
@@ -84,7 +88,7 @@ enum class LexemeType: unsigned {
   For,
   Func,
   
-  LE0 = 0xE0,
+  LF0 = 0xF0,
   
   Error
 };
@@ -124,6 +128,8 @@ inline bool isStopLexeme(const Lexeme& lex){
   case LexemeType::Identifier:
   case LexemeType::String:
   case LexemeType::Null:
+  case LexemeType::Print:
+  case LexemeType::Assert:
     return true;
   default:
     return false;

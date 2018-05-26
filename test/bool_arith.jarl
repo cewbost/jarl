@@ -1,0 +1,27 @@
+assert not false, "not should work"
+assert true or false, "or should work"
+assert not (false or false), "or should work"
+assert true and true, "and should work"
+assert not (true and false), "and should work"
+
+x := 0
+b := false or {
+  x += 1
+  true
+}
+b = b or {
+  x += 2
+  false
+}
+assert b and x == 1, "short circuiting with or should work"
+
+x = 0
+b = true and {
+  x += 1
+  false
+}
+b = b and {
+  x += 2
+  true
+}
+assert not b and x == 1, "short circuiting with and should work"

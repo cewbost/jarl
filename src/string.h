@@ -6,7 +6,6 @@
 #include "rc_trait.h"
 
 #include <new>
-#include <cstring>
 #include <functional>
 
 #ifndef NDEBUG
@@ -50,12 +49,8 @@ public:
   String& operator=(const String&) = delete;
   String& operator=(String &&) = delete;
   
-  int cmp(const String& other)const{
-    return strcmp(this->str(), other.str());
-  }
-  int cmp(const char* other)const{
-    return strcmp(this->str(), other);
-  }
+  int cmp(const String& other)const;
+  int cmp(const char* other)const;
   
   size_t hash()const;
   

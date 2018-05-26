@@ -1,1 +1,9 @@
 build/
+test/*.out
+test/*.o
+test/*.a
+test/CMakeFiles
+test/cmake_install.cmake
+test/CMakeCache.txt
+test/Makefile
+test/test_runner

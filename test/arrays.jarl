@@ -1,0 +1,23 @@
+arr1 := [1, 2, 3]
+arr2 := [4, 5, 6]
+arr3 := arr1 ++ arr2
+arr4 := arr3[1,5]
+arr5 := arr3[-4,-2]
+arr6 := arr3[2,]
+arr7 := arr3[,4]
+
+assert arr1[1] == 2, "indexing should work"
+assert arr1[-1] == 3, "negative indexing should work"
+assert arr3[1] == arr1[1] and arr3[4] == arr2[1], "appending should work"
+assert arr4[0] == 2 and arr4[-1] == 5, "slicing should work"
+assert arr5[0] == 3 and arr5[-1] == 4, "negative slicing should work"
+assert arr6[0] == 3 and arr6[-1] == 6, "head slicing should work"
+assert arr7[0] == 1 and arr7[-1] == 4, "tail slicing should work"
+
+marr := [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9]
+]
+assert marr[0][0] + marr[1][1] + marr[2][2] == 15,
+  "multidimensional arrays should work"
