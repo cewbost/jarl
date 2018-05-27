@@ -11,6 +11,10 @@
 //#define PRINT_STACK
 //#define PRINT_OP
 //#define PRINT_ERROR_JUMPS
+#else
+#undef PRINT_STACK
+#undef PRINT_OP
+#undef PRINT_ERROR_JUMPS
 #endif
 
 namespace {

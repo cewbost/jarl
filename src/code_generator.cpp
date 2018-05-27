@@ -5,6 +5,8 @@
 #ifndef NDEBUG
 #include <cstdio>
 //#define PRINT_CODE
+#else
+#undef PRINT_CODE
 #endif
 
 using namespace CodeGenerator;
