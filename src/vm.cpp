@@ -38,6 +38,10 @@ void VM::doArithOp_(
       ++it;
       (this->stack_.back().*op)(this->stack_[this->frame_.bp + *it]);
     }
+  }else if(*it & Op::Borrowed){
+    (this->stack_[this->stack_.size() - 2].value.borrowed_v->*op)
+      (this->stack_.back());
+    this->stack_.pop_back();
   }else{
     (this->stack_[this->stack_.size() - 2].*op)(this->stack_.back());
     this->stack_.pop_back();
@@ -217,10 +221,20 @@ void VM::execute(const Function& func){
         }
         break;
       case Op::Write:
-        assert((*this->frame_.ip & Op::Extended) != 0);
-        ++this->frame_.ip;
-        stack_[this->frame_.bp + *this->frame_.ip] = std::move(stack_.back());
-        stack_.pop_back();
+        switch(*this->frame_.ip & Op::Head){
+        case Op::Extended:
+          ++this->frame_.ip;
+          stack_[frame_.bp + *frame_.ip] = std::move(stack_.back());
+          stack_.pop_back();
+          break;
+        case Op::Borrowed:
+          *stack_[stack_.size() - 2].value.borrowed_v =
+            std::move(stack_.back());
+          stack_.pop_back();
+          break;
+        default:
+          assert(false);
+        }
         break;
       
       case Op::Add:
@@ -404,6 +418,16 @@ void VM::execute(const Function& func){
         }
         break;
         
+      case Op::Borrow:
+        if(*this->frame_.ip & Op::Extended){
+          ++this->frame_.ip;
+          stack_.emplace_back(&stack_[frame_.bp + *frame_.ip]);
+        }else{
+          stack_[stack_.size() - 2].borrow(std::move(stack_.back()));
+          stack_.pop_back();
+        }
+        break;
+      
       case Op::CreateArray:
         if(*this->frame_.ip & Op::Extended){
           assert((*this->frame_.ip & Op::Int) == Op::Int);
@@ -491,7 +515,7 @@ void VM::execute(const Function& func){
         
       case Op::Assert:
         stack_.back().toBool();
-        if(*this->frame_.ip & Op::Bool){
+        if(*this->frame_.ip & Op::Alt){
           if(!stack_.back().value.bool_v){
             auto str = stack_[stack_.size() - 2].toCStr();
             VM* vm = VM::getCurrentVM();

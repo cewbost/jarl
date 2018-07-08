@@ -138,6 +138,10 @@ TypedValue::TypedValue(Array* p){
   value.array_v = p;
   p->incRefCount();
 }
+TypedValue::TypedValue(TypedValue* p){
+  type = TypeTag::Borrow;
+  value.borrowed_v = p;
+}
 TypedValue::TypedValue(const void* p){
   type = TypeTag::Ptr;
   value.ptr_v = const_cast<void*>(p);
@@ -1037,6 +1041,61 @@ error:
   vm->errorJmp(1);
 }
 
+void TypedValue::borrow(const TypedValue& other){
+  assert(this->type == TypeTag::Borrow);
+  switch(this->value.borrowed_v->type){
+  case TypeTag::Array:
+    switch(other.type){
+    case TypeTag::Int:
+      {
+        auto& borrowed = this->value.borrowed_v;
+        Int idx = other.value.int_v;
+        if(other.value.int_v < 0){
+          idx += borrowed->value.array_v->size();
+        }
+        if(idx < 0 || idx >= borrowed->value.array_v->size()) goto index_error;
+        
+        borrowed->clone();
+        borrowed = &borrowed->value.array_v->operator[](idx);
+      }
+      break;
+    default:
+      goto type_error;
+    }
+    break;
+  default:
+    goto type_error;
+  }
+  return;
+  
+type_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf(
+      "%d: Type error. Unsupported operation %s[%s].",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
+      this->typeStr(),
+      other.typeStr()
+    );
+    vm->errPrint(msg);
+    delete[] msg;
+    vm->errorJmp(1);
+  }
+  
+index_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf(
+      "%d: Error. Index %lld out of range.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
+      (long long)other.value.int_v
+    );
+    vm->errPrint(msg);
+    delete[] msg;
+    vm->errorJmp(1);
+  }
+}
+
 void TypedValue::toBool(){
   switch(this->type){
   case TypeTag::Null:
@@ -1249,6 +1308,18 @@ void TypedValue::toPartial(){
   this->type = TypeTag::Partial;
 }
 
+void TypedValue::clone(){
+  switch(this->type){
+  case TypeTag::Array:
+    if(this->value.array_v->getRefCount() > 1){
+      this->value.array_v = new Array(*this->value.array_v);
+      this->value.array_v->incRefCount();
+    }
+  default:
+    assert(false);
+  }
+}
+
 const char* TypedValue::typeStr() const {
   switch(this->type){
   case TypeTag::Null:
@@ -1316,7 +1387,11 @@ std::string TypedValue::toStrDebug()const{
   case TypeTag::Array:
     return this->value.array_v->toStrDebug();
   default:
-    return std::to_string((uintptr_t)this->value.ptr_v);
+    {
+      char buffer[20];
+      sprintf(buffer, "%p", this->value.ptr_v);
+      return buffer;
+    }
   }
 }
 #endif

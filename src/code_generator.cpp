@@ -39,9 +39,9 @@ struct ThreadingContext {
     arguments(args) {}
   
   void putInstruction(OpCodeType op, int pos);
-  void removeStackTop(int pos);
   
   void threadAST(ASTNode*, ASTNode* = nullptr);
+  void threadRexpr(ASTNode* node, ASTNode* prev_node);
 };
 
 namespace {
@@ -110,27 +110,10 @@ void ThreadingContext::putInstruction(OpCodeType op, int pos){
   this->code.push_back(op);
 }
 
-void ThreadingContext::removeStackTop(int pos){
-  if(code.size() >= 2 && (code[code.size() - 2] & Op::Extended) == Op::Extended){
-    if((code[code.size() - 2] & ~Op::Head) == Op::Push){
-      code.pop_back();
-      code.pop_back();
-      return;
-    }
-  }else{
-    if(code.back() == Op::Push
-    || code.back() == Op::PushFalse
-    || code.back() == Op::PushTrue){
-      code.pop_back();
-      return;
-    }
-  }
-  putInstruction(Op::Pop, pos);
-}
+//Threading functions
+#define D_putInstruction(ins) this->putInstruction(ins, node->pos.first)
 
 void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
-  #define D_putInstruction(ins) this->putInstruction(ins, node->pos.first)
-  #define D_removeStackTop() this->removeStackTop(node->pos.first)
   
   switch(static_cast<ASTNodeType>(static_cast<unsigned>(node->type) & ~0xff)){
   case ASTNodeType::Error:
@@ -376,57 +359,35 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     
   case ASTNodeType::AssignExpr:
     {
-      if(node->children.first->type != ASTNodeType::Identifier){
-        errors->emplace_back(
-          dynSprintf("line %d: Assignment to rvalue.", node->pos.first)
-        );
-        D_putInstruction(Op::Nop);
-        break;
-      }
-      
-      auto it = var_allocs->find(node->children.first->string_value);
-      if(it == var_allocs->end()){
-        errors->emplace_back(dynSprintf(
-          "line %d: Undeclared identifier '%s'.",
-          node->children.first->pos.first,
-          node->children.first->string_value->str()
-        ));
-        D_putInstruction(Op::Nop);
-        break;
-      }
-      auto stack_pos = it->second;
-      
+      threadRexpr(node->children.first, node);
       threadAST(node->children.second, node);
+      
       switch(node->type){
       case ASTNodeType::Assign:
-        D_putInstruction(Op::Write | Op::Extended | Op::Dest);
+        D_putInstruction(Op::Write | Op::Borrowed);
         break;
       case ASTNodeType::AddAssign:
-        D_putInstruction(Op::Add | Op::Extended | Op::Dest);
+        D_putInstruction(Op::Add | Op::Borrowed);
         break;
       case ASTNodeType::SubAssign:
-        D_putInstruction(Op::Sub | Op::Extended | Op::Dest);
+        D_putInstruction(Op::Sub | Op::Borrowed);
         break;
       case ASTNodeType::MulAssign:
-        D_putInstruction(Op::Mul | Op::Extended | Op::Dest);
+        D_putInstruction(Op::Mul | Op::Borrowed);
         break;
       case ASTNodeType::DivAssign:
-        D_putInstruction(Op::Div | Op::Extended | Op::Dest);
+        D_putInstruction(Op::Div | Op::Borrowed);
         break;
       case ASTNodeType::ModAssign:
-        D_putInstruction(Op::Mod | Op::Extended | Op::Dest);
+        D_putInstruction(Op::Mod | Op::Borrowed);
         break;
       case ASTNodeType::AppendAssign:
-        D_putInstruction(Op::Append | Op::Extended | Op::Dest);
+        D_putInstruction(Op::Append | Op::Borrowed);
         break;
-        
       default:
         assert(false);
       }
-      
-      D_putInstruction(stack_pos);
-      D_putInstruction(Op::Push | Op::Extended);
-      D_putInstruction(stack_pos);
+      --stack_size;
     }
     break;
     
@@ -505,7 +466,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction((OpCodeType)0);
         
         threadAST(node->children.second, node);
-        D_removeStackTop();
+        D_putInstruction(Op::Pop);
         --stack_size;
         D_putInstruction(Op::Jmp | Op::Extended);
         D_putInstruction((OpCodeType)begin_addr);
@@ -565,13 +526,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       
     case ASTNodeType::Seq:
       threadAST(node->children.first, node);
-      if(node->children.first->type == ASTNodeType::If
-      || (node->children.first->type == ASTNodeType::Seq
-      && node->children.first->children.second->type == ASTNodeType::If)){
-        D_putInstruction(Op::Pop);
-      }else{
-        D_removeStackTop();
-      }
+      D_putInstruction(Op::Pop);
       --stack_size;
       threadAST(node->children.second, node);
       break;
@@ -605,7 +560,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           }
           threadAST(node->child->children.second, node);
           threadAST(node->child->children.first, node);
-          D_putInstruction(Op::Assert | Op::Bool);
+          D_putInstruction(Op::Assert | Op::Alt);
           --stack_size;
         }else{
           if(node->child->type == ASTNodeType::Nop){
@@ -667,10 +622,43 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       assert(false);
     }
   }
-  
-  #undef D_putInstruction
-  #undef D_removeStackTop
 }
+
+void ThreadingContext::threadRexpr(ASTNode* node, ASTNode* prev_node){
+  switch(node->type){
+  case ASTNodeType::Identifier:
+    if(
+      auto it = var_allocs->find(node->string_value);
+      it == var_allocs->end()
+    ){
+      errors->emplace_back(dynSprintf(
+        "line %d: Undeclared identifier '%s'.",
+        node->pos.first, node->string_value
+      ));
+      D_putInstruction(Op::Nop);
+      break;
+    }else{
+      D_putInstruction(Op::Borrow | Op::Extended);
+      D_putInstruction(it->second);
+      ++stack_size;
+    }
+    break;
+  case ASTNodeType::Index:
+    this->threadRexpr(node->children.first, node);
+    this->threadAST(node->children.second, node);
+    D_putInstruction(Op::Borrow | Op::Borrowed);
+    --stack_size;
+    break;
+  default:
+    errors->emplace_back(dynSprintf(
+      "line %d: Assignment to rvalue", node->pos.first
+    ));
+    D_putInstruction(Op::Nop);
+    break;
+  }
+}
+
+#undef D_putInstruction
 
 namespace CodeGenerator {
   

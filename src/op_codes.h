@@ -43,6 +43,9 @@ struct Op{
     Get,
     Slice,
     
+    Store,
+    Borrow,
+    
     Jmp,
     Jt,
     Jf,
@@ -55,12 +58,13 @@ struct Op{
     Print,
     Assert,
     
-    Extended = 0x8000,
-    Dest     = 0x4000,
-    Int      = 0x2000,
-    Bool     = 0x1000,
+    Extended  = 0x8000,
+    Dest      = 0x4000,
+    Int       = 0x2000,
+    Alt       = 0x1000,
+    Borrowed  = 0x0800,
     
-    Head     = 0xf000
+    Head      = 0xf800
   };
 };
 

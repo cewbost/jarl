@@ -37,7 +37,8 @@ enum class TypeTag: Int{
   String,
   Func,
   Partial,
-  Array
+  Array,
+  Borrow
 };
 
 enum class CmpMode{
@@ -60,6 +61,7 @@ struct Value{
     Function*         func_v;
     PartiallyApplied* partial_v;
     Array*            array_v;
+    TypedValue*       borrowed_v;
     void*             ptr_v;
   };
   
@@ -116,6 +118,7 @@ public:
   TypedValue(Function*);
   TypedValue(PartiallyApplied*);
   TypedValue(Array*);
+  TypedValue(TypedValue*);
   TypedValue(const void*);
   
   TypedValue& operator=(nullptr_t);
@@ -155,6 +158,8 @@ public:
   void get(const TypedValue&);
   void slice(const TypedValue&, const TypedValue&);
   
+  void borrow(const TypedValue&);
+  
   void toBool();
   void toBool(bool*);
   void toInt();
@@ -162,6 +167,8 @@ public:
   void toString();
   
   void toPartial();
+  
+  void clone();
   
   const char* typeStr() const;
   std::unique_ptr<char[]> toCStr() const;

@@ -97,6 +97,9 @@ std::string opCodeToStrDebug(OpCodeType op){
   case Op::Slice:
     ret += "slice"s;
     break;
+  case Op::Borrow:
+    ret += "borrow"s;
+    break;
   case Op::Jmp:
     ret += "jmp"s;
     break;
@@ -127,9 +130,10 @@ std::string opCodeToStrDebug(OpCodeType op){
     break;
   }
   
-  if(op & Op::Dest)   ret += " dest"s;
-  if(op & Op::Int)    ret += " int"s;
-  if(op & Op::Bool)   ret += " bool"s;
+  if(op & Op::Dest)     ret += " dest"s;
+  if(op & Op::Int)      ret += " int"s;
+  if(op & Op::Alt)      ret += " alt"s;
+  if(op & Op::Borrowed) ret += " borrowed"s;
   
   return ret;
 }

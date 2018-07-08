@@ -9,7 +9,7 @@ runner=test_runner
 results_file=test.out
 
 function run_test {
-  echo "Testing $1"
+  echo "Testing ${1/%.out/.jarl}"
   
   valgrind --leak-check=full --error-exitcode=2 ./$runner \
     ${1/%.out/.jarl} 1>$1 2>${1/%.out/.grind}
@@ -21,7 +21,7 @@ function run_test {
   1)
     echo -e "Failed!" >>$1
     ;;
-  2)
+  *)
     echo "Valgrind caught errors." >>$1
     cat ${1/%.out/.grind} >>$1
     echo -e "Failed!" >>$1
@@ -52,7 +52,7 @@ function compile_test_results {
       else is_new=0
       fi
       line=$(cat $test | tail -n 1)
-      if [ $line = "Success!" ]; then
+      if [ $line == "Success!" ]; then
         let good=good+1
         let new_good=new_good+1*is_new
       else
@@ -66,7 +66,7 @@ function compile_test_results {
   echo "tests: $((good+bad)), success: $good, fail: $bad" >>"$results_file.temp"
   mv "$results_file.temp" $results_file
   
-  if [ "$1" = "new_tests" ]; then
+  if [ "$1" == "new_tests" ]; then
     if [ $new_bad -ne 0 ]
     then echo -ne $red_c
     else echo -ne $blue_c
@@ -82,9 +82,9 @@ function compile_test_results {
   echo -ne $no_c
 }
 
-if [ "$1" = "" ];
+if [ "$1" == "" ];
 then compile_test_results
-elif [ "$1" = "new_tests" ];
+elif [ "$1" == "new_tests" ];
 then compile_test_results new_tests
 else
   while [ "$1" != "" ]; do
