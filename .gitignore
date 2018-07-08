@@ -7,3 +7,4 @@ test/cmake_install.cmake
 test/CMakeCache.txt
 test/Makefile
 test/test_runner
+test/vgcore.*
