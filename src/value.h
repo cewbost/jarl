@@ -158,7 +158,9 @@ public:
   void get(const TypedValue&);
   void slice(const TypedValue&, const TypedValue&);
   
-  void borrow(const TypedValue&);
+  TypedValue* borrow();
+  
+  void getBorrowed(const TypedValue&);
   
   void toBool();
   void toBool(bool*);

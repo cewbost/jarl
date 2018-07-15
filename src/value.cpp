@@ -1041,7 +1041,18 @@ error:
   vm->errorJmp(1);
 }
 
-void TypedValue::borrow(const TypedValue& other){
+TypedValue* TypedValue::borrow(){
+  switch(this->type){
+  case TypeTag::Array:
+    this->clone();
+    break;
+  default:
+    break;
+  }
+  return this;
+}
+
+void TypedValue::getBorrowed(const TypedValue& other){
   assert(this->type == TypeTag::Borrow);
   switch(this->value.borrowed_v->type){
   case TypeTag::Array:
@@ -1072,7 +1083,7 @@ type_error:
   {
     VM* vm = VM::getCurrentVM();
     char* msg = dynSprintf(
-      "%d: Type error. Unsupported operation %s[%s].",
+      "%d: Type error: Unsupported operation %s[%s].",
       vm->getFrame()->func->getLine(vm->getFrame()->ip),
       this->typeStr(),
       other.typeStr()
@@ -1083,17 +1094,15 @@ type_error:
   }
   
 index_error:
-  {
-    VM* vm = VM::getCurrentVM();
-    char* msg = dynSprintf(
-      "%d: Error. Index %lld out of range.",
-      vm->getFrame()->func->getLine(vm->getFrame()->ip),
-      (long long)other.value.int_v
-    );
-    vm->errPrint(msg);
-    delete[] msg;
-    vm->errorJmp(1);
-  }
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "%d: Error. Index %lld out of range.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
+    (long long)other.value.int_v
+  );
+  vm->errPrint(msg);
+  delete[] msg;
+  vm->errorJmp(1);
 }
 
 void TypedValue::toBool(){
@@ -1315,6 +1324,7 @@ void TypedValue::clone(){
       this->value.array_v = new Array(*this->value.array_v);
       this->value.array_v->incRefCount();
     }
+    break;
   default:
     assert(false);
   }

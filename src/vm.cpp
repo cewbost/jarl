@@ -419,12 +419,17 @@ void VM::execute(const Function& func){
         break;
         
       case Op::Borrow:
-        if(*this->frame_.ip & Op::Extended){
+        switch(*this->frame_.ip & Op::Head){
+        case Op::Extended:
           ++this->frame_.ip;
-          stack_.emplace_back(&stack_[frame_.bp + *frame_.ip]);
-        }else{
-          stack_[stack_.size() - 2].borrow(std::move(stack_.back()));
+          stack_.emplace_back(stack_[frame_.bp + *frame_.ip].borrow());
+          break;
+        case Op::Borrowed:
+          stack_[stack_.size() - 2].getBorrowed(stack_.back());
           stack_.pop_back();
+          break;
+        default:
+          assert(false);
         }
         break;
       
