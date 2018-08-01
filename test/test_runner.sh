@@ -9,7 +9,9 @@ runner=test_runner
 results_file=test.out
 
 function run_test {
-  echo "Testing ${1/%.out/.jarl}"
+  #echo "Testing ${1/%.out/.jarl}"
+  
+  local success
   
   valgrind --leak-check=full --error-exitcode=2 ./$runner \
     ${1/%.out/.jarl} 1>$1 2>${1/%.out/.grind}
@@ -28,22 +30,23 @@ function run_test {
     ;;
   esac
   rm ${1/%.out/.grind}
+  
   if [ -z $success ]
-  then echo -ne $red_c
-  else echo -ne $green_c
+  then local format="%s:\n$red_c%s$no_c\n"
+  else local format="%s:\n$green_c%s$no_c\n"
   fi
-  cat $1
-  echo -en $no_c
+  printf $format "${1/%.out/}" "$(cat $1)"
 }
 
 function compile_test_results {
-  tests=($(ls *.jarl))
+  local tests=($(ls *.jarl))
   tests=${tests[*]/%.jarl/.out}
   
-  good=0
-  bad=0
-  new_good=0
-  new_bad=0
+  local good=0
+  local bad=0
+  local new_good=0
+  local new_bad=0
+  local is_new=0
   
   for test in $tests; do
     if [ -e $test ]; then
@@ -51,7 +54,7 @@ function compile_test_results {
       then is_new=1
       else is_new=0
       fi
-      line=$(cat $test | tail -n 1)
+      local line=$(cat $test | tail -n 1)
       if [ $line == "Success!" ]; then
         let good=good+1
         let new_good=new_good+1*is_new
