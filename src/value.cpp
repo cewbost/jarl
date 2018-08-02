@@ -1321,6 +1321,7 @@ void TypedValue::clone(){
   switch(this->type){
   case TypeTag::Array:
     if(this->value.array_v->getRefCount() > 1){
+      this->value.array_v->decRefCount();
       this->value.array_v = new Array(*this->value.array_v);
       this->value.array_v->incRefCount();
     }
