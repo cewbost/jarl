@@ -31,14 +31,14 @@ enum class TypeTag: Int{
   None,
   Null,
   Ptr,
-  Rvalue,
   Bool,
   Int,
   Float,
   String,
   Func,
   Partial,
-  Array
+  Array,
+  Borrow
 };
 
 enum class CmpMode{
@@ -54,15 +54,14 @@ struct TypedValue;
 
 struct Value{
   union{
-    TypedValue*       rvalue_v;
     bool              bool_v;
     Int               int_v;
     Float             float_v;
     String*           string_v;
-    Value*            ref_v;
     Function*         func_v;
     PartiallyApplied* partial_v;
     Array*            array_v;
+    TypedValue*       borrowed_v;
     void*             ptr_v;
   };
   
@@ -78,9 +77,6 @@ struct Value{
   }
   Value(String* s){
     this->string_v = s;
-  }
-  Value(Value* v){
-    this->ref_v = v;
   }
   Value(void* p){
     this->ptr_v = p;
@@ -115,7 +111,6 @@ public:
   
   TypedValue();
   TypedValue(nullptr_t);
-  TypedValue(TypedValue*);
   TypedValue(bool);
   TypedValue(Int);
   TypedValue(Float);
@@ -123,10 +118,10 @@ public:
   TypedValue(Function*);
   TypedValue(PartiallyApplied*);
   TypedValue(Array*);
+  TypedValue(TypedValue*);
   TypedValue(const void*);
   
   TypedValue& operator=(nullptr_t);
-  TypedValue& operator=(TypedValue*);
   TypedValue& operator=(bool);
   TypedValue& operator=(Int);
   TypedValue& operator=(Float);
@@ -163,6 +158,10 @@ public:
   void get(const TypedValue&);
   void slice(const TypedValue&, const TypedValue&);
   
+  TypedValue* borrow();
+  
+  void getBorrowed(const TypedValue&);
+  
   void toBool();
   void toBool(bool*);
   void toInt();
@@ -170,6 +169,8 @@ public:
   void toString();
   
   void toPartial();
+  
+  void clone();
   
   const char* typeStr() const;
   std::unique_ptr<char[]> toCStr() const;
@@ -195,8 +196,6 @@ namespace std{
       switch(lhs.type){
       case TypeTag::Null:
         return true;
-      case TypeTag::Rvalue:
-        return lhs.value.rvalue_v == rhs.value.rvalue_v;
       case TypeTag::Bool:
         return lhs.value.bool_v == rhs.value.bool_v;
       case TypeTag::Int:

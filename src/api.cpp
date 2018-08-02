@@ -12,6 +12,12 @@
 //#define NO_GENERATE
 //#define PRINT_CODE
 //#define NO_EXECUTE
+#else
+#undef PRINT_LEXEMES
+#undef PRINT_AST
+#undef NO_GENERATE
+#undef PRINT_CODE
+#undef NO_EXECUTE
 #endif
 
 using jarl::vm;
