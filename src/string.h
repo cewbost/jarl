@@ -1,9 +1,9 @@
 #ifndef STRING_H_INCLUDED
 #define STRING_H_INCLUDED
 
-#include "cmp_trait.h"
+#include "cmp_mixin.h"
 #include "misc.h"
-#include "rc_trait.h"
+#include "rc_mixin.h"
 
 #include <new>
 #include <functional>
@@ -25,9 +25,11 @@ class String;
 extern AllocMonitor<String> string_alloc_monitor;
 #endif
 
-class String: public RcTraitDirect<String>, public CmpTrait<String>
+class String:
+  public RcDirectMixin<String>,
+  public CmpMixin<String>
 #ifndef NDEBUG
-, public MonitoredTrait<String, string_alloc_monitor>
+, public MonitoredMixin<String, string_alloc_monitor>
 #endif
 {
   int len_;

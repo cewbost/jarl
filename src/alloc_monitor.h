@@ -47,19 +47,21 @@ struct AllocMonitor{
 };
 
 template<class Type, AllocMonitor<Type>& monitor>
-struct MonitoredTrait{
-  MonitoredTrait(){
+class MonitoredMixin{
+  MonitoredMixin(){
     monitor.push(static_cast<const Type*>(this));
   }
-  MonitoredTrait(const MonitoredTrait&){
+  MonitoredMixin(const MonitoredMixin&){
     monitor.push(static_cast<const Type*>(this));
   }
-  MonitoredTrait(MonitoredTrait&&){
+  MonitoredMixin(MonitoredMixin&&){
     monitor.push(static_cast<const Type*>(this));
   }
-  ~MonitoredTrait(){
+  ~MonitoredMixin(){
     monitor.pop(static_cast<const Type*>(this));
   }
+  
+  friend Type;
 };
 
 #endif

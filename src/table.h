@@ -3,12 +3,12 @@
 
 #include "value.h"
 #include "misc.h"
-#include "rc_trait.h"
+#include "rc_mixin.h"
 
 #include <memory>
 #include <unordered_map>
 
-class Table: public RcTrait<Table>{
+class Table: public RcMixin<Table>{
   
   std::unordered_map<
     std::unique_ptr<String>,

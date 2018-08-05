@@ -3,7 +3,7 @@
 
 #include "value.h"
 #include "string_view.h"
-#include "rc_trait.h"
+#include "rc_mixin.h"
 #include "lexeme.h"
 
 #include <unordered_map>

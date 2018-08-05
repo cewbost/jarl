@@ -1,7 +1,7 @@
 #ifndef PROCEDURE_H_INCLUDED
 #define PROCEDURE_H_INCLUDED
 
-#include "rc_trait.h"
+#include "rc_mixin.h"
 #include "value.h"
 #include "ast.h"
 #include "vector_map.h"
@@ -26,7 +26,7 @@
 
 class TypedValue;
 
-class Function: public RcTraitDirect<Function>{
+class Function: public RcDirectMixin<Function>{
   
   std::vector<OpCodeType> code_;
   std::vector<TypedValue> values_;
@@ -66,7 +66,7 @@ public:
   #endif
 };
 
-class PartiallyApplied: public RcTraitDirect<PartiallyApplied>{
+class PartiallyApplied: public RcDirectMixin<PartiallyApplied>{
   
   typedef SSOVector<TypedValue, 8, sizeof(void*) * 2> ArgVectorType;
   

@@ -1,7 +1,7 @@
 #ifndef ARRAY_H_INCLUDED
 #define ARRAY_H_INCLUDED
 
-#include "rc_trait.h"
+#include "rc_mixin.h"
 #include "value.h"
 
 #include <vector>
@@ -14,7 +14,7 @@
 
 class TypedValue;
 
-class Array: public std::vector<TypedValue>, public RcTraitDirect<Array>{
+class Array: public std::vector<TypedValue>, public RcDirectMixin<Array>{
 public:
   
   using std::vector<TypedValue>::vector;
