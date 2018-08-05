@@ -91,19 +91,7 @@ int String::cmp(const char* other)const{
 }
 
 size_t String::hash()const{
-  constexpr size_t _offset = sizeof(size_t) == 8?
-    0xcbf29ce484222325 : 0x811c9dc5;
-  constexpr size_t _prime = sizeof(size_t) == 8?
-    0x100000001b3 : 0x1000193;
-  
-  const char* data = this->str();
-  size_t ret = _offset;
-  while(*data != '\0'){
-    ret ^= *data;
-    ret *= _prime;
-    ++data;
-  }
-  return ret;
+  return defaultHash(this->str(), this->str() + this->len_);
 }
 
 bool String::toInt32(int32_t* t){

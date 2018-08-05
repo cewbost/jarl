@@ -46,6 +46,20 @@ inline char* dynSprintf(const char* format, ...){
   return buffer;
 }
 
+inline size_t defaultHash(const char* from, const char* to){
+  constexpr size_t _offset = sizeof(size_t) == 8?
+    0xcbf29ce484222325 : 0x811c9dc5;
+  constexpr size_t _prime = sizeof(size_t) == 8?
+    0x100000001b3 : 0x1000193;
+  
+  size_t ret = _offset;
+  for(; from < to; ++from){
+    ret ^= *from;
+    ret *= _prime;
+  }
+  return ret;
+}
+
 #ifndef NDEBUG
 inline std::string unlexString(const char* str){
   std::string ret = "\"";

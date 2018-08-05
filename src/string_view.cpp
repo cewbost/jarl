@@ -1,20 +1,11 @@
 #include "string_view.h"
 
+#include "misc.h"
+
 #include <cstring>
 
 size_t StringView::hash()const{
-  constexpr size_t _offset = sizeof(size_t) == 8?
-    0xcbf29ce484222325 : 0x811c9dc5;
-  constexpr size_t _prime = sizeof(size_t) == 8?
-    0x100000001b3 : 0x1000193;
-  
-  size_t ret = _offset;
-  
-  for(char ch: *this){
-    ret ^= ch;
-    ret *= _prime;
-  }
-  return ret;
+  return defaultHash(this->begin(), this->end());
 }
 
 bool StringView::cmp(const StringView& other)const{
