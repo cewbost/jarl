@@ -33,6 +33,9 @@ class String:
 #endif
 {
   int len_;
+  //the hash_ value should be initialized in every constructor, since it is used
+  //by std::hash.
+  size_t hash_;
   
   char* mut_str_(){return reinterpret_cast<char*>(this) + sizeof(String);}
   
@@ -106,6 +109,8 @@ public:
   friend String* make_new<String, const String*, int64_t>(const String*, int64_t);
   friend String* make_new<String, const String*, float>(const String*, float);
   friend String* make_new<String, const String*, double>(const String*, double);
+  
+  friend std::hash<String>;
 };
 
 template<> String* make_new<String>();
@@ -146,7 +151,7 @@ namespace std{
   
   template<> struct hash<String>{
     size_t operator()(const String& arg)const{
-      return arg.hash();
+      return arg.hash_;
     }
   };
   

@@ -50,12 +50,14 @@ namespace{
 
 String::String(): len_(0){
   this->mut_str_()[0] = '\0';
+  this->hash_ = this->hash();
 }
 
 String::String(const char* str, int l)
 : len_(l){
   memcpy(this->mut_str_(), str, l);
   this->mut_str_()[l] = '\0';
+  this->hash_ = this->hash();
 }
 
 String::String(const String* l, const String* r)
@@ -63,6 +65,7 @@ String::String(const String* l, const String* r)
   memcpy(this->mut_str_(), l->str(), l->len());
   memcpy(this->mut_str_() + l->len(), r->str(), r->len());
   this->mut_str_()[this->len_] = '\0';
+  this->hash_ = this->hash();
 }
 
 String::String(const String* st, const char* cs, int csl)
@@ -70,6 +73,7 @@ String::String(const String* st, const char* cs, int csl)
   memcpy(this->mut_str_(), st->str(), st->len());
   memcpy(this->mut_str_() + st->len(), cs, csl);
   this->mut_str_()[this->len_] = '\0';
+  this->hash_ = this->hash();
 }
 
 String::String(const char* cs, int csl, const String* st)
@@ -77,12 +81,16 @@ String::String(const char* cs, int csl, const String* st)
   memcpy(this->mut_str_(), cs, csl);
   memcpy(this->mut_str_() + csl, st->str(), st->len());
   this->mut_str_()[this->len_] = '\0';
+  this->hash_ = this->hash();
 }
 
 int String::cmp(const String& other)const{
   return this->cmp(other.str());
 }
 int String::cmp(const char* other)const{
+  //strcmp is not used here, since the behaviour of strcmp is not standardized.
+  //in particular the implementation used in valgrind returns a value in the
+  //range [-1;+1].
   const char* this_str = this->str();
   for(int i = 0;; ++i){
     int diff = this_str[i] - other[i];
