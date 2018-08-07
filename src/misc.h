@@ -20,7 +20,7 @@ template<class T>
 struct ptr_hash{
   typedef std::hash<typename std::remove_pointer<T>::type> hash;
   size_t operator()(const T& arg)const{
-    return hash::operator()(*arg);
+    return hash().operator()(*arg);
   }
 };
 
@@ -28,7 +28,7 @@ template<class T>
 struct ptr_equal_to{
   typedef std::equal_to<typename std::remove_pointer<T>::type> equal_to;
   constexpr bool operator()(const T& lhs, const T& rhs)const{
-    return equal_to::operator()(*lhs, *rhs);
+    return equal_to().operator()(*lhs, *rhs);
   }
 };
 

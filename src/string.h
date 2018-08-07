@@ -47,7 +47,9 @@ class String:
   
 public:
   int len()const{return len_;}
-  const char* str()const{return reinterpret_cast<const char*>(this) + sizeof(String);}
+  const char* str()const{
+    return reinterpret_cast<const char*>(this) + sizeof(String);
+  }
   
   String(const String&) = delete;
   String(String&&) = delete;
@@ -69,9 +71,8 @@ public:
   uint32_t getGlyph(unsigned)const;
   uint32_t utf8Get(unsigned)const;
   
-  void operator delete(void* ptr){
-    ::operator delete(ptr);
-  }
+  void operator delete(void*);
+  void operator delete[](void*) = delete;
   
   static void* operator new(size_t)   = delete;
   static void* operator new[](size_t) = delete;
@@ -156,8 +157,8 @@ namespace std{
   };
   
   template<> struct equal_to<String>{
-    constexpr bool operator()(const String& lhs, const String& rhs)const{
-      return lhs == rhs;
+    bool operator()(const String& lhs, const String& rhs)const{
+      return lhs.cmp(rhs) == 0;
     }
   };
 }

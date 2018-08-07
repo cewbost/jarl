@@ -1,15 +1,38 @@
 #include "string.h"
 
+#include <unordered_set>
+
 #include <cstring>
+#include <cassert>
 
 #ifndef NDEBUG
 #include "alloc_monitor.h"
 #include <cstdio>
-
-//#define MONITOR_ALL_ALLOCS
+#else
+#undef MONITOR_ALL_ALLOCS
 #endif
 
 namespace{
+  
+  std::unordered_set<
+    String*,
+    ptr_hash<String*>,
+    ptr_equal_to<String*>
+  > global_string_table_;
+  
+  inline void popGlobalString_(String* str){
+    auto res = global_string_table_.erase(str);
+    assert(res == 1);
+  }
+  inline String* pushGlobalString_(String* str){
+    auto ins = global_string_table_.insert(str);
+    if(ins.second){
+      return str;
+    }else{
+      delete str;
+      return *ins.first;
+    }
+  }
   
   inline int writeNumToBuffer_(char* buffer, bool val){
     return sprintf(buffer, "%s", val? "true" : "false");
@@ -151,6 +174,10 @@ uint32_t String::getGlyph(unsigned idx)const{
     if((ret & 0x80) == 0) break;
   }
   return ret;
+}
+
+void String::operator delete(void* ptr){
+  ::operator delete(ptr);
 }
 
 template<>
