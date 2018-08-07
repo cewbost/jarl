@@ -20,7 +20,7 @@ full:
 	@$(MAKE) --no-print-directory
 
 %.out: %.jarl $(test_bin) $(test_runner)
-	@./$(test_runner) $@
+	@./$(test_runner) $@ $(valgrind)
 
 $(test_bin): $(test_bin).cpp libjarl.a
 	$(CXX) $(cc_flags) -L./ -o $@ $< -ljarl
@@ -35,4 +35,3 @@ libjarl.a: $(jarl_source_files)
 clean:
 	rm $(test_bin)
 	$(MAKE) --no-print-directory -f Makefile clean
-

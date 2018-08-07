@@ -9,12 +9,15 @@ runner=test_runner
 results_file=test.out
 
 function run_test {
-  #echo "Testing ${1/%.out/.jarl}"
   
   local success
   
-  valgrind --leak-check=full --error-exitcode=2 ./$runner \
-    ${1/%.out/.jarl} 1>$1 2>${1/%.out/.grind}
+  if [ -n "$2" ]; then
+    valgrind --leak-check=full --error-exitcode=2 ./$runner \
+      ${1/%.out/.jarl} 1>$1 2>${1/%.out/.grind}
+  else
+    ./$runner ${1/%.out/.jarl} 1>$1 2>${1/%.out/.grind}
+  fi
   case $? in
   0)
     echo -e "Success!" >>$1
@@ -90,8 +93,5 @@ then compile_test_results
 elif [ "$1" == "new_tests" ];
 then compile_test_results new_tests
 else
-  while [ "$1" != "" ]; do
-    run_test $1
-    shift
-  done
+  run_test $1 $2
 fi
