@@ -177,40 +177,41 @@ uint32_t String::getGlyph(unsigned idx)const{
 }
 
 void String::operator delete(void* ptr){
+  popGlobalString_(reinterpret_cast<String*>(ptr));
   ::operator delete(ptr);
 }
 
 template<>
 String* make_new<String>(){
   void* mem = ::operator new(1 + sizeof(String));
-  return ::new(mem) String();
+  return pushGlobalString_(::new(mem) String());
 }
 
 template<>
 String* make_new<String, const char*>(const char* str){
   int len = strlen(str);
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(str, len);
+  return pushGlobalString_(::new(mem) String(str, len));
 }
 
 template<>
 String* make_new<String, const char*, int>(const char* str, int len){
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(str, len);
+  return pushGlobalString_(::new(mem) String(str, len));
 }
 
 template<>
 String* make_new<String, const char*, const char*>(const char* begin, const char* end){
   int len = end - begin;
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(begin, len);
+  return pushGlobalString_(::new(mem) String(begin, len));
 }
 
 template<>
 String* make_new<String, const String*, const String*>(const String* l, const String* r){
   int len = l->len() + r->len();
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(l, r);
+  return pushGlobalString_(::new(mem) String(l, r));
 }
 
 template<>
@@ -218,7 +219,7 @@ String* make_new<String, const char*, int, const String*>
 (const char* cs, int csl, const String* st){
   int len = csl + st->len();
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(cs, csl, st);
+  return pushGlobalString_(::new(mem) String(cs, csl, st));
 }
 
 template<>
@@ -226,7 +227,7 @@ String* make_new<String, const String*, const char*, int>
 (const String* st, const char* cs, int csl){
   int len = csl + st->len();
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(st, cs, csl);
+  return pushGlobalString_(::new(mem) String(st, cs, csl));
 }
 
 //numeral conversions
@@ -259,7 +260,7 @@ template<> String* make_new<String, uint32_t>(uint32_t val){
   }
   
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(buffer, len);
+  return pushGlobalString_(::new(mem) String(buffer, len));
 }
 
 //numeral additions

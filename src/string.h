@@ -58,6 +58,12 @@ public:
   
   int cmp(const String& other)const;
   int cmp(const char* other)const;
+  bool operator==(const String& other)const{
+    return this == &other;
+  }
+  bool operator!=(const String& other)const{
+    return this != &other;
+  }
   
   size_t hash()const;
   
