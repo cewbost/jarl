@@ -1,44 +1,5 @@
-#ifndef REF_COUNTED_H_INCLUDED
-#define REF_COUNTED_H_INCLUDED
-
-/** 
-  @file
-  @author Erik Boström <cewbostrom@gmail.com>
-  @date 15.8.2015
-  
-  @section LICENSE
-  
-  MIT License (MIT)
-
-  Copyright (c) 2015 Erik Boström
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
-  
-  @section DESCRIPTION
-  
-  Reference counting without atomic operations. Reference count object is inherited,
-  making it possible to get a reference counting pointer from a regular pointer, for
-  instance from this.
-  
-  The smart pointers depend on undefined behaviour, since the weak reference count
-  can still be accessed after an object has been deconstructed.
-*/
+#ifndef RC_MIXIN_H_INCLUDED
+#define RC_MIXIN_H_INCLUDED
 
 #include <cstddef>
 #include <new>
@@ -54,11 +15,14 @@ class rc_ptr;
 template<class T>
 class rc_weak_ptr;
 
+template<class T>
+class RcDirectMixin;
+
 /**
   @brief Inherit from this class to make a pointer reference countable.
 */
 template<class T>
-class RcTrait{
+class RcMixin{
 private:
 
   mutable unsigned short refcount_;
@@ -110,11 +74,8 @@ protected:
   }
 
 public:
-
-  RcTrait(): refcount_(0), weakrefcount_(0){}
-  RcTrait(const RcTrait&): refcount_(0), weakrefcount_(0){}
   
-  void operator=(const RcTrait&){
+  void operator=(const RcMixin&){
     refcount_ = 0;
     weakrefcount_ = 0;
   }
@@ -126,20 +87,33 @@ public:
   friend class rc_ptr;
   template<class Y>
   friend class rc_weak_ptr;
+  
+private:
+  
+  RcMixin(): refcount_(0), weakrefcount_(0){}
+  RcMixin(const RcMixin&): refcount_(0), weakrefcount_(0){}
+  
+  friend T;
+  friend RcDirectMixin<T>;
 };
 
 template<class T>
-class RcTraitDirect: public RcTrait<T>{
+class RcDirectMixin: public RcMixin<T>{
 public:
-  using RcTrait<T>::incRefCount;
-  using RcTrait<T>::decRefCount;
-  using RcTrait<T>::incWeakRefCount;
-  using RcTrait<T>::decWeakRefCount;
+  using RcMixin<T>::incRefCount;
+  using RcMixin<T>::decRefCount;
+  using RcMixin<T>::incWeakRefCount;
+  using RcMixin<T>::decWeakRefCount;
+  
+private:
+  
+  RcDirectMixin(){}
+  friend T;
 };
 
 /**
   @brief Smart pointer that does reference counting.
-  @param T value type, must inherit from RcTrait
+  @param T value type, must inherit from RcMixin
   @note Do not assign objects to this pointer unless they are allocated with new
 */
 template<class T>
@@ -288,7 +262,7 @@ public:
   This pointer does not keep the object alive. It can point to already destructed
   objects.
   
-  @param T value type, must inherit from RcTrait
+  @param T value type, must inherit from RcMixin
   @note Do not assign objects to this pointer unless they are allocated with new
 */
 template<class T>

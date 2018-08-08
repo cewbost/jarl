@@ -1,7 +1,7 @@
 #ifndef VM_H_INCLUDED
 #define VM_H_INCLUDED
 
-#include "rc_trait.h"
+#include "rc_mixin.h"
 #include "misc.h"
 #include "string.h"
 #include "value.h"

@@ -2,12 +2,12 @@
 #define STRING_VIEW_H_INCLUDED
 
 #include "array_view.h"
-#include "cmp_trait.h"
+#include "cmp_mixin.h"
 
 #include <functional>
 #include <cstddef>
 
-class StringView: public ArrayView<const char>, public CmpTrait<StringView>{
+class StringView: public ArrayView<const char>, public CmpMixin<StringView>{
 public:
   using ArrayView::ArrayView;
   

@@ -20,7 +20,7 @@ template<class T>
 struct ptr_hash{
   typedef std::hash<typename std::remove_pointer<T>::type> hash;
   size_t operator()(const T& arg)const{
-    return hash::operator()(*arg);
+    return hash().operator()(*arg);
   }
 };
 
@@ -28,7 +28,7 @@ template<class T>
 struct ptr_equal_to{
   typedef std::equal_to<typename std::remove_pointer<T>::type> equal_to;
   constexpr bool operator()(const T& lhs, const T& rhs)const{
-    return equal_to::operator()(*lhs, *rhs);
+    return equal_to().operator()(*lhs, *rhs);
   }
 };
 
@@ -44,6 +44,20 @@ inline char* dynSprintf(const char* format, ...){
   
   va_end(args);
   return buffer;
+}
+
+inline size_t defaultHash(const char* from, const char* to){
+  constexpr size_t _offset = sizeof(size_t) == 8?
+    0xcbf29ce484222325 : 0x811c9dc5;
+  constexpr size_t _prime = sizeof(size_t) == 8?
+    0x100000001b3 : 0x1000193;
+  
+  size_t ret = _offset;
+  for(; from < to; ++from){
+    ret ^= *from;
+    ret *= _prime;
+  }
+  return ret;
 }
 
 #ifndef NDEBUG

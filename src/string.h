@@ -1,9 +1,9 @@
 #ifndef STRING_H_INCLUDED
 #define STRING_H_INCLUDED
 
-#include "cmp_trait.h"
+#include "cmp_mixin.h"
 #include "misc.h"
-#include "rc_trait.h"
+#include "rc_mixin.h"
 
 #include <new>
 #include <functional>
@@ -25,12 +25,17 @@ class String;
 extern AllocMonitor<String> string_alloc_monitor;
 #endif
 
-class String: public RcTraitDirect<String>, public CmpTrait<String>
+class String:
+  public RcDirectMixin<String>,
+  public CmpMixin<String>
 #ifndef NDEBUG
-, public MonitoredTrait<String, string_alloc_monitor>
+, public MonitoredMixin<String, string_alloc_monitor>
 #endif
 {
   int len_;
+  //the hash_ value should be initialized in every constructor, since it is used
+  //by std::hash.
+  size_t hash_;
   
   char* mut_str_(){return reinterpret_cast<char*>(this) + sizeof(String);}
   
@@ -42,7 +47,9 @@ class String: public RcTraitDirect<String>, public CmpTrait<String>
   
 public:
   int len()const{return len_;}
-  const char* str()const{return reinterpret_cast<const char*>(this) + sizeof(String);}
+  const char* str()const{
+    return reinterpret_cast<const char*>(this) + sizeof(String);
+  }
   
   String(const String&) = delete;
   String(String&&) = delete;
@@ -51,6 +58,12 @@ public:
   
   int cmp(const String& other)const;
   int cmp(const char* other)const;
+  bool operator==(const String& other)const{
+    return this == &other;
+  }
+  bool operator!=(const String& other)const{
+    return this != &other;
+  }
   
   size_t hash()const;
   
@@ -64,9 +77,8 @@ public:
   uint32_t getGlyph(unsigned)const;
   uint32_t utf8Get(unsigned)const;
   
-  void operator delete(void* ptr){
-    ::operator delete(ptr);
-  }
+  void operator delete(void*);
+  void operator delete[](void*) = delete;
   
   static void* operator new(size_t)   = delete;
   static void* operator new[](size_t) = delete;
@@ -104,6 +116,8 @@ public:
   friend String* make_new<String, const String*, int64_t>(const String*, int64_t);
   friend String* make_new<String, const String*, float>(const String*, float);
   friend String* make_new<String, const String*, double>(const String*, double);
+  
+  friend std::hash<String>;
 };
 
 template<> String* make_new<String>();
@@ -144,13 +158,13 @@ namespace std{
   
   template<> struct hash<String>{
     size_t operator()(const String& arg)const{
-      return arg.hash();
+      return arg.hash_;
     }
   };
   
   template<> struct equal_to<String>{
-    constexpr bool operator()(const String& lhs, const String& rhs)const{
-      return lhs == rhs;
+    bool operator()(const String& lhs, const String& rhs)const{
+      return lhs.cmp(rhs) == 0;
     }
   };
 }

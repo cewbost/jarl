@@ -1,15 +1,38 @@
 #include "string.h"
 
+#include <unordered_set>
+
 #include <cstring>
+#include <cassert>
 
 #ifndef NDEBUG
 #include "alloc_monitor.h"
 #include <cstdio>
-
-//#define MONITOR_ALL_ALLOCS
+#else
+#undef MONITOR_ALL_ALLOCS
 #endif
 
 namespace{
+  
+  std::unordered_set<
+    String*,
+    ptr_hash<String*>,
+    ptr_equal_to<String*>
+  > global_string_table_;
+  
+  inline void popGlobalString_(String* str){
+    auto res = global_string_table_.erase(str);
+    assert(res == 1);
+  }
+  inline String* pushGlobalString_(String* str){
+    auto ins = global_string_table_.insert(str);
+    if(ins.second){
+      return str;
+    }else{
+      delete str;
+      return *ins.first;
+    }
+  }
   
   inline int writeNumToBuffer_(char* buffer, bool val){
     return sprintf(buffer, "%s", val? "true" : "false");
@@ -50,12 +73,14 @@ namespace{
 
 String::String(): len_(0){
   this->mut_str_()[0] = '\0';
+  this->hash_ = this->hash();
 }
 
 String::String(const char* str, int l)
 : len_(l){
   memcpy(this->mut_str_(), str, l);
   this->mut_str_()[l] = '\0';
+  this->hash_ = this->hash();
 }
 
 String::String(const String* l, const String* r)
@@ -63,6 +88,7 @@ String::String(const String* l, const String* r)
   memcpy(this->mut_str_(), l->str(), l->len());
   memcpy(this->mut_str_() + l->len(), r->str(), r->len());
   this->mut_str_()[this->len_] = '\0';
+  this->hash_ = this->hash();
 }
 
 String::String(const String* st, const char* cs, int csl)
@@ -70,6 +96,7 @@ String::String(const String* st, const char* cs, int csl)
   memcpy(this->mut_str_(), st->str(), st->len());
   memcpy(this->mut_str_() + st->len(), cs, csl);
   this->mut_str_()[this->len_] = '\0';
+  this->hash_ = this->hash();
 }
 
 String::String(const char* cs, int csl, const String* st)
@@ -77,12 +104,16 @@ String::String(const char* cs, int csl, const String* st)
   memcpy(this->mut_str_(), cs, csl);
   memcpy(this->mut_str_() + csl, st->str(), st->len());
   this->mut_str_()[this->len_] = '\0';
+  this->hash_ = this->hash();
 }
 
 int String::cmp(const String& other)const{
   return this->cmp(other.str());
 }
 int String::cmp(const char* other)const{
+  //strcmp is not used here, since the behaviour of strcmp is not standardized.
+  //in particular the implementation used in valgrind returns a value in the
+  //range [-1;+1].
   const char* this_str = this->str();
   for(int i = 0;; ++i){
     int diff = this_str[i] - other[i];
@@ -91,19 +122,7 @@ int String::cmp(const char* other)const{
 }
 
 size_t String::hash()const{
-  constexpr size_t _offset = sizeof(size_t) == 8?
-    0xcbf29ce484222325 : 0x811c9dc5;
-  constexpr size_t _prime = sizeof(size_t) == 8?
-    0x100000001b3 : 0x1000193;
-  
-  const char* data = this->str();
-  size_t ret = _offset;
-  while(*data != '\0'){
-    ret ^= *data;
-    ret *= _prime;
-    ++data;
-  }
-  return ret;
+  return defaultHash(this->str(), this->str() + this->len_);
 }
 
 bool String::toInt32(int32_t* t){
@@ -157,37 +176,42 @@ uint32_t String::getGlyph(unsigned idx)const{
   return ret;
 }
 
+void String::operator delete(void* ptr){
+  popGlobalString_(reinterpret_cast<String*>(ptr));
+  ::operator delete(ptr);
+}
+
 template<>
 String* make_new<String>(){
   void* mem = ::operator new(1 + sizeof(String));
-  return ::new(mem) String();
+  return pushGlobalString_(::new(mem) String());
 }
 
 template<>
 String* make_new<String, const char*>(const char* str){
   int len = strlen(str);
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(str, len);
+  return pushGlobalString_(::new(mem) String(str, len));
 }
 
 template<>
 String* make_new<String, const char*, int>(const char* str, int len){
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(str, len);
+  return pushGlobalString_(::new(mem) String(str, len));
 }
 
 template<>
 String* make_new<String, const char*, const char*>(const char* begin, const char* end){
   int len = end - begin;
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(begin, len);
+  return pushGlobalString_(::new(mem) String(begin, len));
 }
 
 template<>
 String* make_new<String, const String*, const String*>(const String* l, const String* r){
   int len = l->len() + r->len();
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(l, r);
+  return pushGlobalString_(::new(mem) String(l, r));
 }
 
 template<>
@@ -195,7 +219,7 @@ String* make_new<String, const char*, int, const String*>
 (const char* cs, int csl, const String* st){
   int len = csl + st->len();
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(cs, csl, st);
+  return pushGlobalString_(::new(mem) String(cs, csl, st));
 }
 
 template<>
@@ -203,7 +227,7 @@ String* make_new<String, const String*, const char*, int>
 (const String* st, const char* cs, int csl){
   int len = csl + st->len();
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(st, cs, csl);
+  return pushGlobalString_(::new(mem) String(st, cs, csl));
 }
 
 //numeral conversions
@@ -236,7 +260,7 @@ template<> String* make_new<String, uint32_t>(uint32_t val){
   }
   
   void* mem = ::operator new(len + 1 + sizeof(String));
-  return ::new(mem) String(buffer, len);
+  return pushGlobalString_(::new(mem) String(buffer, len));
 }
 
 //numeral additions
