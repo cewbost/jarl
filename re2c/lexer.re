@@ -250,7 +250,7 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "false"   {PUT_LEXEME(false)}
       "not"     {PUT_LEXEME(LexemeType::Not)}
       "if"      {PUT_LEXEME(LexemeType::If)}
-      "for"     {PUT_LEXEME(LexemeType::For)}
+      "while"   {PUT_LEXEME(LexemeType::For)}
       "func"    {PUT_LEXEME(LexemeType::Func)}
       "print"   {PUT_LEXEME(LexemeType::Print)}
       "assert"  {PUT_LEXEME(LexemeType::Assert)}
