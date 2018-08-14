@@ -19,7 +19,7 @@ enum class LexemeType: unsigned {
   RBrace,
   RBracket,
   
-  Colon,
+  Do,
   
   L20 = 0x20,
   Semicolon,

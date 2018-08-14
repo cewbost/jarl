@@ -112,7 +112,7 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::Comma: ret += ","s; break;
   case LexemeType::Semicolon: ret += ";"s; break;
   case LexemeType::Newline: ret += "\\n"; break;
-  case LexemeType::Colon: ret += ":"s; break;
+  case LexemeType::Do: ret += ":"s; break;
   
   case LexemeType::Not: ret += "not"s; break;
   case LexemeType::And: ret += "and"s; break;
