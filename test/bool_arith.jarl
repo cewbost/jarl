@@ -4,8 +4,8 @@ assert not (false or false), "or should work"
 assert true and true, "and should work"
 assert not (true and false), "and should work"
 
-x := 0
-b := false or {
+var x = 0
+var b = false or {
   x += 1
   true
 }

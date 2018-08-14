@@ -88,7 +88,6 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::Div: ret += "/"s; break;
   case LexemeType::Mod: ret += "%"s; break;
   case LexemeType::Append: ret += "++"s; break;
-  case LexemeType::Define: ret += ":="s; break;
   case LexemeType::Assign: ret += "="s; break;
   case LexemeType::AddAssign: ret += "+="s; break;
   case LexemeType::SubAssign: ret += "-="s; break;
@@ -123,6 +122,7 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::For: ret += "for"s; break;
   case LexemeType::Else: ret += "else"s; break;
   case LexemeType::Func: ret += "func"s; break;
+  case LexemeType::Var: ret += "var"s; break;
   case LexemeType::Print: ret += "print"s; break;
   case LexemeType::Assert: ret += "assert"s; break;
   

@@ -1,8 +1,8 @@
-a := "Hello"
-b := "World!"
-c := a ++ ", " ++ b
-d := "abc"
-e := "def"
+var a = "Hello"
+var b = "World!"
+var c = a ++ ", " ++ b
+var d = "abc"
+var e = "def"
 
 assert d < e, "comparison should work"
 assert c > a, "comparison should work by length"

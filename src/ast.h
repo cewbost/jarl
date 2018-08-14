@@ -34,6 +34,7 @@ enum class ASTNodeType: unsigned {
   
   CodeBlock,
   Array,
+  Var,
   Print,
   Assert,
   
@@ -81,10 +82,6 @@ enum class ASTNodeType: unsigned {
   
   If,
 
-  DefineExpr = 0x2300,
-  
-  Define,
-  
   AssignExpr = 0x2400,
   
   Assign,

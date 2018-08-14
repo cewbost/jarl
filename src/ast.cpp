@@ -133,8 +133,6 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "and"; break;
   case ASTNodeType::Or:
     ret += "or"; break;
-  case ASTNodeType::Define:
-    ret += ":="; break;
   case ASTNodeType::Assign:
     ret += "="; break;
   case ASTNodeType::AddAssign:
@@ -197,6 +195,8 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "range"; break;
   case ASTNodeType::Function:
     ret += "function"; break;
+  case ASTNodeType::Var:
+    ret += "var"; break;
   case ASTNodeType::Print:
     ret += "print"; break;
   case ASTNodeType::Assert:

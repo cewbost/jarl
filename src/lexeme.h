@@ -27,6 +27,7 @@ enum class LexemeType: unsigned {
   
   L30 = 0x30,
   Else,
+  Var,
   Print,
   Assert,
   
@@ -34,7 +35,6 @@ enum class LexemeType: unsigned {
   Comma,
   
   L60 = 0x60,
-  Define,
   Assign,
   AddAssign,
   SubAssign,

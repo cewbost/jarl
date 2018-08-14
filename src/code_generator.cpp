@@ -326,37 +326,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     }
     break;
     
-  case ASTNodeType::DefineExpr:
-    switch(node->type){
-    case ASTNodeType::Define:
-      {
-        if(node->children.first->type != ASTNodeType::Identifier){
-          errors->emplace_back(
-            dynSprintf("line %d: Definition of rvalue", node->pos.first)
-          );
-          D_putInstruction(Op::Nop);
-          break;
-        }
-        
-        auto old_stack_size = stack_size;
-        threadAST(node->children.second, node);
-        auto it = var_allocs->direct().find(node->children.first->string_value);
-        if(it != var_allocs->direct().end()){
-          D_putInstruction(Op::Write | Op::Extended | Op::Dest);
-          D_putInstruction(it->second);
-        }else{
-          var_allocs->direct()[node->children.first->string_value] =
-            old_stack_size | stack_pos_local;
-        }
-        D_putInstruction(Op::Push);
-        ++stack_size;
-      }
-      break;
-    default:
-      assert(false);
-    }
-    break;
-    
   case ASTNodeType::AssignExpr:
     {
       threadRexpr(node->children.first, node);
@@ -530,7 +499,47 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       --stack_size;
       threadAST(node->children.second, node);
       break;
-      
+    
+    case ASTNodeType::Var:
+      {
+        switch(node->child->type){
+        case ASTNodeType::Assign:
+          {
+            auto subnode = node->child;
+            if(subnode->children.first->type != ASTNodeType::Identifier){
+              errors->emplace_back(
+                dynSprintf("line %d: Expected identifier", subnode->pos.first)
+              );
+              D_putInstruction(Op::Nop);
+              break;
+            }
+            
+            auto old_stack_size = stack_size;
+            threadAST(subnode->children.second, subnode);
+            auto it = var_allocs->direct()
+              .find(subnode->children.first->string_value);
+            if(it != var_allocs->direct().end()){
+              D_putInstruction(Op::Write | Op::Extended | Op::Dest);
+              D_putInstruction(it->second);
+            }else{
+              var_allocs->direct()[subnode->children.first->string_value] =
+                old_stack_size | stack_pos_local;
+            }
+            D_putInstruction(Op::Push);
+            ++stack_size;
+          }
+          break;
+        default:
+          errors->emplace_back(dynSprintf(
+            "line %d: Invalid variable declaration syntax",
+            node->pos.first
+          ));
+          D_putInstruction(Op::Nop);
+          break;
+        }
+      }
+      break;
+    
     case ASTNodeType::Print:
       {
         int num = 0;

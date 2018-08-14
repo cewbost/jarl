@@ -1,15 +1,15 @@
-foo := func x do x * 3
+var foo = func x do x * 3
 assert foo 3 == 9, "functions should work"
 
-y := 2
+var y = 2
 foo = func x do x * y
 assert foo 4 == 8, "capturing should work"
 
 foo = func a, b do a * b
-bar := foo 2
+var bar = foo 2
 assert bar 3 == 6, "partial application should work"
 
-baz := func f, v do f v v
+var baz = func f, v do f v v
 assert baz foo 4 == 16, "passing functions by value should work"
 
 baz = func f, v do f v

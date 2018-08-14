@@ -160,6 +160,12 @@ ASTNode* Parser::nud_(const Lexeme& lex){
   case LexemeType::Identifier:
     return new ASTNode(ASTNodeType::Identifier, lex.value.s, lex.pos);
   
+  case LexemeType::Var:
+    return new ASTNode(
+      ASTNodeType::Var,
+      this->expression_(def_expr_bindp),
+      lex.pos
+    );
   case LexemeType::Print:
     return new ASTNode(
       ASTNodeType::Print,
@@ -242,8 +248,6 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
     auto right = this->expression_(typen - 1);
     
     switch(lex.type){
-    case LexemeType::Define:
-      return new ASTNode(ASTNodeType::Define, left, right, lex.pos);
     case LexemeType::Assign:
       return new ASTNode(ASTNodeType::Assign, left, right, lex.pos);
     case LexemeType::AddAssign:

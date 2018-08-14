@@ -1,5 +1,5 @@
-acc := 0
-n := 0
+var acc = 0
+var n = 0
 while n <= 10 do {
   acc += n
   n += 1
@@ -9,7 +9,7 @@ assert acc == 55, "loops should work"
 acc = 0
 n = 1
 while n <= 5 do {
-  m := 1
+  var m = 1
   while m <= 5 do {
     acc += n * m
     m += 1
