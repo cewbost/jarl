@@ -1,8 +1,8 @@
-x := 6.5
-y := 3.5
-eps := 1.0e-6
+var x = 6.5
+var y = 3.5
+var eps = 1.0e-6
 
-res := x + y
+var res = x + y
 assert res < 10.0 + eps and res > 10.0 - eps, "x + y should work"
 res = x - y
 assert res < 3.0 + eps and res > 3.0 - eps, "x - y should work"

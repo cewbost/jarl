@@ -61,7 +61,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
   case LexemeType::If:
     {
       std::unique_ptr<ASTNode> tok(this->expression_(def_block_bindp));
-      if(!this->checkNext_(LexemeType::Colon)){
+      if(!this->checkNext_(LexemeType::Do)){
         this->errors_->emplace_back(dynSprintf(
           "line %d: Expected ':'.",
           (this->lcurrent_ - 1)->pos.first
@@ -78,8 +78,41 @@ ASTNode* Parser::nud_(const Lexeme& lex){
     }
   case LexemeType::Func:
     {
+      if(!this->checkNext_(LexemeType::LParen)){
+        this->errors_->emplace_back(dynSprintf(
+          "line %d: Expected '('.",
+          (this->lcurrent_ - 1)->pos.first
+        ));
+        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+      }
+      std::unique_ptr<ASTNode> cond(this->expression_(def_expr_bindp));
+      if(!this->checkNext_(LexemeType::RParen)){
+        this->errors_->emplace_back(dynSprintf(
+          "line %d: Expected ')'.",
+          (this->lcurrent_ - 1)->pos.first
+        ));
+        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+      }
+      return new ASTNode(
+        ASTNodeType::Function,
+        cond.release(),
+        this->expression_(def_statement_bindp),
+        (this->lcurrent_ - 1)->pos
+      );
+      
+      /*
       std::unique_ptr<ASTNode> tok(this->expression_(def_expr_bindp));
-      if(!this->checkNext_(LexemeType::Colon)){
+      if(!this->checkNext_(LexemeType::RParen)){
+        this->errors_->emplace_back(dynSprintf(
+          "line %d: Expected ')'.",
+          (this->lcurrent_ - 1)->pos.first
+        ));
+        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+      }else return tok.release();
+      */
+      
+      /*std::unique_ptr<ASTNode> tok(this->expression_(def_expr_bindp));
+      if(!this->checkNext_(LexemeType::Do)){
         this->errors_->emplace_back(dynSprintf(
           "line %d: Expected ':'.",
           (this->lcurrent_ - 1)->pos.first
@@ -92,12 +125,12 @@ ASTNode* Parser::nud_(const Lexeme& lex){
           this->expression_(def_statement_bindp),
           (this->lcurrent_ - 1)->pos
         );
-      }
+      }*/
     }
   case LexemeType::For:
     {
       std::unique_ptr<ASTNode> tok(this->expression_(def_block_bindp));
-      if(!this->checkNext_(LexemeType::Colon)){
+      if(!this->checkNext_(LexemeType::Do)){
         this->errors_->emplace_back(dynSprintf(
           "line %d: Expected ':'.",
           (this->lcurrent_ - 1)->pos.first
@@ -160,6 +193,12 @@ ASTNode* Parser::nud_(const Lexeme& lex){
   case LexemeType::Identifier:
     return new ASTNode(ASTNodeType::Identifier, lex.value.s, lex.pos);
   
+  case LexemeType::Var:
+    return new ASTNode(
+      ASTNodeType::Var,
+      this->expression_(def_expr_bindp),
+      lex.pos
+    );
   case LexemeType::Print:
     return new ASTNode(
       ASTNodeType::Print,
@@ -242,8 +281,6 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
     auto right = this->expression_(typen - 1);
     
     switch(lex.type){
-    case LexemeType::Define:
-      return new ASTNode(ASTNodeType::Define, left, right, lex.pos);
     case LexemeType::Assign:
       return new ASTNode(ASTNodeType::Assign, left, right, lex.pos);
     case LexemeType::AddAssign:
@@ -259,8 +296,6 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
     case LexemeType::AppendAssign:
       return new ASTNode(ASTNodeType::AppendAssign, left, right, lex.pos);
     
-    case LexemeType::Colon:
-      return new ASTNode(ASTNodeType::Then, left, right, lex.pos);
     case LexemeType::Comma:
       return new ASTNode(ASTNodeType::ExprList, left, right, lex.pos);
     

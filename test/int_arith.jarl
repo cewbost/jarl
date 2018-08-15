@@ -1,5 +1,5 @@
-x := 8
-y := 5
+var x = 8
+var y = 5
 
 assert x + y == 13, "x + y should work"
 assert x - y == 3, "x - y should work"
