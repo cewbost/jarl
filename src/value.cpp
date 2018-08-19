@@ -1,6 +1,7 @@
 #include "value.h"
 
 #include "vm.h"
+#include "table.h"
 
 #include <memory>
 #include <algorithm>
@@ -54,6 +55,9 @@ void TypedValue::clear_(){
   case TypeTag::Array:
     this->value.array_v->decRefCount();
     break;
+  case TypeTag::Table:
+    this->value.table_v->decRefCount();
+    break;
   default:
     break;
   }
@@ -89,6 +93,10 @@ void TypedValue::copy_(const TypedValue& other)noexcept{
   case TypeTag::Array:
     this->value.array_v = other.value.array_v;
     this->value.array_v->incRefCount();
+    break;
+  case TypeTag::Table:
+    this->value.table_v = other.value.table_v;
+    this->value.table_v->incRefCount();
     break;
   case TypeTag::None:
     break;
@@ -136,6 +144,11 @@ TypedValue::TypedValue(PartiallyApplied* p){
 TypedValue::TypedValue(Array* p){
   type = TypeTag::Array;
   value.array_v = p;
+  p->incRefCount();
+}
+TypedValue::TypedValue(Table* p){
+  type = TypeTag::Table;
+  value.table_v = p;
   p->incRefCount();
 }
 TypedValue::TypedValue(TypedValue* p){
@@ -198,6 +211,13 @@ TypedValue& TypedValue::operator=(Array* val){
   this->clear_();
   this->type = TypeTag::Array;
   this->value.array_v = val;
+  val->incRefCount();
+  return *this;
+}
+TypedValue& TypedValue::operator=(Table* val){
+  this->clear_();
+  this->type = TypeTag::Table;
+  this->value.table_v = val;
   val->incRefCount();
   return *this;
 }
@@ -1348,6 +1368,8 @@ const char* TypedValue::typeStr() const {
     return "function";
   case TypeTag::Array:
     return "array";
+  case TypeTag::Table:
+    return "table";
   default:
     assert(false);
     return nullptr;
@@ -1374,6 +1396,10 @@ std::unique_ptr<char[]> TypedValue::toCStr() const {
   }
 }
 
+bool TypedValue::isHashable()const{
+  return this->type == TypeTag::Int || this->type == TypeTag::String;
+}
+
 #ifndef NDEBUG
 std::string TypedValue::toStrDebug()const{
   using namespace std::string_literals;
@@ -1397,6 +1423,8 @@ std::string TypedValue::toStrDebug()const{
     return this->value.partial_v->toStrDebug();
   case TypeTag::Array:
     return this->value.array_v->toStrDebug();
+  case TypeTag::Table:
+    return this->value.table_v->toStrDebug();
   default:
     {
       char buffer[20];

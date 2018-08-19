@@ -53,6 +53,7 @@ struct Op{
     Jfsc,
     
     CreateArray,
+    CreateTable,
     CreateRange,
     
     Print,

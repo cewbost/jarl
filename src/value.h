@@ -16,6 +16,7 @@
 class Function;
 class PartiallyApplied;
 class Array;
+class Table;
 
 using jarl::Int;
 using jarl::Float;
@@ -38,6 +39,7 @@ enum class TypeTag: Int{
   Func,
   Partial,
   Array,
+  Table,
   Borrow
 };
 
@@ -61,6 +63,7 @@ struct Value{
     Function*         func_v;
     PartiallyApplied* partial_v;
     Array*            array_v;
+    Table*            table_v;
     TypedValue*       borrowed_v;
     void*             ptr_v;
   };
@@ -118,6 +121,7 @@ public:
   TypedValue(Function*);
   TypedValue(PartiallyApplied*);
   TypedValue(Array*);
+  TypedValue(Table*);
   TypedValue(TypedValue*);
   TypedValue(const void*);
   
@@ -129,6 +133,7 @@ public:
   TypedValue& operator=(Function*);
   TypedValue& operator=(PartiallyApplied*);
   TypedValue& operator=(Array*);
+  TypedValue& operator=(Table*);
   TypedValue& operator=(const void*);
   
   TypedValue(TypedValue&& other)noexcept;
@@ -180,6 +185,8 @@ public:
   Float asFloat()const{return this->value.float_v;}
   const String* asString()const{return this->value.string_v;}
   
+  bool isHashable()const;
+  
   #ifndef NDEBUG
   std::string toStrDebug()const;
   #endif
@@ -207,6 +214,15 @@ namespace std{
       default:
         return false;
       }
+    }
+  };
+  
+  template<> struct hash<TypedValue>{
+    size_t operator()(const TypedValue& arg)const{
+      return defaultHash(
+        reinterpret_cast<const char*>(&arg),
+        reinterpret_cast<const char*>(&arg) + sizeof(TypedValue)
+      );
     }
   };
 }

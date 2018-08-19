@@ -43,6 +43,8 @@ enum class LexemeType: unsigned {
   ModAssign,
   AppendAssign,
   
+  Colon,
+  
   LeftAssocClass = 0x70,
   And,
   Or,

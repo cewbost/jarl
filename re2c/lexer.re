@@ -195,9 +195,10 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       ">="  {PUT_LEXEME(LexemeType::Geq)}
       "<="  {PUT_LEXEME(LexemeType::Leq)}
       "<=>" {PUT_LEXEME(LexemeType::Cmp)}
+      ":"   {PUT_LEXEME(LexemeType::Colon)}
       ","   {PUT_LEXEME(LexemeType::Comma)}
-      //"@"   {PUT_LEXEME(LexemeType::Apply)}
       ";"   {PUT_LEXEME(LexemeType::Semicolon)}
+      //"@"   {PUT_LEXEME(LexemeType::Apply)}
       
       "("   {
         br_stack.push('(');

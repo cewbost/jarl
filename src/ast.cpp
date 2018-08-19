@@ -189,8 +189,12 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "[]"; break;
   case ASTNodeType::ExprList:
     ret += "expr list"; break;
+  case ASTNodeType::KeyValuePair:
+    ret += "key value pair"; break;
   case ASTNodeType::Array:
     ret += "array"; break;
+  case ASTNodeType::Table:
+    ret += "table"; break;
   case ASTNodeType::Range:
     ret += "range"; break;
   case ASTNodeType::Function:

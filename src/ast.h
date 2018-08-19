@@ -34,6 +34,7 @@ enum class ASTNodeType: unsigned {
   
   CodeBlock,
   Array,
+  Table,
   Var,
   Print,
   Assert,
@@ -52,6 +53,7 @@ enum class ASTNodeType: unsigned {
   Index,
   
   ExprList,
+  KeyValuePair,
   Range,
   Then,
   Function,

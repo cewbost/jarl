@@ -57,6 +57,13 @@ ASTNode* Parser::nud_(const Lexeme& lex){
       this->expression_(bindp_(lex.type) + 1),
       lex.pos
     );
+  case LexemeType::Colon:
+    return new ASTNode(
+      ASTNodeType::KeyValuePair,
+      new ASTNode(ASTNodeType::Nop, lex.pos),
+      this->expression_(bindp_(lex.type) + 1),
+      lex.pos
+    );
   
   case LexemeType::If:
     {
@@ -166,7 +173,15 @@ ASTNode* Parser::nud_(const Lexeme& lex){
           (this->lcurrent_ - 1)->pos.first
         ));
         return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
-      }else return new ASTNode(ASTNodeType::CodeBlock, tok.release(), lex.pos);
+      }else{
+        if(tok->type == ASTNodeType::ExprList
+        || tok->type == ASTNodeType::KeyValuePair
+        || tok->type == ASTNodeType::Nop){
+          return new ASTNode(ASTNodeType::Table, tok.release(), lex.pos);
+        }else{
+          return new ASTNode(ASTNodeType::CodeBlock, tok.release(), lex.pos);
+        }
+      }
     }
   case LexemeType::LBracket:
     {
@@ -298,6 +313,8 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
     
     case LexemeType::Comma:
       return new ASTNode(ASTNodeType::ExprList, left, right, lex.pos);
+    case LexemeType::Colon:
+      return new ASTNode(ASTNodeType::KeyValuePair, left, right, lex.pos);
     
     default:
       assert(false);
