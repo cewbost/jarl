@@ -1,0 +1,18 @@
+var table = {"foo": 2, "bar": 5}
+assert table["foo"] == 2 and table["bar"] == 5, "tables should work"
+
+table = {3: "foo", 7: "bar"}
+assert table[3] == "foo" and table[7] == "bar", "tables with integer keys should work"
+
+table = {
+  "a": {
+    "a": 1,
+    "b": 2
+  },
+  "b": {
+    "a": 4,
+    "b": 6
+  }
+}
+
+assert table["a"]["b"] == 2 and table["b"]["a"] == 4, "nested tables should work"
