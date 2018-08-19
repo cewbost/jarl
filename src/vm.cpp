@@ -257,6 +257,9 @@ void VM::execute(const Function& func){
       case Op::Append:
         this->doArithOp_(&this->frame_.ip, &TypedValue::append);
         break;
+      case Op::In:
+        this->doArithOp_(&this->frame_.ip, &TypedValue::in);
+        break;
       
       case Op::Neg:
         stack_.back().neg();

@@ -173,6 +173,8 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += ">="; break;
   case ASTNodeType::Leq:
     ret += "<="; break;
+  case ASTNodeType::In:
+    ret += "in"; break;
   case ASTNodeType::Apply:
     ret += "apply"; break;
   case ASTNodeType::Seq:

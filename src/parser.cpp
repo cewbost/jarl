@@ -289,6 +289,9 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
     case LexemeType::Or:
       return new ASTNode(ASTNodeType::Or, left, right, lex.pos);
     
+    case LexemeType::In:
+      return new ASTNode(ASTNodeType::In, left, right, lex.pos);
+    
     default:
       assert(false);
     }

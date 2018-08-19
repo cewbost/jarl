@@ -94,6 +94,9 @@ std::string opCodeToStrDebug(OpCodeType op){
   case Op::Leq:
     ret += "leq"s;
     break;
+  case Op::In:
+    ret += "in"s;
+    break;
   case Op::Get:
     ret += "get"s;
     break;

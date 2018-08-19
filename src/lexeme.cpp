@@ -118,6 +118,8 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::And: ret += "and"s; break;
   case LexemeType::Or: ret += "or"s; break;
   
+  case LexemeType::In: ret += "in"s; break;
+  
   case LexemeType::Null: ret += "null"s; break;
   case LexemeType::If: ret += "if"s; break;
   case LexemeType::For: ret += "for"s; break;

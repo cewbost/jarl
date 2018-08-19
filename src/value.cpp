@@ -795,6 +795,46 @@ error:
   vm->errorJmp(1);
 }
 
+void TypedValue::in(const TypedValue& rhs){
+  const TypedValue* other = &rhs;
+  
+  switch(other->type){
+  case TypeTag::Array:
+    for(auto& val: *other->value.array_v){
+      if(*this == val){
+        *this = true;
+        return;
+      }
+    }
+    *this = false;
+    break;
+  case TypeTag::Table:
+    {
+      if(!this->isHashable()){
+        *this = false;
+      }
+      auto it = other->value.table_v->find(*this);
+      *this = it != other->value.table_v->end();
+    }
+    break;
+  default:
+    goto error;
+  }
+  return;
+  
+error:
+  VM* vm = VM::getCurrentVM();
+  char* msg = dynSprintf(
+    "%d: Type error. Unsupported operation %s in %s.",
+    vm->getFrame()->func->getLine(vm->getFrame()->ip),
+    this->typeStr(),
+    other->typeStr()
+  );
+  vm->errPrint(msg);
+  delete[] msg;
+  vm->errorJmp(1);
+}
+
 void TypedValue::cmp(const TypedValue& rhs){
   const TypedValue* other = &rhs;
   
@@ -935,19 +975,32 @@ void TypedValue::boolNot(){
 void TypedValue::get(const TypedValue& rhs){
   const TypedValue* other = &rhs;
   
-  Int index;
-  if(other->type == TypeTag::Int){
-    index = other->value.int_v;
-  }else goto type_error;
-  
   switch(this->type){
   case TypeTag::Array:
-    if(index < 0) index = this->value.array_v->size() + index;
-    if(index >= this->value.array_v->size()) goto index_error;
-    *this = this->value.array_v->operator[](index);
+    {
+      Int index;
+      if(other->type == TypeTag::Int){
+        index = other->value.int_v;
+      }else goto type_error;
+      if(index < 0) index = this->value.array_v->size() + index;
+      if(index >= this->value.array_v->size()) goto index_error;
+      *this = this->value.array_v->operator[](index);
+    }
+    break;
+  case TypeTag::Table:
+    {
+      if(!other->isHashable()) goto type_error;
+      auto it = this->value.table_v->find(*other);
+      if(it == this->value.table_v->end()) goto lookup_error;
+      *this = it->second;
+    }
     break;
   case TypeTag::String:
     {
+      Int index;
+      if(other->type == TypeTag::Int){
+        index = other->value.int_v;
+      }else goto type_error;
       if(index < 0) index = this->value.string_v->utf8Len() + index;
       auto glyph = this->value.string_v->utf8Get(index);
       if(glyph == 0xffffffff) goto index_error;
@@ -978,11 +1031,25 @@ index_error:
     char* msg = dynSprintf(
       "%d: Index out of range error: %lld.",
       vm->getFrame()->func->getLine(vm->getFrame()->ip),
-      (long long)index
+      (long long)other->value.int_v
     );
     vm->errPrint(msg);
     delete[] msg;
     vm->errorJmp(3);
+  }
+lookup_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    auto other_str = other->toCStr();
+    char* msg = dynSprintf(
+      "%d: Lookup error, key not found: %s.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
+      other_str.get()
+    );
+    other_str = nullptr;
+    vm->errPrint(msg);
+    delete[] msg;
+    vm->errorJmp(4);
   }
 }
 
@@ -1064,6 +1131,7 @@ error:
 TypedValue* TypedValue::borrow(){
   switch(this->type){
   case TypeTag::Array:
+  case TypeTag::Table:
     this->clone();
     break;
   default:
@@ -1094,6 +1162,18 @@ void TypedValue::getBorrowed(const TypedValue& other){
       goto type_error;
     }
     break;
+  case TypeTag::Table:
+    {
+      if(!other.isHashable()) goto type_error;
+      auto& borrowed = this->value.borrowed_v;
+      borrowed->clone();
+      auto it = borrowed->value.table_v->find(other);
+      if(it == borrowed->value.table_v->end()){
+        goto lookup_error;
+      }
+      borrowed = &it->second;
+    }
+    break;
   default:
     goto type_error;
   }
@@ -1114,15 +1194,32 @@ type_error:
   }
   
 index_error:
-  VM* vm = VM::getCurrentVM();
-  char* msg = dynSprintf(
-    "%d: Error. Index %lld out of range.",
-    vm->getFrame()->func->getLine(vm->getFrame()->ip),
-    (long long)other.value.int_v
-  );
-  vm->errPrint(msg);
-  delete[] msg;
-  vm->errorJmp(1);
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf(
+      "%d: Error. Index %lld out of range.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
+      (long long)other.value.int_v
+    );
+    vm->errPrint(msg);
+    delete[] msg;
+    vm->errorJmp(1);
+  }
+
+lookup_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    auto other_str = other.toCStr();
+    char* msg = dynSprintf(
+      "%d: Loopup error, key not found: %s.",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
+      other_str.get()
+    );
+    other_str = nullptr;
+    vm->errPrint(msg);
+    delete[] msg;
+    vm->errorJmp(4);
+  }
 }
 
 void TypedValue::toBool(){
@@ -1346,6 +1443,13 @@ void TypedValue::clone(){
       this->value.array_v->incRefCount();
     }
     break;
+  case TypeTag::Table:
+    if(this->value.table_v->getRefCount() > 1){
+      this->value.table_v->decRefCount();
+      this->value.table_v = new Table(*this->value.table_v);
+      this->value.table_v->incRefCount();
+    }
+    break;
   default:
     assert(false);
   }
@@ -1398,6 +1502,10 @@ std::unique_ptr<char[]> TypedValue::toCStr() const {
 
 bool TypedValue::isHashable()const{
   return this->type == TypeTag::Int || this->type == TypeTag::String;
+}
+
+bool TypedValue::operator==(const TypedValue& other)const{
+  return this->type == other.type && this->value.ptr_v == other.value.ptr_v;
 }
 
 #ifndef NDEBUG

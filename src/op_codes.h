@@ -40,6 +40,8 @@ struct Op{
     Geq,
     Leq,
     
+    In,
+    
     Get,
     Slice,
     

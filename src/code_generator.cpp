@@ -261,6 +261,10 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       D_putInstruction(Op::Leq);
       break;
     
+    case ASTNodeType::In:
+      D_putInstruction(Op::In);
+      break;
+    
     default:
       assert(false);
     }

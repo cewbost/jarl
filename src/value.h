@@ -154,6 +154,7 @@ public:
   void append(const TypedValue&);
   void append(TypedValue&&);
   void neg();
+  void in(const TypedValue&);
   
   void cmp(const TypedValue&);
   void cmp(const TypedValue&, CmpMode);
@@ -186,6 +187,8 @@ public:
   const String* asString()const{return this->value.string_v;}
   
   bool isHashable()const;
+  
+  bool operator==(const TypedValue&)const;
   
   #ifndef NDEBUG
   std::string toStrDebug()const;

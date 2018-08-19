@@ -56,6 +56,7 @@ enum class LexemeType: unsigned {
   Lt,
   Geq,
   Leq,
+  In,
   
   L90 = 0x90,
   Append,

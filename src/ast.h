@@ -75,6 +75,8 @@ enum class ASTNodeType: unsigned {
   Geq,
   Leq,
   
+  In,
+  
   Apply,
   
   BranchExpr = 0x2200,
