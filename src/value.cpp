@@ -1222,6 +1222,38 @@ lookup_error:
   }
 }
 
+void TypedValue::getInserted(const TypedValue& other){
+  assert(this->type == TypeTag::Borrow);
+  switch(this->value.borrowed_v->type){
+  case TypeTag::Table:
+    {
+      if(!other.isHashable()) goto type_error;
+      auto& borrowed = this->value.borrowed_v;
+      borrowed->clone();
+      auto it = borrowed->value.table_v->emplace(std::make_pair(other, nullptr));
+      borrowed = &it.first->second;
+    }
+    break;
+  default:
+    goto type_error;
+  }
+  return;
+  
+type_error:
+  {
+    VM* vm = VM::getCurrentVM();
+    char* msg = dynSprintf(
+      "%d: Type error: Unsupported operation %s[%s].",
+      vm->getFrame()->func->getLine(vm->getFrame()->ip),
+      this->typeStr(),
+      other.typeStr()
+    );
+    vm->errPrint(msg);
+    delete[] msg;
+    vm->errorJmp(1);
+  }
+}
+
 void TypedValue::toBool(){
   switch(this->type){
   case TypeTag::Null:

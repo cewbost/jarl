@@ -147,6 +147,8 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "%="; break;
   case ASTNodeType::AppendAssign:
     ret += "++="; break;
+  case ASTNodeType::Insert:
+    ret += "<-"; break;
   case ASTNodeType::Add:
     ret += "+"; break;
   case ASTNodeType::Sub:

@@ -95,6 +95,7 @@ enum class ASTNodeType: unsigned {
   DivAssign,
   ModAssign,
   AppendAssign,
+  Insert,
 };
 
 struct ASTNode {

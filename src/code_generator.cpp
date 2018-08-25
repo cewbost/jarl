@@ -42,6 +42,7 @@ struct ThreadingContext {
   
   void threadAST(ASTNode*, ASTNode* = nullptr);
   void threadRexpr(ASTNode* node, ASTNode* prev_node);
+  void threadInsRexpr(ASTNode* node, ASTNode* prev_node);
 };
 
 namespace {
@@ -332,11 +333,16 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     
   case ASTNodeType::AssignExpr:
     {
-      threadRexpr(node->children.first, node);
+      if(node->type == ASTNodeType::Insert){
+        threadInsRexpr(node->children.first, node);
+      }else{
+        threadRexpr(node->children.first, node);
+      }
       threadAST(node->children.second, node);
       
       switch(node->type){
       case ASTNodeType::Assign:
+      case ASTNodeType::Insert:
         D_putInstruction(Op::Write | Op::Borrowed);
         break;
       case ASTNodeType::AddAssign:
@@ -712,6 +718,26 @@ void ThreadingContext::threadRexpr(ASTNode* node, ASTNode* prev_node){
     ));
     D_putInstruction(Op::Nop);
     break;
+  }
+}
+
+void ThreadingContext::threadInsRexpr(ASTNode* node, ASTNode* prev_node){
+  if(node->type == ASTNodeType::Index){
+    this->threadRexpr(node->children.first, node);
+    this->threadAST(node->children.second, node);
+    D_putInstruction(Op::Borrow | Op::Borrowed | Op::Alt);
+    --stack_size;
+  }else{
+    if(node->type == ASTNodeType::Identifier){
+      errors->emplace_back(dynSprintf(
+        "line %d: Insertion to variable", node->pos.first
+      ));
+    }else{
+      errors->emplace_back(dynSprintf(
+        "line %d: Insertion to rvalue", node->pos.first
+      ));
+    }
+    D_putInstruction(Op::Nop);
   }
 }
 

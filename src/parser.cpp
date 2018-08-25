@@ -313,6 +313,8 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
       return new ASTNode(ASTNodeType::ModAssign, left, right, lex.pos);
     case LexemeType::AppendAssign:
       return new ASTNode(ASTNodeType::AppendAssign, left, right, lex.pos);
+    case LexemeType::Insert:
+      return new ASTNode(ASTNodeType::Insert, left, right, lex.pos);
     
     case LexemeType::Comma:
       return new ASTNode(ASTNodeType::ExprList, left, right, lex.pos);

@@ -174,7 +174,6 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       }
       
       //operators
-      //"<-"  {PUT_LEXEME(LexemeType::Insert)}
       "+"   {PUT_LEXEME(LexemeType::Plus)}
       "-"   {PUT_LEXEME(LexemeType::Minus)}
       "*"   {PUT_LEXEME(LexemeType::Mul)}
@@ -188,6 +187,7 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "/="  {PUT_LEXEME(LexemeType::DivAssign)}
       "%="  {PUT_LEXEME(LexemeType::ModAssign)}
       "++=" {PUT_LEXEME(LexemeType::AppendAssign)}
+      "<-"  {PUT_LEXEME(LexemeType::Insert)}
       "=="  {PUT_LEXEME(LexemeType::Eq)}
       "!="  {PUT_LEXEME(LexemeType::Neq)}
       ">"   {PUT_LEXEME(LexemeType::Gt)}

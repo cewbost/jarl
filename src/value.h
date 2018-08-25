@@ -167,6 +167,7 @@ public:
   TypedValue* borrow();
   
   void getBorrowed(const TypedValue&);
+  void getInserted(const TypedValue&);
   
   void toBool();
   void toBool(bool*);

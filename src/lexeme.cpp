@@ -95,6 +95,7 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::DivAssign: ret += "/="s; break;
   case LexemeType::ModAssign: ret += "%="s; break;
   case LexemeType::AppendAssign: ret += "++="s; break;
+  case LexemeType::Insert: ret += "<-"s; break;
   case LexemeType::Colon: ret += ":"s; break;
   case LexemeType::Eq: ret += "=="s; break;
   case LexemeType::Neq: ret += "!="s; break;

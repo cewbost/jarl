@@ -433,6 +433,10 @@ void VM::execute(const Function& func){
           stack_[stack_.size() - 2].getBorrowed(stack_.back());
           stack_.pop_back();
           break;
+        case Op::Borrowed | Op::Alt:
+          stack_[stack_.size() - 2].getInserted(stack_.back());
+          stack_.pop_back();
+          break;
         default:
           assert(false);
         }
