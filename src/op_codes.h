@@ -40,6 +40,8 @@ struct Op{
     Geq,
     Leq,
     
+    In,
+    
     Get,
     Slice,
     
@@ -53,6 +55,7 @@ struct Op{
     Jfsc,
     
     CreateArray,
+    CreateTable,
     CreateRange,
     
     Print,

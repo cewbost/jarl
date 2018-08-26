@@ -42,6 +42,7 @@ struct ThreadingContext {
   
   void threadAST(ASTNode*, ASTNode* = nullptr);
   void threadRexpr(ASTNode* node, ASTNode* prev_node);
+  void threadInsRexpr(ASTNode* node, ASTNode* prev_node);
 };
 
 namespace {
@@ -261,6 +262,10 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       D_putInstruction(Op::Leq);
       break;
     
+    case ASTNodeType::In:
+      D_putInstruction(Op::In);
+      break;
+    
     default:
       assert(false);
     }
@@ -328,11 +333,16 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     
   case ASTNodeType::AssignExpr:
     {
-      threadRexpr(node->children.first, node);
+      if(node->type == ASTNodeType::Insert){
+        threadInsRexpr(node->children.first, node);
+      }else{
+        threadRexpr(node->children.first, node);
+      }
       threadAST(node->children.second, node);
       
       switch(node->type){
       case ASTNodeType::Assign:
+      case ASTNodeType::Insert:
         D_putInstruction(Op::Write | Op::Borrowed);
         break;
       case ASTNodeType::AddAssign:
@@ -385,7 +395,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       break;
       
     case ASTNodeType::Array:
-      
       if(node->child->type != ASTNodeType::Nop){
         if(node->child->type == ASTNodeType::ExprList){
           ASTNode* t = node->child;
@@ -406,11 +415,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           D_putInstruction(Op::CreateArray | Op::Extended | Op::Int);
           D_putInstruction(elems);
           stack_size -= elems - 1;
-        }else if(node->child->type == ASTNodeType::Range){
-          threadAST(node->child->children.first, node);
-          threadAST(node->child->children.second, node);
-          D_putInstruction(Op::CreateRange);
-          --stack_size;
         }else{
           threadAST(node->child, node);
           D_putInstruction(Op::CreateArray | Op::Extended | Op::Int);
@@ -420,7 +424,58 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction(Op::CreateArray);
         ++stack_size;
       }
-      
+      break;
+    
+    case ASTNodeType::Table:
+      if(node->child->type != ASTNodeType::Nop){
+        if(node->child->type == ASTNodeType::ExprList){
+          ASTNode* stepper = node->child;
+          OpCodeType elems = 0;
+          
+          for(;;){
+            assert(stepper->children.first->type == ASTNodeType::KeyValuePair);
+            threadAST(
+              stepper->children.first->children.first,
+              stepper->children.first
+            );
+            threadAST(
+              stepper->children.first->children.second,
+              stepper->children.first
+            );
+            ++elems;
+            if(stepper->children.second->type == ASTNodeType::ExprList){
+              stepper = stepper->children.second;
+            }else if(stepper->children.second->type == ASTNodeType::KeyValuePair){
+              threadAST(
+                stepper->children.second->children.first,
+                stepper->children.second
+              );
+              threadAST(
+                stepper->children.second->children.second,
+                stepper->children.second
+              );
+              ++elems;
+              break;
+            }else if(stepper->children.second->type == ASTNodeType::Nop){
+              break;
+            }else assert(false);
+          }
+          
+          D_putInstruction(Op::CreateTable | Op::Extended | Op::Int);
+          D_putInstruction(elems);
+          stack_size -= 2 * elems - 1;
+        }else{
+          assert(node->child->type == ASTNodeType::KeyValuePair);
+          threadAST(node->child->children.first, node->child);
+          threadAST(node->child->children.second, node->child);
+          D_putInstruction(Op::CreateTable | Op::Extended | Op::Int);
+          D_putInstruction(1);
+          --stack_size;
+        }
+      }else{
+        D_putInstruction(Op::CreateTable);
+        ++stack_size;
+      }
       break;
       
     case ASTNodeType::For:
@@ -664,6 +719,26 @@ void ThreadingContext::threadRexpr(ASTNode* node, ASTNode* prev_node){
     ));
     D_putInstruction(Op::Nop);
     break;
+  }
+}
+
+void ThreadingContext::threadInsRexpr(ASTNode* node, ASTNode* prev_node){
+  if(node->type == ASTNodeType::Index){
+    this->threadRexpr(node->children.first, node);
+    this->threadAST(node->children.second, node);
+    D_putInstruction(Op::Borrow | Op::Borrowed | Op::Alt);
+    --stack_size;
+  }else{
+    if(node->type == ASTNodeType::Identifier){
+      errors->emplace_back(dynSprintf(
+        "line %d: Insertion to variable", node->pos.first
+      ));
+    }else{
+      errors->emplace_back(dynSprintf(
+        "line %d: Insertion to rvalue", node->pos.first
+      ));
+    }
+    D_putInstruction(Op::Nop);
   }
 }
 

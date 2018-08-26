@@ -34,6 +34,9 @@ std::string opCodeToStrDebug(OpCodeType op){
   case Op::CreateArray:
     ret += "create array"s;
     break;
+  case Op::CreateTable:
+    ret += "create table"s;
+    break;
   case Op::CreateRange:
     ret += "create range"s;
     break;
@@ -90,6 +93,9 @@ std::string opCodeToStrDebug(OpCodeType op){
     break;
   case Op::Leq:
     ret += "leq"s;
+    break;
+  case Op::In:
+    ret += "in"s;
     break;
   case Op::Get:
     ret += "get"s;

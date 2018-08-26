@@ -23,12 +23,12 @@ function run_test {
     echo -e "Success!" >>$1
     success=true
     ;;
-  1)
+  2)
+    echo "Valgrind caught errors." >>$1
+    cat ${1/%.out/.grind} >>$1
     echo -e "Failed!" >>$1
     ;;
   *)
-    echo "Valgrind caught errors." >>$1
-    cat ${1/%.out/.grind} >>$1
     echo -e "Failed!" >>$1
     ;;
   esac

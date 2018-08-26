@@ -174,7 +174,6 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       }
       
       //operators
-      //"<-"  {PUT_LEXEME(LexemeType::Insert)}
       "+"   {PUT_LEXEME(LexemeType::Plus)}
       "-"   {PUT_LEXEME(LexemeType::Minus)}
       "*"   {PUT_LEXEME(LexemeType::Mul)}
@@ -188,6 +187,7 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "/="  {PUT_LEXEME(LexemeType::DivAssign)}
       "%="  {PUT_LEXEME(LexemeType::ModAssign)}
       "++=" {PUT_LEXEME(LexemeType::AppendAssign)}
+      "<-"  {PUT_LEXEME(LexemeType::Insert)}
       "=="  {PUT_LEXEME(LexemeType::Eq)}
       "!="  {PUT_LEXEME(LexemeType::Neq)}
       ">"   {PUT_LEXEME(LexemeType::Gt)}
@@ -195,9 +195,10 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       ">="  {PUT_LEXEME(LexemeType::Geq)}
       "<="  {PUT_LEXEME(LexemeType::Leq)}
       "<=>" {PUT_LEXEME(LexemeType::Cmp)}
+      ":"   {PUT_LEXEME(LexemeType::Colon)}
       ","   {PUT_LEXEME(LexemeType::Comma)}
-      //"@"   {PUT_LEXEME(LexemeType::Apply)}
       ";"   {PUT_LEXEME(LexemeType::Semicolon)}
+      //"@"   {PUT_LEXEME(LexemeType::Apply)}
       
       "("   {
         br_stack.push('(');
@@ -254,6 +255,7 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "var"     {PUT_LEXEME(LexemeType::Var)}
       "print"   {PUT_LEXEME(LexemeType::Print)}
       "assert"  {PUT_LEXEME(LexemeType::Assert)}
+      "in"      {PUT_LEXEME(LexemeType::In)}
       
       "and"   {
         if(lexemes.back().type == LexemeType::Newline){

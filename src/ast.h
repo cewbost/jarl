@@ -34,6 +34,7 @@ enum class ASTNodeType: unsigned {
   
   CodeBlock,
   Array,
+  Table,
   Var,
   Print,
   Assert,
@@ -52,6 +53,7 @@ enum class ASTNodeType: unsigned {
   Index,
   
   ExprList,
+  KeyValuePair,
   Range,
   Then,
   Function,
@@ -73,6 +75,8 @@ enum class ASTNodeType: unsigned {
   Geq,
   Leq,
   
+  In,
+  
   Apply,
   
   BranchExpr = 0x2200,
@@ -91,6 +95,7 @@ enum class ASTNodeType: unsigned {
   DivAssign,
   ModAssign,
   AppendAssign,
+  Insert,
 };
 
 struct ASTNode {

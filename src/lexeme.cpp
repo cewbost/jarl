@@ -95,6 +95,8 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::DivAssign: ret += "/="s; break;
   case LexemeType::ModAssign: ret += "%="s; break;
   case LexemeType::AppendAssign: ret += "++="s; break;
+  case LexemeType::Insert: ret += "<-"s; break;
+  case LexemeType::Colon: ret += ":"s; break;
   case LexemeType::Eq: ret += "=="s; break;
   case LexemeType::Neq: ret += "!="s; break;
   case LexemeType::Gt: ret += ">"s; break;
@@ -116,6 +118,8 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::Not: ret += "not"s; break;
   case LexemeType::And: ret += "and"s; break;
   case LexemeType::Or: ret += "or"s; break;
+  
+  case LexemeType::In: ret += "in"s; break;
   
   case LexemeType::Null: ret += "null"s; break;
   case LexemeType::If: ret += "if"s; break;

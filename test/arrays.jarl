@@ -14,10 +14,12 @@ assert arr5[0] == 3 and arr5[-1] == 4, "negative slicing should work"
 assert arr6[0] == 3 and arr6[-1] == 6, "head slicing should work"
 assert arr7[0] == 1 and arr7[-1] == 4, "tail slicing should work"
 
+assert 2 in arr1 and not (4 in arr1), "in should work"
+
 var marr = [
   [1, 2, 3],
   [4, 5, 6],
-  [7, 8, 9]
+  [7, 8, 9],
 ]
 assert marr[0][0] + marr[1][1] + marr[2][2] == 15,
   "multidimensional arrays should work"

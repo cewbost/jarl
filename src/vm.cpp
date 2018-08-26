@@ -2,6 +2,8 @@
 
 #include "fixed_vector.h"
 
+#include "table.h"
+
 #include <algorithm>
 #include <iterator>
 #include <cassert>
@@ -255,6 +257,9 @@ void VM::execute(const Function& func){
       case Op::Append:
         this->doArithOp_(&this->frame_.ip, &TypedValue::append);
         break;
+      case Op::In:
+        this->doArithOp_(&this->frame_.ip, &TypedValue::in);
+        break;
       
       case Op::Neg:
         stack_.back().neg();
@@ -428,6 +433,10 @@ void VM::execute(const Function& func){
           stack_[stack_.size() - 2].getBorrowed(stack_.back());
           stack_.pop_back();
           break;
+        case Op::Borrowed | Op::Alt:
+          stack_[stack_.size() - 2].getInserted(stack_.back());
+          stack_.pop_back();
+          break;
         default:
           assert(false);
         }
@@ -447,6 +456,32 @@ void VM::execute(const Function& func){
           stack_.back() = arr;
         }else{
           stack_.push_back(new Array);
+        }
+        break;
+      
+      case Op::CreateTable:
+        if(*this->frame_.ip & Op::Extended){
+          assert((*this->frame_.ip & Op::Int) == Op::Int);
+          Table* tab = new Table;
+          auto stack_pos = stack_.size() - 2 * *(++this->frame_.ip);
+          
+          for(auto i = stack_pos; i < stack_.size(); i += 2){
+            if(!stack_[i].isHashable()){
+              VM* vm = VM::getCurrentVM();
+              char* msg = dynSprintf(
+                "%d: Hash error. Invalid key type in table",
+                vm->getFrame()->func->getLine(vm->getFrame()->ip)
+              );
+              vm->errPrint(msg);
+              delete[] msg;
+              vm->errorJmp(1);
+            }
+            tab->insert({std::move(stack_[i]), std::move(stack_[i + 1])});
+          }
+          stack_.resize(stack_pos + 1);
+          stack_.back() = tab;
+        }else{
+          stack_.push_back(new Table);
         }
         break;
       
