@@ -91,6 +91,7 @@ enum class LexemeType: unsigned {
   Null,
   If,
   While,
+  For,
   Func,
   
   LF0 = 0xF0,
