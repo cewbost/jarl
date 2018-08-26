@@ -445,8 +445,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
             ++elems;
             if(stepper->children.second->type == ASTNodeType::ExprList){
               stepper = stepper->children.second;
-            }else{
-              assert(stepper->children.second->type == ASTNodeType::KeyValuePair);
+            }else if(stepper->children.second->type == ASTNodeType::KeyValuePair){
               threadAST(
                 stepper->children.second->children.first,
                 stepper->children.second
@@ -457,7 +456,9 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
               );
               ++elems;
               break;
-            }
+            }else if(stepper->children.second->type == ASTNodeType::Nop){
+              break;
+            }else assert(false);
           }
           
           D_putInstruction(Op::CreateTable | Op::Extended | Op::Int);

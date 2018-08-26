@@ -1,0 +1,14 @@
+var tab1 = {
+  "foo": 3,
+  "bar": 4,
+}
+tab1["foo"] += 4
+assert tab1["foo"] == 7, "assigning to tables should work"
+
+var tab2 = tab1
+tab1["bar"] = 2
+assert tab1["bar"] == 2 and tab2["bar"] == 4, "tables should be pass by value"
+
+tab1["foo"] <- 10
+tab1["baz"] <- 20
+assert tab1["foo"] == 10 and tab1["baz"] == 20, "inserting elements should work"
