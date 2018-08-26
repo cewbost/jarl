@@ -29,7 +29,8 @@ namespace{
     if(ins.second){
       return str;
     }else{
-      delete str;
+      //warning: string deallocated without call to destructor.
+      ::operator delete(str);
       return *ins.first;
     }
   }
