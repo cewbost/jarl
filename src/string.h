@@ -18,6 +18,10 @@
   This object must be allocated using the make_new template specialization.
   For this reason creating objects of this class is disabled using any other method.
   Copying and moving is also disabled.
+  
+  All strings are stored in a global string table after being allocated. Strings
+  which are not stored in this table upon allocation will be deallocated.
+  *THIS DEALLOCATION TAKES PLACE WITHOUT CALLING THE STRING DESTRUCTOR*.
 */
 
 #ifndef NDEBUG
