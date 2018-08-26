@@ -106,6 +106,12 @@ std::string opCodeToStrDebug(OpCodeType op){
   case Op::Borrow:
     ret += "borrow"s;
     break;
+  case Op::BeginIter:
+    ret += "begin iteration"s;
+    break;
+  case Op::NextOrJmp:
+    ret += "next or jmp"s;
+    break;
   case Op::Jmp:
     ret += "jmp"s;
     break;

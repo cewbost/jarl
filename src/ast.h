@@ -49,6 +49,7 @@ enum class ASTNodeType: unsigned {
   Seq,
   Else,
   While,
+  For,
   
   Index,
   

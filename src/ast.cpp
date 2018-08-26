@@ -187,6 +187,8 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "else"; break;
   case ASTNodeType::While:
     ret += "while"; break;
+  case ASTNodeType::For:
+    ret += "for"; break;
   case ASTNodeType::CodeBlock:
     ret += "code block"; break;
   case ASTNodeType::Index:

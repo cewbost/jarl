@@ -48,6 +48,9 @@ struct Op{
     Store,
     Borrow,
     
+    BeginIter,
+    NextOrJmp,
+    
     Jmp,
     Jt,
     Jf,

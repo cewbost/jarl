@@ -500,6 +500,34 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         ++stack_size;
       }
       break;
+    
+    case ASTNodeType::For:
+      {
+        if(node->children.first->type != ASTNodeType::In){
+          errors->emplace_back(dynSprintf(
+            "line %d: Expected in expression",
+            node->pos.first
+          ));
+          D_putInstruction(Op::Nop);
+          break;
+        }
+        threadAST(node->children.first->children.second, node);
+        D_putInstruction(Op::BeginIter);
+        
+        unsigned begin_addr = code.size();
+        D_putInstruction(Op::NextOrJmp | Op::Extended);
+        unsigned end_jmp_addr = code.size();
+        D_putInstruction((OpCodeType)0);
+        
+        threadAST(node->children.second, node);
+        
+        D_putInstruction(Op::Pop);
+        --stack_size;
+        D_putInstruction(Op::Jmp | Op::Extended);
+        D_putInstruction((OpCodeType)begin_addr);
+        code[end_jmp_addr] = (OpCodeType)code.size();
+      }
+      break;
       
     case ASTNodeType::Function:
       {
