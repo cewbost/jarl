@@ -90,7 +90,7 @@ enum class LexemeType: unsigned {
   String,
   Null,
   If,
-  For,
+  While,
   Func,
   
   LF0 = 0xF0,

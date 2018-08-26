@@ -478,7 +478,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       }
       break;
       
-    case ASTNodeType::For:
+    case ASTNodeType::While:
       {
         unsigned begin_addr = code.size();
         

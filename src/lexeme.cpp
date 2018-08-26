@@ -123,7 +123,7 @@ std::string Lexeme::toStrDebug() const {
   
   case LexemeType::Null: ret += "null"s; break;
   case LexemeType::If: ret += "if"s; break;
-  case LexemeType::For: ret += "for"s; break;
+  case LexemeType::While: ret += "while"s; break;
   case LexemeType::Else: ret += "else"s; break;
   case LexemeType::Func: ret += "func"s; break;
   case LexemeType::Var: ret += "var"s; break;

@@ -134,7 +134,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
         );
       }*/
     }
-  case LexemeType::For:
+  case LexemeType::While:
     {
       std::unique_ptr<ASTNode> tok(this->expression_(def_block_bindp));
       if(!this->checkNext_(LexemeType::Do)){
@@ -145,7 +145,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
         return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
       }else{
         return new ASTNode(
-          ASTNodeType::For,
+          ASTNodeType::While,
           tok.release(),
           this->expression_(def_statement_bindp),
           (this->lcurrent_ - 1)->pos
