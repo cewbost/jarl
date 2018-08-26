@@ -223,10 +223,7 @@ namespace std{
   
   template<> struct hash<TypedValue>{
     size_t operator()(const TypedValue& arg)const{
-      return defaultHash(
-        reinterpret_cast<const char*>(&arg),
-        reinterpret_cast<const char*>(&arg) + sizeof(TypedValue)
-      );
+      return arg.value.int_v ^ static_cast<Int>(arg.type);
     }
   };
 }
