@@ -2,6 +2,7 @@
 
 #include "vm.h"
 #include "table.h"
+#include "iterator.h"
 
 #include <memory>
 #include <algorithm>
@@ -57,6 +58,9 @@ void TypedValue::clear_(){
     break;
   case TypeTag::Table:
     this->value.table_v->decRefCount();
+    break;
+  case TypeTag::Iterator:
+    this->value.iterator_v->decRefCount();
     break;
   default:
     break;
@@ -151,6 +155,11 @@ TypedValue::TypedValue(Table* p){
   value.table_v = p;
   p->incRefCount();
 }
+TypedValue::TypedValue(Iterator* p){
+  type = TypeTag::Iterator;
+  value.iterator_v = p;
+  p->incRefCount();
+}
 TypedValue::TypedValue(TypedValue* p){
   type = TypeTag::Borrow;
   value.borrowed_v = p;
@@ -218,6 +227,13 @@ TypedValue& TypedValue::operator=(Table* val){
   this->clear_();
   this->type = TypeTag::Table;
   this->value.table_v = val;
+  val->incRefCount();
+  return *this;
+}
+TypedValue& TypedValue::operator=(Iterator* val){
+  this->clear_();
+  this->type = TypeTag::Iterator;
+  this->value.iterator_v = val;
   val->incRefCount();
   return *this;
 }
