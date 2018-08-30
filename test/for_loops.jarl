@@ -1,0 +1,50 @@
+var arr = ["foo", "bar", "baz"]
+var str = ""
+for val in arr do {
+  str ++= val
+}
+assert str == "foobarbaz", "looping over arrays should work"
+
+var num1 = 0
+var num2 = 0
+for idx, val in [1, 1, 1, 1, 1] do {
+  num1 += idx
+  num2 += val
+}
+assert num1 == 10, "looping over array indexes should work"
+assert num2 == 5, "looping over indexes should not break looping over values"
+
+var table = {"a": "foo", "b": "bar", "c": "baz"}
+arr = []
+for val in table do {
+  arr ++= val
+}
+assert "foo" in arr and "bar" in arr and "baz" in arr,
+  "looping over table values should work"
+
+arr = []
+for idx, _ in table do {
+  arr ++= idx
+}
+assert "a" in arr and "b" in arr and "c" in arr,
+  "looping over table keys should work"
+
+num1 = 10; num2 = 10
+for num1, num2 in [1, 2, 3, 4] do {
+  //nop
+}
+assert num1 == 10 and num2 == 10, "shadowing should not overwrite variables"
+
+arr = [2, 4, 6, 8]
+for idx, val in arr do {
+  arr[idx] += val
+}
+assert arr[0] == 4 and arr[1] == 8 and arr[2] == 12 and arr[3] == 16,
+  "arrays should be mutable while being iterated"
+
+arr = [1, 2, 3]
+for val in arr do {
+  arr ++= val
+}
+assert arr[0] + arr[3] == 2 and arr[1] + arr[4] == 4 and arr[2] + arr[5] == 6,
+  "extending an array while iterating it should work"
