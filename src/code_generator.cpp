@@ -43,6 +43,25 @@ struct ThreadingContext {
   void threadAST(ASTNode*, ASTNode* = nullptr);
   void threadRexpr(ASTNode* node, ASTNode* prev_node);
   void threadInsRexpr(ASTNode* node, ASTNode* prev_node);
+  
+private:
+  class AllocContextGuard {
+    VarAllocMap*& alloc_map_;
+  public:
+    AllocContextGuard(VarAllocMap*& alloc_map): alloc_map_(alloc_map){
+      alloc_map_ = new VarAllocMap(alloc_map_);
+    }
+    ~AllocContextGuard(){
+      VarAllocMap* old_allocs = alloc_map_;
+      alloc_map_ = alloc_map_->get_delegate();
+      delete old_allocs;
+    }
+  };
+  
+public:
+  AllocContextGuard newScope(){
+    return AllocContextGuard(this->var_allocs);
+  }
 };
 
 namespace {
@@ -374,7 +393,8 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     switch(node->type){
     case ASTNodeType::CodeBlock:
       {
-        var_allocs = new VarAllocMap(var_allocs);
+        auto guard = this->newScope();
+        //var_allocs = new VarAllocMap(var_allocs);
         threadAST(node->children.first, node);
         
         auto size = var_allocs->direct().size();
@@ -388,9 +408,9 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           stack_size -= size;
         }
         
-        auto old_allocs = var_allocs;
-        var_allocs = var_allocs->get_delegate();
-        delete old_allocs;
+        //auto old_allocs = var_allocs;
+        //var_allocs = var_allocs->get_delegate();
+        //delete old_allocs;
       }
       break;
       
@@ -503,29 +523,45 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     
     case ASTNodeType::For:
       {
-        if(node->children.first->type != ASTNodeType::In){
-          errors->emplace_back(dynSprintf(
-            "line %d: Expected in expression",
-            node->pos.first
-          ));
-          D_putInstruction(Op::Nop);
-          break;
+        auto guard = this->newScope();
+        {
+          ASTNode* stepper = node->children.first;
+          if(stepper->type == ASTNodeType::ExprList){
+            if(stepper->children.first->type != ASTNodeType::Identifier){
+              errors->emplace_back(dynSprintf(
+                "line %d: Expected identifier",
+                stepper->pos.first
+              ));
+              D_putInstruction(Op::Nop);
+              break;
+            }
+            var_allocs->direct()[stepper->children.first->string_value] =
+              stack_size + 1 | stack_pos_local;
+            stepper = stepper->children.second;
+          }
+          if(stepper->type != ASTNodeType::In){
+            errors->emplace_back(dynSprintf(
+              "line %d: Expected in expression",
+              stepper->pos.first
+            ));
+            D_putInstruction(Op::Nop);
+            break;
+          }
+          if(stepper->children.first->type != ASTNodeType::Identifier){
+            errors->emplace_back(dynSprintf(
+              "line %d: Expected identifier",
+              stepper->children.first->pos.first
+            ));
+            D_putInstruction(Op::Nop);
+            break;
+          }
+          var_allocs->direct()[stepper->children.first->string_value] =
+            stack_size + 2 | stack_pos_local;
+          
+          threadAST(stepper->children.second, node);
+          D_putInstruction(Op::BeginIter);
+          stack_size += 2;
         }
-        var_allocs = new VarAllocMap(var_allocs);
-        if(node->children.first->children.first->type != ASTNodeType::Identifier){
-          errors->emplace_back(dynSprintf(
-            "line %d: Expected identifier",
-            node->pos.first
-          ));
-          D_putInstruction(Op::Nop);
-          break;
-        }
-        var_allocs->direct()[node->children.first->children.first->string_value] =
-          stack_size + 1 | stack_pos_local;
-        
-        threadAST(node->children.first->children.second, node);
-        D_putInstruction(Op::BeginIter);
-        stack_size += 2;
         
         unsigned begin_addr = code.size();
         D_putInstruction(Op::NextOrJmp | Op::Extended);
@@ -541,10 +577,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         code[end_jmp_addr] = (OpCodeType)code.size();
         D_putInstruction(Op::Push);
         stack_size -= 2;
-        
-        auto old_allocs = var_allocs;
-        var_allocs = var_allocs->get_delegate();
-        delete old_allocs;
       }
       break;
       

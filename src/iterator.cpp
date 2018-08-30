@@ -42,6 +42,7 @@ bool Iterator::ended()const{
   default:
     assert(false);
   }
+  return true;
 }
 
 void Iterator::advance(){
@@ -71,6 +72,7 @@ TypedValue Iterator::getKey()const{
   default:
     assert(false);
   }
+  return nullptr;
 }
 
 TypedValue Iterator::getValue()const{
@@ -82,6 +84,7 @@ TypedValue Iterator::getValue()const{
   default:
     assert(false);
   }
+  return nullptr;
 }
 
 #ifndef NDEBUG
