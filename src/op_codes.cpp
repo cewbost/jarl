@@ -144,8 +144,9 @@ std::string opCodeToStrDebug(OpCodeType op){
   
   if(op & Op::Dest)     ret += " dest"s;
   if(op & Op::Int)      ret += " int"s;
-  if(op & Op::Alt)      ret += " alt"s;
   if(op & Op::Borrowed) ret += " borrowed"s;
+  if(op & Op::Alt1)     ret += " alt1"s;
+  if(op & Op::Alt2)     ret += " alt2"s;
   
   return ret;
 }

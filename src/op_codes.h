@@ -67,8 +67,9 @@ struct Op{
     Extended  = 0x8000,
     Dest      = 0x4000,
     Int       = 0x2000,
-    Alt       = 0x1000,
-    Borrowed  = 0x0800,
+    Borrowed  = 0x1000,
+    Alt1      = 0x0800,
+    Alt2      = 0x0400,
     
     Head      = 0xf800
   };

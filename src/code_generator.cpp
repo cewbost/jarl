@@ -511,8 +511,21 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           D_putInstruction(Op::Nop);
           break;
         }
+        var_allocs = new VarAllocMap(var_allocs);
+        if(node->children.first->children.first->type != ASTNodeType::Identifier){
+          errors->emplace_back(dynSprintf(
+            "line %d: Expected identifier",
+            node->pos.first
+          ));
+          D_putInstruction(Op::Nop);
+          break;
+        }
+        var_allocs->direct()[node->children.first->children.first->string_value] =
+          stack_size + 1 | stack_pos_local;
+        
         threadAST(node->children.first->children.second, node);
         D_putInstruction(Op::BeginIter);
+        stack_size += 2;
         
         unsigned begin_addr = code.size();
         D_putInstruction(Op::NextOrJmp | Op::Extended);
@@ -526,6 +539,12 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction(Op::Jmp | Op::Extended);
         D_putInstruction((OpCodeType)begin_addr);
         code[end_jmp_addr] = (OpCodeType)code.size();
+        D_putInstruction(Op::Push);
+        stack_size -= 2;
+        
+        auto old_allocs = var_allocs;
+        var_allocs = var_allocs->get_delegate();
+        delete old_allocs;
       }
       break;
       
@@ -652,7 +671,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           }
           threadAST(node->child->children.second, node);
           threadAST(node->child->children.first, node);
-          D_putInstruction(Op::Assert | Op::Alt);
+          D_putInstruction(Op::Assert | Op::Alt1);
           --stack_size;
         }else{
           if(node->child->type == ASTNodeType::Nop){
@@ -754,7 +773,7 @@ void ThreadingContext::threadInsRexpr(ASTNode* node, ASTNode* prev_node){
   if(node->type == ASTNodeType::Index){
     this->threadRexpr(node->children.first, node);
     this->threadAST(node->children.second, node);
-    D_putInstruction(Op::Borrow | Op::Borrowed | Op::Alt);
+    D_putInstruction(Op::Borrow | Op::Borrowed | Op::Alt1);
     --stack_size;
   }else{
     if(node->type == ASTNodeType::Identifier){
