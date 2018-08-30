@@ -17,6 +17,7 @@ class Function;
 class PartiallyApplied;
 class Array;
 class Table;
+class Iterator;
 
 using jarl::Int;
 using jarl::Float;
@@ -40,6 +41,7 @@ enum class TypeTag: Int{
   Partial,
   Array,
   Table,
+  Iterator,
   Borrow
 };
 
@@ -65,6 +67,7 @@ struct Value{
     Array*            array_v;
     Table*            table_v;
     TypedValue*       borrowed_v;
+    Iterator*         iterator_v;
     void*             ptr_v;
   };
   
@@ -122,6 +125,7 @@ public:
   TypedValue(PartiallyApplied*);
   TypedValue(Array*);
   TypedValue(Table*);
+  TypedValue(Iterator*);
   TypedValue(TypedValue*);
   TypedValue(const void*);
   
@@ -134,6 +138,7 @@ public:
   TypedValue& operator=(PartiallyApplied*);
   TypedValue& operator=(Array*);
   TypedValue& operator=(Table*);
+  TypedValue& operator=(Iterator*);
   TypedValue& operator=(const void*);
   
   TypedValue(TypedValue&& other)noexcept;
@@ -223,10 +228,7 @@ namespace std{
   
   template<> struct hash<TypedValue>{
     size_t operator()(const TypedValue& arg)const{
-      return defaultHash(
-        reinterpret_cast<const char*>(&arg),
-        reinterpret_cast<const char*>(&arg) + sizeof(TypedValue)
-      );
+      return arg.value.int_v ^ static_cast<Int>(arg.type);
     }
   };
 }

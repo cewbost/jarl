@@ -3,6 +3,7 @@
 #include "fixed_vector.h"
 
 #include "table.h"
+#include "iterator.h"
 
 #include <algorithm>
 #include <iterator>
@@ -355,6 +356,26 @@ void VM::execute(const Function& func){
           break;
         }
       
+      case Op::BeginIter:
+        stack_.back() = new Iterator(stack_.back());
+        stack_.resize(stack_.size() + 2, TypedValue(nullptr));
+        break;
+      
+      case Op::NextOrJmp:
+        assert((*this->frame_.ip & Op::Extended) != 0);
+        ++this->frame_.ip;
+        if(stack_[stack_.size() - 3].value.iterator_v->ended()){
+          stack_.resize(stack_.size() - 3);
+          this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          goto loop_start;
+        }else{
+          auto iter = stack_[stack_.size() - 3].value.iterator_v;
+          stack_[stack_.size() - 2] = iter->getKey();
+          stack_[stack_.size() - 1] = iter->getValue();
+          iter->advance();
+        }
+        break;
+      
       case Op::Apply:
         {
           auto& callee = stack_[stack_.size() - 2];
@@ -433,7 +454,7 @@ void VM::execute(const Function& func){
           stack_[stack_.size() - 2].getBorrowed(stack_.back());
           stack_.pop_back();
           break;
-        case Op::Borrowed | Op::Alt:
+        case Op::Borrowed | Op::Alt1:
           stack_[stack_.size() - 2].getInserted(stack_.back());
           stack_.pop_back();
           break;
@@ -555,7 +576,7 @@ void VM::execute(const Function& func){
         
       case Op::Assert:
         stack_.back().toBool();
-        if(*this->frame_.ip & Op::Alt){
+        if(*this->frame_.ip & Op::Alt1){
           if(!stack_.back().value.bool_v){
             auto str = stack_[stack_.size() - 2].toCStr();
             VM* vm = VM::getCurrentVM();

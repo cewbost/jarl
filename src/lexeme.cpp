@@ -82,59 +82,60 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::Identifier:
     ret += "identifier: "s + std::string(this->value.s->str()); break;
   
-  case LexemeType::Plus: ret += "+"s; break;
-  case LexemeType::Minus: ret += "-"s; break;
-  case LexemeType::Mul: ret += "*"s; break;
-  case LexemeType::Div: ret += "/"s; break;
-  case LexemeType::Mod: ret += "%"s; break;
-  case LexemeType::Append: ret += "++"s; break;
-  case LexemeType::Assign: ret += "="s; break;
-  case LexemeType::AddAssign: ret += "+="s; break;
-  case LexemeType::SubAssign: ret += "-="s; break;
-  case LexemeType::MulAssign: ret += "*="s; break;
-  case LexemeType::DivAssign: ret += "/="s; break;
-  case LexemeType::ModAssign: ret += "%="s; break;
-  case LexemeType::AppendAssign: ret += "++="s; break;
-  case LexemeType::Insert: ret += "<-"s; break;
-  case LexemeType::Colon: ret += ":"s; break;
-  case LexemeType::Eq: ret += "=="s; break;
-  case LexemeType::Neq: ret += "!="s; break;
-  case LexemeType::Gt: ret += ">"s; break;
-  case LexemeType::Lt: ret += "<"s; break;
-  case LexemeType::Geq: ret += ">="s; break;
-  case LexemeType::Leq: ret += "<="s; break;
-  case LexemeType::Cmp: ret += "<=>"s; break;
-  case LexemeType::LParen: ret += "("s; break;
-  case LexemeType::RParen: ret += ")"s; break;
-  case LexemeType::LBrace: ret += "{"s; break;
-  case LexemeType::RBrace: ret += "}"s; break;
-  case LexemeType::LBracket: ret += "["s; break;
-  case LexemeType::RBracket: ret += "]"s; break;
-  case LexemeType::Comma: ret += ","s; break;
-  case LexemeType::Semicolon: ret += ";"s; break;
-  case LexemeType::Newline: ret += "\\n"; break;
-  case LexemeType::Do: ret += ":"s; break;
+  case LexemeType::Plus:          ret += "+"s; break;
+  case LexemeType::Minus:         ret += "-"s; break;
+  case LexemeType::Mul:           ret += "*"s; break;
+  case LexemeType::Div:           ret += "/"s; break;
+  case LexemeType::Mod:           ret += "%"s; break;
+  case LexemeType::Append:        ret += "++"s; break;
+  case LexemeType::Assign:        ret += "="s; break;
+  case LexemeType::AddAssign:     ret += "+="s; break;
+  case LexemeType::SubAssign:     ret += "-="s; break;
+  case LexemeType::MulAssign:     ret += "*="s; break;
+  case LexemeType::DivAssign:     ret += "/="s; break;
+  case LexemeType::ModAssign:     ret += "%="s; break;
+  case LexemeType::AppendAssign:  ret += "++="s; break;
+  case LexemeType::Insert:        ret += "<-"s; break;
+  case LexemeType::Colon:         ret += ":"s; break;
+  case LexemeType::Eq:            ret += "=="s; break;
+  case LexemeType::Neq:           ret += "!="s; break;
+  case LexemeType::Gt:            ret += ">"s; break;
+  case LexemeType::Lt:            ret += "<"s; break;
+  case LexemeType::Geq:           ret += ">="s; break;
+  case LexemeType::Leq:           ret += "<="s; break;
+  case LexemeType::Cmp:           ret += "<=>"s; break;
+  case LexemeType::LParen:        ret += "("s; break;
+  case LexemeType::RParen:        ret += ")"s; break;
+  case LexemeType::LBrace:        ret += "{"s; break;
+  case LexemeType::RBrace:        ret += "}"s; break;
+  case LexemeType::LBracket:      ret += "["s; break;
+  case LexemeType::RBracket:      ret += "]"s; break;
+  case LexemeType::Comma:         ret += ","s; break;
+  case LexemeType::Semicolon:     ret += ";"s; break;
+  case LexemeType::Newline:       ret += "\\n"; break;
+  case LexemeType::Do:            ret += ":"s; break;
   
-  case LexemeType::Not: ret += "not"s; break;
-  case LexemeType::And: ret += "and"s; break;
-  case LexemeType::Or: ret += "or"s; break;
+  case LexemeType::Not:           ret += "not"s; break;
+  case LexemeType::And:           ret += "and"s; break;
+  case LexemeType::Or:            ret += "or"s; break;
   
-  case LexemeType::In: ret += "in"s; break;
+  case LexemeType::In:            ret += "in"s; break;
   
-  case LexemeType::Null: ret += "null"s; break;
-  case LexemeType::If: ret += "if"s; break;
-  case LexemeType::For: ret += "for"s; break;
-  case LexemeType::Else: ret += "else"s; break;
-  case LexemeType::Func: ret += "func"s; break;
-  case LexemeType::Var: ret += "var"s; break;
-  case LexemeType::Print: ret += "print"s; break;
-  case LexemeType::Assert: ret += "assert"s; break;
+  case LexemeType::Null:          ret += "null"s; break;
+  case LexemeType::If:            ret += "if"s; break;
+  case LexemeType::While:         ret += "while"s; break;
+  case LexemeType::For:           ret += "for"s; break;
+  case LexemeType::Else:          ret += "else"s; break;
+  case LexemeType::Func:          ret += "func"s; break;
+  case LexemeType::Var:           ret += "var"s; break;
+  case LexemeType::Print:         ret += "print"s; break;
+  case LexemeType::Assert:        ret += "assert"s; break;
   
-  case LexemeType::End: ret += "end"s; break;
+  case LexemeType::End:           ret += "end"s; break;
   
-  case LexemeType::Error: ret += "error"s; break;
+  case LexemeType::Error:         ret += "error"s; break;
   
-  default: ret += "unrecognized lexeme"s;
+  default:                        ret += "unrecognized lexeme"s;
   }
   
   return ret;

@@ -43,6 +43,25 @@ struct ThreadingContext {
   void threadAST(ASTNode*, ASTNode* = nullptr);
   void threadRexpr(ASTNode* node, ASTNode* prev_node);
   void threadInsRexpr(ASTNode* node, ASTNode* prev_node);
+  
+private:
+  class AllocContextGuard {
+    VarAllocMap*& alloc_map_;
+  public:
+    AllocContextGuard(VarAllocMap*& alloc_map): alloc_map_(alloc_map){
+      alloc_map_ = new VarAllocMap(alloc_map_);
+    }
+    ~AllocContextGuard(){
+      VarAllocMap* old_allocs = alloc_map_;
+      alloc_map_ = alloc_map_->get_delegate();
+      delete old_allocs;
+    }
+  };
+  
+public:
+  AllocContextGuard newScope(){
+    return AllocContextGuard(this->var_allocs);
+  }
 };
 
 namespace {
@@ -374,7 +393,8 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     switch(node->type){
     case ASTNodeType::CodeBlock:
       {
-        var_allocs = new VarAllocMap(var_allocs);
+        auto guard = this->newScope();
+        //var_allocs = new VarAllocMap(var_allocs);
         threadAST(node->children.first, node);
         
         auto size = var_allocs->direct().size();
@@ -388,9 +408,9 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           stack_size -= size;
         }
         
-        auto old_allocs = var_allocs;
-        var_allocs = var_allocs->get_delegate();
-        delete old_allocs;
+        //auto old_allocs = var_allocs;
+        //var_allocs = var_allocs->get_delegate();
+        //delete old_allocs;
       }
       break;
       
@@ -478,7 +498,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       }
       break;
       
-    case ASTNodeType::For:
+    case ASTNodeType::While:
       {
         unsigned begin_addr = code.size();
         
@@ -498,6 +518,65 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         
         D_putInstruction(Op::Push);
         ++stack_size;
+      }
+      break;
+    
+    case ASTNodeType::For:
+      {
+        auto guard = this->newScope();
+        {
+          ASTNode* stepper = node->children.first;
+          if(stepper->type == ASTNodeType::ExprList){
+            if(stepper->children.first->type != ASTNodeType::Identifier){
+              errors->emplace_back(dynSprintf(
+                "line %d: Expected identifier",
+                stepper->pos.first
+              ));
+              D_putInstruction(Op::Nop);
+              break;
+            }
+            var_allocs->direct()[stepper->children.first->string_value] =
+              stack_size + 1 | stack_pos_local;
+            stepper = stepper->children.second;
+          }
+          if(stepper->type != ASTNodeType::In){
+            errors->emplace_back(dynSprintf(
+              "line %d: Expected in expression",
+              stepper->pos.first
+            ));
+            D_putInstruction(Op::Nop);
+            break;
+          }
+          if(stepper->children.first->type != ASTNodeType::Identifier){
+            errors->emplace_back(dynSprintf(
+              "line %d: Expected identifier",
+              stepper->children.first->pos.first
+            ));
+            D_putInstruction(Op::Nop);
+            break;
+          }
+          var_allocs->direct()[stepper->children.first->string_value] =
+            stack_size + 2 | stack_pos_local;
+          
+          threadAST(stepper->children.second, node);
+          D_putInstruction(Op::BeginIter);
+          stack_size += 2;
+        }
+        
+        unsigned begin_addr = code.size();
+        D_putInstruction(Op::NextOrJmp | Op::Extended);
+        unsigned end_jmp_addr = code.size();
+        D_putInstruction((OpCodeType)0);
+        
+        threadAST(node->children.second, node);
+        
+        D_putInstruction(Op::Pop);
+        --stack_size;
+        D_putInstruction(Op::Jmp | Op::Extended);
+        D_putInstruction((OpCodeType)begin_addr);
+        code[end_jmp_addr] = (OpCodeType)code.size();
+        D_putInstruction(Op::Push);
+        stack_size -= 2;
       }
       break;
       
@@ -624,7 +703,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           }
           threadAST(node->child->children.second, node);
           threadAST(node->child->children.first, node);
-          D_putInstruction(Op::Assert | Op::Alt);
+          D_putInstruction(Op::Assert | Op::Alt1);
           --stack_size;
         }else{
           if(node->child->type == ASTNodeType::Nop){
@@ -726,7 +805,7 @@ void ThreadingContext::threadInsRexpr(ASTNode* node, ASTNode* prev_node){
   if(node->type == ASTNodeType::Index){
     this->threadRexpr(node->children.first, node);
     this->threadAST(node->children.second, node);
-    D_putInstruction(Op::Borrow | Op::Borrowed | Op::Alt);
+    D_putInstruction(Op::Borrow | Op::Borrowed | Op::Alt1);
     --stack_size;
   }else{
     if(node->type == ASTNodeType::Identifier){
