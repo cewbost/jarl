@@ -134,10 +134,14 @@ struct ASTNode {
   
   //iteration
   struct ExprListIterator {
-    ASTNode* current;
+    ASTNode* current_;
     
     ExprListIterator(ASTNode*);
+    bool operator==(const ExprListIterator&);
     bool operator!=(const ExprListIterator&);
+    bool operator==(nullptr_t);
+    bool operator!=(nullptr_t);
+    ASTNode* get();
     ASTNode* operator*();
     ASTNode* operator->();
     ExprListIterator operator++();

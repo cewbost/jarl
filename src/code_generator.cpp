@@ -415,34 +415,18 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       break;
       
     case ASTNodeType::Array:
-      if(node->child->type != ASTNodeType::Nop){
-        if(node->child->type == ASTNodeType::ExprList){
-          ASTNode* t = node->child;
-          OpCodeType elems = 0;
-          
-          for(;;){
-            threadAST(t->children.first, node);
-            ++elems;
-            if(t->children.second->type == ASTNodeType::ExprList){
-              t = t->children.second;
-            }else{
-              threadAST(t->children.second, node);
-              ++elems;
-              break;
-            }
-          }
-          
-          D_putInstruction(Op::CreateArray | Op::Extended | Op::Int);
-          D_putInstruction(elems);
-          stack_size -= elems - 1;
-        }else{
-          threadAST(node->child, node);
-          D_putInstruction(Op::CreateArray | Op::Extended | Op::Int);
-          D_putInstruction(1);
-        }
-      }else{
+      if(node->child->type == ASTNodeType::Nop){
         D_putInstruction(Op::CreateArray);
         ++stack_size;
+      }else{
+        OpCodeType elems = 0;
+        for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
+          threadAST(it.get(), node);
+          ++elems;
+        }
+        D_putInstruction(Op::CreateArray | Op::Extended | Op::Int);
+        D_putInstruction(elems);
+        stack_size -= elems - 1;
       }
       break;
     
@@ -586,11 +570,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         
         auto var_alloc = new VarAllocMap(nullptr);
         OpCodeType std_args = 0;
-        for(
-          auto it = node->children.first->exprListIterator();
-          it != node->children.second->exprListIteratorEnd();
-          ++it
-        ){
+        for(auto it = node->children.first->exprListIterator(); it != nullptr; ++it){
           if(it->type == ASTNodeType::Identifier){
             (*var_alloc)[it->string_value] = std_args++;
           }else{
@@ -677,11 +657,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     case ASTNodeType::Print:
       {
         int num = 0;
-        for(
-          auto it = node->child->exprListIterator();
-          it != node->child->exprListIteratorEnd();
-          ++it
-        ){
+        for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
           threadAST(*it, node);
           ++num;
         }

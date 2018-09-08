@@ -65,39 +65,49 @@ ASTNode::~ASTNode(){
 //ExprListIterator
 ASTNode::ExprListIterator::ExprListIterator(ASTNode* c){
   if(c && c->type == ASTNodeType::Nop)
-    this->current = nullptr;
+    this->current_ = nullptr;
   else
-    this->current = c;
+    this->current_ = c;
 }
 
+bool ASTNode::ExprListIterator::operator==(const ExprListIterator& other){
+  return this->current_ == other.current_;
+}
 bool ASTNode::ExprListIterator::operator!=(const ExprListIterator& other){
-  return this->current != other.current;
+  return this->current_ != other.current_;
+}
+bool ASTNode::ExprListIterator::operator==(nullptr_t){
+  return this->current_ == nullptr;
+}
+bool ASTNode::ExprListIterator::operator!=(nullptr_t){
+  return this->current_ != nullptr;
+}
+ASTNode* ASTNode::ExprListIterator::get(){
+  if(this->current_->type == ASTNodeType::ExprList){
+    return this->current_->children.first;
+  }else{
+    return this->current_;
+  }
 }
 ASTNode* ASTNode::ExprListIterator::operator*(){
-  if(this->current->type == ASTNodeType::ExprList)
-    return this->current->children.first;
-  else
-    return this->current;
+  return this->get();
 }
 ASTNode* ASTNode::ExprListIterator::operator->(){
-  if(this->current->type == ASTNodeType::ExprList)
-    return this->current->children.first;
-  else
-    return this->current;
+  return this->get();
 }
 ASTNode::ExprListIterator ASTNode::ExprListIterator::operator++(){
-  if(this->current->type == ASTNodeType::ExprList)
-    this->current = this->current->children.second;
+  if(this->current_->type == ASTNodeType::ExprList)
+    this->current_ = this->current_->children.second;
   else
-    this->current = nullptr;
+    this->current_ = nullptr;
   return *this;
 }
 ASTNode::ExprListIterator ASTNode::ExprListIterator::operator++(int){
   auto temp = *this;
-  if(this->current->type == ASTNodeType::ExprList)
-    this->current = this->current->children.second;
+  if(this->current_->type == ASTNodeType::ExprList)
+    this->current_ = this->current_->children.second;
   else
-    this->current = nullptr;
+    this->current_ = nullptr;
   return temp;
 }
 
