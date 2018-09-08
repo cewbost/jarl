@@ -191,6 +191,8 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "for"; break;
   case ASTNodeType::CodeBlock:
     ret += "code block"; break;
+  case ASTNodeType::Call:
+    ret += "call"; break;
   case ASTNodeType::Index:
     ret += "[]"; break;
   case ASTNodeType::ExprList:

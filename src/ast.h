@@ -52,6 +52,7 @@ enum class ASTNodeType: unsigned {
   For,
   
   Index,
+  Call,
   
   ExprList,
   KeyValuePair,

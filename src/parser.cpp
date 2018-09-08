@@ -242,6 +242,17 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
         ));
         return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
       }else return new ASTNode(ASTNodeType::Index, left, right, lex.pos);
+    }else if(lex.type == LexemeType::LParen){
+      auto right = this->expression_(def_expr_bindp);
+      if(!this->checkNext_(LexemeType::RParen)){
+        delete right;
+        delete left;
+        this->errors_->emplace_back(dynSprintf(
+          "line %d: Expected ')'.",
+          (this->lcurrent_ - 1)->pos.first
+        ));
+        return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
+      }else return new ASTNode(ASTNodeType::Call, left, right, lex.pos);
     }else{
       return new ASTNode(ASTNodeType::Apply, left, this->nud_(lex), lex.pos);
     }
