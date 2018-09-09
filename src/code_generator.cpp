@@ -394,7 +394,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     case ASTNodeType::CodeBlock:
       {
         auto guard = this->newScope();
-        //var_allocs = new VarAllocMap(var_allocs);
         threadAST(node->children.first, node);
         
         auto size = var_allocs->direct().size();
@@ -407,10 +406,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           }
           stack_size -= size;
         }
-        
-        //auto old_allocs = var_allocs;
-        //var_allocs = var_allocs->get_delegate();
-        //delete old_allocs;
       }
       break;
       
@@ -431,54 +426,23 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       break;
     
     case ASTNodeType::Table:
-      if(node->child->type != ASTNodeType::Nop){
-        if(node->child->type == ASTNodeType::ExprList){
-          ASTNode* stepper = node->child;
-          OpCodeType elems = 0;
-          
-          for(;;){
-            assert(stepper->children.first->type == ASTNodeType::KeyValuePair);
-            threadAST(
-              stepper->children.first->children.first,
-              stepper->children.first
-            );
-            threadAST(
-              stepper->children.first->children.second,
-              stepper->children.first
-            );
-            ++elems;
-            if(stepper->children.second->type == ASTNodeType::ExprList){
-              stepper = stepper->children.second;
-            }else if(stepper->children.second->type == ASTNodeType::KeyValuePair){
-              threadAST(
-                stepper->children.second->children.first,
-                stepper->children.second
-              );
-              threadAST(
-                stepper->children.second->children.second,
-                stepper->children.second
-              );
-              ++elems;
-              break;
-            }else if(stepper->children.second->type == ASTNodeType::Nop){
-              break;
-            }else assert(false);
-          }
-          
-          D_putInstruction(Op::CreateTable | Op::Extended | Op::Int);
-          D_putInstruction(elems);
-          stack_size -= 2 * elems - 1;
-        }else{
-          assert(node->child->type == ASTNodeType::KeyValuePair);
-          threadAST(node->child->children.first, node->child);
-          threadAST(node->child->children.second, node->child);
-          D_putInstruction(Op::CreateTable | Op::Extended | Op::Int);
-          D_putInstruction(1);
-          --stack_size;
-        }
-      }else{
+      if(node->child->type == ASTNodeType::Nop){
         D_putInstruction(Op::CreateTable);
         ++stack_size;
+      }else{
+        OpCodeType elems = 0;
+        for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
+          if(it->type == ASTNodeType::KeyValuePair){
+            threadAST(it->children.first, node);
+            threadAST(it->children.second, node);
+            ++elems;
+          }else if(it->type == ASTNodeType::Nop){
+            continue;
+          }else assert(false);
+        }
+        D_putInstruction(Op::CreateTable | Op::Extended | Op::Int);
+        D_putInstruction(elems);
+        stack_size -= 2 * elems - 1;
       }
       break;
       
