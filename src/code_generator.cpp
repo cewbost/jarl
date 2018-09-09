@@ -416,6 +416,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       }else{
         OpCodeType elems = 0;
         for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
+          if(it->type == ASTNodeType::Nop) continue;
           threadAST(it.get(), node);
           ++elems;
         }
