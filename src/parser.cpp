@@ -206,6 +206,12 @@ ASTNode* Parser::nud_(const Lexeme& lex){
       this->expression_(def_expr_bindp),
       lex.pos
     );
+  case LexemeType::Return:
+    return new ASTNode(
+      ASTNodeType::Var,
+      this->expression_(def_expr_bindp),
+      lex.pos
+    );
   case LexemeType::Print:
     return new ASTNode(
       ASTNodeType::Print,

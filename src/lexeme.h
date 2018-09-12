@@ -28,6 +28,7 @@ enum class LexemeType: unsigned {
   L30 = 0x30,
   Else,
   Var,
+  Return,
   Print,
   Assert,
   

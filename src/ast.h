@@ -36,6 +36,7 @@ enum class ASTNodeType: unsigned {
   Array,
   Table,
   Var,
+  Return,
   Print,
   Assert,
   
