@@ -453,7 +453,7 @@ void VM::execute(const Function& func){
           
           auto& callee = stack_[stack_.size() - 1 - args];
           if(callee.type == TypeTag::Func){
-            if(callee.value.func_v->arguments < args){
+            if(callee.value.func_v->arguments != args){
               char* msg = dynSprintf(
                 "%d: Wrong number of arguments.",
                 this->getFrame()->func->getLine(this->getFrame()->ip)

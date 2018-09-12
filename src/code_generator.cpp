@@ -81,10 +81,11 @@ namespace {
       var_allocs->size()
     );
     
+    int prev_errors = errors->size();
     auto pos = parse_tree->pos.first;
     context.code_positions.emplace_back(pos, 0);
     context.threadAST(parse_tree.get());
-    if(!errors->empty()) return nullptr;
+    if(errors->size() > prev_errors) return nullptr;
     context.putInstruction(Op::Return, pos);
     
     //correct stack positions
@@ -552,6 +553,10 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           std::unique_ptr<ASTNode>(node->children.second),
           errors, var_alloc, var_allocs
         );
+        if(func == nullptr){
+          D_putInstruction(Op::Nop);
+          break;
+        }
         
         node->children.second = nullptr;
         D_putInstruction(Op::Push | Op::Extended);
@@ -694,7 +699,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       threadAST(node->children.first, node);
       if(node->children.second->type == ASTNodeType::Nop){
         D_putInstruction(Op::Call);
-        --stack_size;
       }else{
         OpCodeType elems = 0;
         for(auto it = node->children.second->exprListIterator(); it != nullptr; ++it){
@@ -735,7 +739,7 @@ void ThreadingContext::threadRexpr(ASTNode* node, ASTNode* prev_node){
     ){
       errors->emplace_back(dynSprintf(
         "line %d: Undeclared identifier '%s'.",
-        node->pos.first, node->string_value
+        node->pos.first, node->string_value->str()
       ));
       D_putInstruction(Op::Nop);
       break;

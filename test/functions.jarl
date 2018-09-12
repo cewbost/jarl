@@ -1,19 +1,19 @@
-var foo = func(x) x * 3
-assert foo 3 == 9, "functions should work"
+var f = func() 5
+assert f() == 5, "functions should work"
 
-var y = 2
-foo = func(x) x * y
-assert foo 4 == 8, "capturing should work"
+f = func(x) x * 2
+assert f(4) == 8, "function arguments should work"
 
-foo = func(a, b) a * b
-var bar = foo 2
-assert bar 3 == 6, "partial application should work"
+f = func(x, y, z) x + y + z
+assert f(1, 2, 3) == 6, "functions of many arguments should work"
 
-var baz = func(f, v) f v v
-assert baz foo 4 == 16, "passing functions by value should work"
+f = func(x, y, z) x(y, z)
+var g = func(a, b) a * b
+assert f(g, 3, 4) == 12, "passing functions by value should work"
 
-baz = func(f, v) f v
-assert baz bar 5 == 10, "passing partially applied functions by value should work"
-
-foo = func(a) func(b) a + b
-assert foo 5 7 == 12, "currying should work"
+f = func(x){
+  var y = 7
+  var z = 4
+  x * z + y
+}
+assert f(3) == 19, "local variables should work"
