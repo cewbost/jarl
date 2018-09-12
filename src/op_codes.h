@@ -45,6 +45,8 @@ struct Op{
     Get,
     Slice,
     
+    Call,
+    
     Store,
     Borrow,
     

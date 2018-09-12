@@ -404,7 +404,7 @@ void VM::execute(const Function& func){
               this->pushFunction_(*callee.value.func_v);
               end_it = this->frame_.func->getCode()
                 + this->frame_.func->getCodeSize();
-              --this->frame_.ip;
+              goto loop_start;
             }else{
               callee.toPartial();
               callee.value.partial_v->apply(std::move(stack_.back()), bind_pos);
@@ -429,11 +429,47 @@ void VM::execute(const Function& func){
               this->pushFunction_(*callee.value.partial_v);
               end_it =
                 this->frame_.func->getCode() + this->frame_.func->getCodeSize();
-              --this->frame_.ip;
+              goto loop_start;
             }
           }else{
             char* msg = dynSprintf(
               "%d: Type error. Cannot bind argument to %s.",
+              this->getFrame()->func->getLine(this->getFrame()->ip),
+              callee.typeStr()
+            );
+            this->errPrint(msg);
+            delete[] msg;
+            this->errorJmp(1);
+          }
+        }
+        break;
+      
+      case Op::Call:
+        {
+          int args;
+          if(*this->frame_.ip & Op::Extended){
+            args = *(++this->frame_.ip);
+          }else args = 0;
+          
+          auto& callee = stack_[stack_.size() - 1 - args];
+          if(callee.type == TypeTag::Func){
+            if(callee.value.func_v->arguments < args){
+              char* msg = dynSprintf(
+                "%d: Wrong number of arguments.",
+                this->getFrame()->func->getLine(this->getFrame()->ip)
+              );
+              this->errPrint(msg);
+              delete[] msg;
+              this->errorJmp(1);
+            }
+            
+            this->pushFunction_(*callee.value.func_v);
+            end_it = this->frame_.func->getCode()
+              + this->frame_.func->getCodeSize();
+            goto loop_start;
+          }else{
+            char* msg = dynSprintf(
+              "%d: Cannot call to type '%s'.",
               this->getFrame()->func->getLine(this->getFrame()->ip),
               callee.typeStr()
             );

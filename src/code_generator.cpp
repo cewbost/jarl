@@ -690,6 +690,24 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       }
       break;
       
+    case ASTNodeType::Call:
+      threadAST(node->children.first, node);
+      if(node->children.second->type == ASTNodeType::Nop){
+        D_putInstruction(Op::Call);
+        --stack_size;
+      }else{
+        OpCodeType elems = 0;
+        for(auto it = node->children.second->exprListIterator(); it != nullptr; ++it){
+          if(it->type == ASTNodeType::Nop) continue;
+          threadAST(it.get(), node);
+          ++elems;
+        }
+        D_putInstruction(Op::Call | Op::Extended);
+        D_putInstruction(elems);
+        stack_size -= elems;
+      }
+      break;
+      
     case ASTNodeType::Nop:
       D_putInstruction(Op::Push);
       ++stack_size;

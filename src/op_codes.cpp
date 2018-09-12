@@ -103,6 +103,9 @@ std::string opCodeToStrDebug(OpCodeType op){
   case Op::Slice:
     ret += "slice"s;
     break;
+  case Op::Call:
+    ret += "call"s;
+    break;
   case Op::Borrow:
     ret += "borrow"s;
     break;
