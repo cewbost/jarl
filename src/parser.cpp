@@ -2,9 +2,9 @@
 
 #include <cassert>
 
-constexpr int def_expr_bindp      = 0x31;
-constexpr int def_statement_bindp = 0x21;
-constexpr int def_block_bindp     = 0x11;
+constexpr int def_expr_bindp      = 0x3f;
+constexpr int def_statement_bindp = 0x2f;
+constexpr int def_block_bindp     = 0x1f;
 constexpr int func_bindp          = static_cast<int>(LexemeType::LeftAssocClass);
 
 int Parser::bindp_(LexemeType type){
@@ -208,7 +208,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
     );
   case LexemeType::Return:
     return new ASTNode(
-      ASTNodeType::Var,
+      ASTNodeType::Return,
       this->expression_(def_expr_bindp),
       lex.pos
     );

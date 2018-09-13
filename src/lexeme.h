@@ -137,6 +137,7 @@ inline bool isStopLexeme(const Lexeme& lex){
   case LexemeType::Null:
   case LexemeType::Print:
   case LexemeType::Assert:
+  case LexemeType::Return:
     return true;
   default:
     return false;
