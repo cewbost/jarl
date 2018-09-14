@@ -608,8 +608,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       break;
     
     case ASTNodeType::Recurse:
-      //D_putInstruction(Op::Push);
-      threadAST(node->child, node);
+      D_putInstruction(Op::Push);
       if(node->child->type == ASTNodeType::Nop){
         D_putInstruction(Op::Recurse);
       }else{
