@@ -17,3 +17,14 @@ f = func(x){
   x * z + y
 }
 assert f(3) == 19, "local variables should work"
+
+f = func(x){
+  return x * 2
+  assert false, "return statements should work"
+}
+assert f(4) == 8, "return statements should work"
+
+f = func(){
+  return
+}
+assert f() == null, "empty return should return null"

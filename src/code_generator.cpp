@@ -624,6 +624,11 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       }
       break;
     
+    case ASTNodeType::Return:
+      threadAST(node->child, node);
+      D_putInstruction(Op::Return);
+      break;
+    
     case ASTNodeType::Print:
       {
         int num = 0;
