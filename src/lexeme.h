@@ -94,6 +94,7 @@ enum class LexemeType: unsigned {
   While,
   For,
   Func,
+  Recurse,
   
   LF0 = 0xF0,
   

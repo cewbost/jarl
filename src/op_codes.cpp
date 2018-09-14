@@ -106,6 +106,9 @@ std::string opCodeToStrDebug(OpCodeType op){
   case Op::Call:
     ret += "call"s;
     break;
+  case Op::Recurse:
+    ret += "recurse"s;
+    break;
   case Op::Borrow:
     ret += "borrow"s;
     break;

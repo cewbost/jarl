@@ -462,7 +462,6 @@ void VM::execute(const Function& func){
               delete[] msg;
               this->errorJmp(1);
             }
-            
             this->pushFunction_(*callee.value.func_v);
             end_it = this->frame_.func->getCode()
               + this->frame_.func->getCodeSize();
@@ -478,6 +477,8 @@ void VM::execute(const Function& func){
             this->errorJmp(1);
           }
         }
+      
+      case Op::Recurse:
         break;
         
       case Op::Borrow:

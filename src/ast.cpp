@@ -213,14 +213,14 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "array"; break;
   case ASTNodeType::Table:
     ret += "table"; break;
-  case ASTNodeType::Range:
-    ret += "range"; break;
   case ASTNodeType::Function:
     ret += "function"; break;
   case ASTNodeType::Var:
     ret += "var"; break;
   case ASTNodeType::Return:
     ret += "return"; break;
+  case ASTNodeType::Recurse:
+    ret += "recurse"; break;
   case ASTNodeType::Print:
     ret += "print"; break;
   case ASTNodeType::Assert:

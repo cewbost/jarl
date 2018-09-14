@@ -133,6 +133,21 @@ void ThreadingContext::putInstruction(OpCodeType op, int pos){
 
 //Threading functions
 #define D_putInstruction(ins) this->putInstruction(ins, node->pos.first)
+#define D_breakError(msg, node, ...) \
+  errors->emplace_back(dynSprintf( \
+    "line %d: " msg, \
+    node ->pos.first \
+  )); \
+  D_putInstruction(Op::Nop); \
+  break;
+#define D_breakErrorVargs(msg, node, ...) \
+  errors->emplace_back(dynSprintf( \
+    "line %d: " msg, \
+    node ->pos.first, \
+    __VA_ARGS__ \
+  )); \
+  D_putInstruction(Op::Nop); \
+  break;
 
 void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
   
@@ -181,25 +196,17 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         auto it = var_allocs->find(node->string_value);
         if(it == var_allocs->end()){
           if(context_var_allocs == nullptr){
-            errors->emplace_back(dynSprintf(
-              "line %d: Undeclared identifier '%s'.",
-              node->pos.first,
+            D_breakErrorVargs("Undeclared identifier '%s'", node,
               node->string_value->str()
-            ));
-            D_putInstruction(Op::Nop);
-            break;
+            );
           }
           
           it = context_var_allocs->find(node->string_value);
           
           if(it == context_var_allocs->end()){
-            errors->emplace_back(dynSprintf(
-              "line %d: Undeclared identifier '%s'.",
-              node->pos.first,
+            D_breakErrorVargs("Undeclared identifier '%s'", node,
               node->string_value->str()
-            ));
-            D_putInstruction(Op::Nop);
-            break;
+            );
           }
           
           var_allocs->base()[node->string_value] = arguments;
@@ -478,32 +485,17 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           ASTNode* stepper = node->children.first;
           if(stepper->type == ASTNodeType::ExprList){
             if(stepper->children.first->type != ASTNodeType::Identifier){
-              errors->emplace_back(dynSprintf(
-                "line %d: Expected identifier",
-                stepper->pos.first
-              ));
-              D_putInstruction(Op::Nop);
-              break;
+              D_breakError("Expected identifier", stepper);
             }
             var_allocs->direct()[stepper->children.first->string_value] =
               stack_size + 1 | stack_pos_local;
             stepper = stepper->children.second;
           }
           if(stepper->type != ASTNodeType::In){
-            errors->emplace_back(dynSprintf(
-              "line %d: Expected in expression",
-              stepper->pos.first
-            ));
-            D_putInstruction(Op::Nop);
-            break;
+            D_breakError("Expected in expression", stepper);
           }
           if(stepper->children.first->type != ASTNodeType::Identifier){
-            errors->emplace_back(dynSprintf(
-              "line %d: Expected identifier",
-              stepper->children.first->pos.first
-            ));
-            D_putInstruction(Op::Nop);
-            break;
+            D_breakError("Expected identifier", stepper->children.first);
           }
           var_allocs->direct()[stepper->children.first->string_value] =
             stack_size + 2 | stack_pos_local;
@@ -540,12 +532,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           if(it->type == ASTNodeType::Identifier){
             (*var_alloc)[it->string_value] = std_args++;
           }else{
-            errors->emplace_back(dynSprintf(
-              "line %d: Invalid function parameter",
-              node->pos.first
-            ));
-            D_putInstruction(Op::Nop);
-            break;
+            D_breakError("Invalid function parameter", it);
           }
         }
         
@@ -591,11 +578,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           {
             auto subnode = node->child;
             if(subnode->children.first->type != ASTNodeType::Identifier){
-              errors->emplace_back(
-                dynSprintf("line %d: Expected identifier", subnode->pos.first)
-              );
-              D_putInstruction(Op::Nop);
-              break;
+              D_breakError("Expected identifier", subnode);
             }
             
             auto old_stack_size = stack_size;
@@ -614,12 +597,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           }
           break;
         default:
-          errors->emplace_back(dynSprintf(
-            "line %d: Invalid variable declaration syntax",
-            node->pos.first
-          ));
-          D_putInstruction(Op::Nop);
-          break;
+          D_breakError("Invalid variable declaration syntax", node);
         }
       }
       break;
@@ -627,6 +605,23 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     case ASTNodeType::Return:
       threadAST(node->child, node);
       D_putInstruction(Op::Return);
+      break;
+    
+    case ASTNodeType::Recurse:
+      threadAST(node->child, node);
+      if(node->children.second->type == ASTNodeType::Nop){
+        D_putInstruction(Op::Recurse);
+      }else{
+        OpCodeType elems = 0;
+        for(auto it = node->children.second->exprListIterator(); it != nullptr; ++it){
+          if(it->type == ASTNodeType::Nop) continue;
+          threadAST(it.get(), node);
+          ++elems;
+        }
+        D_putInstruction(Op::Recurse | Op::Extended);
+        D_putInstruction(elems);
+        stack_size -= elems;
+      }
       break;
     
     case ASTNodeType::Print:
@@ -666,12 +661,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         break;
       
       num_params_error:
-        errors->emplace_back(dynSprintf(
-          "line %d: Wrong number of parameters to assertion",
-          node->pos.first
-        ));
-        D_putInstruction(Op::Nop);
-        break;
+        D_breakError("Wrong number of parameters to assertion", node);
       }
       
     case ASTNodeType::Index:
@@ -681,12 +671,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         if(node->children.second->type == ASTNodeType::ExprList){
           if(node->children.second->children.first->type == ASTNodeType::ExprList
           || node->children.second->children.second->type == ASTNodeType::ExprList){
-            errors->emplace_back(dynSprintf(
-              "line %d: too many parameters in index",
-              node->pos.first
-            ));
-            D_putInstruction(Op::Nop);
-            break;
+            D_breakError("Too many parameters in index", node);
           }
           threadAST(node->children.second->children.first, node);
           threadAST(node->children.second->children.second, node);
@@ -722,13 +707,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       ++stack_size;
       break;
       
-    case ASTNodeType::Range:
-      errors->emplace_back(dynSprintf(
-        "line %d: Range generators not yet supported.", node->pos.first
-      ));
-      D_putInstruction(Op::Nop);
-      break;
-      
     default:
       assert(false);
     }
@@ -742,12 +720,9 @@ void ThreadingContext::threadRexpr(ASTNode* node, ASTNode* prev_node){
       auto it = var_allocs->find(node->string_value);
       it == var_allocs->end()
     ){
-      errors->emplace_back(dynSprintf(
-        "line %d: Undeclared identifier '%s'.",
-        node->pos.first, node->string_value->str()
-      ));
-      D_putInstruction(Op::Nop);
-      break;
+      D_breakErrorVargs("Undeclared identifier '%s'", node,
+        node->string_value->str()
+      );
     }else{
       D_putInstruction(Op::Borrow | Op::Extended);
       D_putInstruction(it->second);
@@ -761,11 +736,7 @@ void ThreadingContext::threadRexpr(ASTNode* node, ASTNode* prev_node){
     --stack_size;
     break;
   default:
-    errors->emplace_back(dynSprintf(
-      "line %d: Assignment to rvalue", node->pos.first
-    ));
-    D_putInstruction(Op::Nop);
-    break;
+    D_breakError("Assignment to rvalue", node);
   }
 }
 
@@ -790,6 +761,8 @@ void ThreadingContext::threadInsRexpr(ASTNode* node, ASTNode* prev_node){
 }
 
 #undef D_putInstruction
+#undef D_breakError
+#undef D_breakErrorVargs
 
 namespace CodeGenerator {
   

@@ -127,6 +127,7 @@ std::string Lexeme::toStrDebug() const {
   case LexemeType::For:           ret += "for"s; break;
   case LexemeType::Else:          ret += "else"s; break;
   case LexemeType::Func:          ret += "func"s; break;
+  case LexemeType::Recurse:       ret += "recurse"s; break;
   case LexemeType::Var:           ret += "var"s; break;
   case LexemeType::Return:        ret += "return"s; break;
   case LexemeType::Print:         ret += "print"s; break;

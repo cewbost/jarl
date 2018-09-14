@@ -37,6 +37,7 @@ enum class ASTNodeType: unsigned {
   Table,
   Var,
   Return,
+  Recurse,
   Print,
   Assert,
   
@@ -57,7 +58,6 @@ enum class ASTNodeType: unsigned {
   
   ExprList,
   KeyValuePair,
-  Range,
   Then,
   Function,
   
