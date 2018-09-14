@@ -20,6 +20,26 @@
 #undef PRINT_ERROR_JUMPS
 #endif
 
+#define D_errorJmp(code, format) { \
+  char* msg = dynSprintf( \
+    "line %d: " format, \
+    this->getFrame()->func->getLine(this->getFrame()->ip) \
+  ); \
+  this->errPrint(msg); \
+  delete[] msg; \
+  this->errorJmp(1); \
+}
+#define D_errorJmpVargs(code, format, ...) { \
+  char* msg = dynSprintf( \
+    "line %d: " format, \
+    this->getFrame()->func->getLine(this->getFrame()->ip), \
+    __VA_ARGS__ \
+  ); \
+  this->errPrint(msg); \
+  delete[] msg; \
+  this->errorJmp(1); \
+}
+
 namespace {
   thread_local VM* current_vm_ = nullptr;
 }
@@ -309,14 +329,16 @@ void VM::execute(const Function& func){
       case Op::Jmp:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
-        this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+        this->frame_.ip =
+          this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
         goto loop_start;
       case Op::Jt:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
         stack_.back().toBool();
         if(stack_.back().value.bool_v){
-          this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          this->frame_.ip =
+            this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
           stack_.pop_back();
           goto loop_start;
         }
@@ -327,7 +349,8 @@ void VM::execute(const Function& func){
         ++this->frame_.ip;
         stack_.back().toBool();
         if(!stack_.back().value.bool_v){
-          this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          this->frame_.ip =
+            this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
           stack_.pop_back();
           goto loop_start;
         }
@@ -338,7 +361,8 @@ void VM::execute(const Function& func){
         ++this->frame_.ip;
         stack_.back().toBool();
         if(stack_.back().value.bool_v){
-          this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          this->frame_.ip =
+            this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
           goto loop_start;
         }else{
           stack_.pop_back();
@@ -349,7 +373,8 @@ void VM::execute(const Function& func){
         ++this->frame_.ip;
         stack_.back().toBool();
         if(!stack_.back().value.bool_v){
-          this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          this->frame_.ip =
+            this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
           goto loop_start;
         }else{
           stack_.pop_back();
@@ -366,7 +391,8 @@ void VM::execute(const Function& func){
         ++this->frame_.ip;
         if(stack_[stack_.size() - 3].value.iterator_v->ended()){
           stack_.resize(stack_.size() - 3);
-          this->frame_.ip = func.getCode() + (OpCodeType)*this->frame_.ip;
+          this->frame_.ip =
+            this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
           goto loop_start;
         }else{
           auto iter = stack_[stack_.size() - 3].value.iterator_v;
@@ -390,14 +416,7 @@ void VM::execute(const Function& func){
           
           if(callee.type == TypeTag::Func){
             if(callee.value.func_v->arguments <= bind_pos){
-              char* msg = dynSprintf(
-                "%d: Unable to bind argument to index %d.",
-                this->getFrame()->func->getLine(this->getFrame()->ip),
-                bind_pos
-              );
-              this->errPrint(msg);
-              delete[] msg;
-              this->errorJmp(1);
+              D_errorJmpVargs(1, "Unable to bind argument to index %d.", bind_pos);
             }
             
             if(callee.value.func_v->arguments == 1){
@@ -412,14 +431,7 @@ void VM::execute(const Function& func){
             }
           }else if(callee.type == TypeTag::Partial){
             if(callee.value.partial_v->nargs <= bind_pos){
-              char* msg = dynSprintf(
-                "%d: Unable to bind argument to index %d.",
-                this->getFrame()->func->getLine(this->getFrame()->ip),
-                bind_pos
-              );
-              this->errPrint(msg);
-              delete[] msg;
-              this->errorJmp(1);
+              D_errorJmpVargs(1, "Unable to bind argument to index %d.", bind_pos);
             }
             
             callee = new PartiallyApplied(*callee.value.partial_v);
@@ -432,14 +444,11 @@ void VM::execute(const Function& func){
               goto loop_start;
             }
           }else{
-            char* msg = dynSprintf(
-              "%d: Type error. Cannot bind argument to %s.",
-              this->getFrame()->func->getLine(this->getFrame()->ip),
+            D_errorJmpVargs(
+              1,
+              "Type error. Cannot bind argument to %s.",
               callee.typeStr()
             );
-            this->errPrint(msg);
-            delete[] msg;
-            this->errorJmp(1);
           }
         }
         break;
@@ -454,33 +463,34 @@ void VM::execute(const Function& func){
           auto& callee = stack_[stack_.size() - 1 - args];
           if(callee.type == TypeTag::Func){
             if(callee.value.func_v->arguments != args){
-              char* msg = dynSprintf(
-                "%d: Wrong number of arguments.",
-                this->getFrame()->func->getLine(this->getFrame()->ip)
-              );
-              this->errPrint(msg);
-              delete[] msg;
-              this->errorJmp(1);
+              D_errorJmp(1, "Wrong number of arguments.");
             }
             this->pushFunction_(*callee.value.func_v);
             end_it = this->frame_.func->getCode()
               + this->frame_.func->getCodeSize();
             goto loop_start;
           }else{
-            char* msg = dynSprintf(
-              "%d: Cannot call to type '%s'.",
-              this->getFrame()->func->getLine(this->getFrame()->ip),
-              callee.typeStr()
-            );
-            this->errPrint(msg);
-            delete[] msg;
-            this->errorJmp(1);
+            D_errorJmpVargs(1, "Cannot call to type '%s'.", callee.typeStr());
           }
         }
       
       case Op::Recurse:
-        break;
-        
+        {
+          int args;
+          if(*this->frame_.ip & Op::Extended){
+            args = *(++this->frame_.ip);
+          }else args = 0;
+          
+          auto callee = this->frame_.func.get();
+          if(callee->arguments != args){
+            D_errorJmp(1, "Wrong number of arguments.");
+          }
+          this->pushFunction_(*callee);
+          end_it = this->frame_.func->getCode()
+            + this->frame_.func->getCodeSize();
+          goto loop_start;
+        }
+      
       case Op::Borrow:
         switch(*this->frame_.ip & Op::Head){
         case Op::Extended:
@@ -525,14 +535,7 @@ void VM::execute(const Function& func){
           
           for(auto i = stack_pos; i < stack_.size(); i += 2){
             if(!stack_[i].isHashable()){
-              VM* vm = VM::getCurrentVM();
-              char* msg = dynSprintf(
-                "%d: Hash error. Invalid key type in table",
-                vm->getFrame()->func->getLine(vm->getFrame()->ip)
-              );
-              vm->errPrint(msg);
-              delete[] msg;
-              vm->errorJmp(1);
+              D_errorJmp(1, "Invalid key type in table");
             }
             tab->insert({std::move(stack_[i]), std::move(stack_[i + 1])});
           }
@@ -553,7 +556,7 @@ void VM::execute(const Function& func){
           
           if(int_1.type != TypeTag::Int || int_2.type != TypeTag::Int){
             char* msg = dynSprintf(
-              "%d: Type error. Create range from %s to %s.",
+              "line %d: Type error. Create range from %s to %s.",
               this->getFrame()->func->getLine(this->getFrame()->ip),
               int_1.typeStr(),
               int_2.typeStr()
@@ -618,7 +621,7 @@ void VM::execute(const Function& func){
             auto str = stack_[stack_.size() - 2].toCStr();
             VM* vm = VM::getCurrentVM();
             char* msg = dynSprintf(
-              "%d: Assertion failed. %s.",
+              "line %d: Assertion failed. %s.",
               vm->getFrame()->func->getLine(vm->getFrame()->ip),
               str.get()
             );
@@ -634,7 +637,7 @@ void VM::execute(const Function& func){
           if(!stack_.back().value.bool_v){
             VM* vm = VM::getCurrentVM();
             char* msg = dynSprintf(
-              "%d: Assertion failed.",
+              "line %d: Assertion failed.",
               vm->getFrame()->func->getLine(vm->getFrame()->ip)
             );
             vm->errPrint(msg);
@@ -687,3 +690,6 @@ void VM::setCurrentVM(VM* vm){
 VM* VM::getCurrentVM(){
   return current_vm_;
 }
+
+#undef D_errorJmp
+#undef D_errorJmpVargs

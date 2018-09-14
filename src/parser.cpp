@@ -201,15 +201,14 @@ ASTNode* Parser::nud_(const Lexeme& lex){
         D_reportError("Expected '('");
         return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
       }
-      std::unique_ptr<ASTNode> cond(this->expression_(def_expr_bindp));
+      std::unique_ptr<ASTNode> args(this->expression_(def_expr_bindp));
       if(!this->checkNext_(LexemeType::RParen)){
         D_reportError("Expected ')'");
         return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
       }
       return new ASTNode(
-        ASTNodeType::Function,
-        cond.release(),
-        this->expression_(def_statement_bindp),
+        ASTNodeType::Recurse,
+        args.release(),
         (this->lcurrent_ - 1)->pos
       );
     }
