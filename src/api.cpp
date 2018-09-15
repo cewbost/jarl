@@ -37,13 +37,6 @@ void jarl::execute(vm v, const char* code){
   Lexer lex(code);
   auto lexemes = lex.lex(&errors);
   
-  if(errors.size() > 0){
-    for(auto& error: errors){
-      v->errPrint(error.get());
-    }
-    return;
-  }
-  
   #ifdef PRINT_LEXEMES
   fprintf(stderr, "::lexemes::\n");
   for(auto& lex: lexemes){
@@ -51,9 +44,6 @@ void jarl::execute(vm v, const char* code){
   }
   #endif
   
-  Parser parser(lexemes);
-  auto parse_tree = parser.parse(&errors);
-  
   if(errors.size() > 0){
     for(auto& error: errors){
       v->errPrint(error.get());
@@ -61,10 +51,20 @@ void jarl::execute(vm v, const char* code){
     return;
   }
   
+  Parser parser(lexemes);
+  auto parse_tree = parser.parse(&errors);
+  
   #ifdef PRINT_AST
   fprintf(stderr, "::AST::\n");
   fprintf(stderr, "%s\n", parse_tree->toStrDebug().c_str());
   #endif
+  
+  if(errors.size() > 0){
+    for(auto& error: errors){
+      v->errPrint(error.get());
+    }
+    return;
+  }
   
   #ifdef NO_GENERATE
   return;

@@ -254,6 +254,8 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "do"      {PUT_LEXEME(LexemeType::Do)}
       "func"    {PUT_LEXEME(LexemeType::Func)}
       "var"     {PUT_LEXEME(LexemeType::Var)}
+      "return"  {PUT_LEXEME(LexemeType::Return)}
+      "recurse" {PUT_LEXEME(LexemeType::Recurse)}
       "print"   {PUT_LEXEME(LexemeType::Print)}
       "assert"  {PUT_LEXEME(LexemeType::Assert)}
       "in"      {PUT_LEXEME(LexemeType::In)}

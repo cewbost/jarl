@@ -36,6 +36,8 @@ enum class ASTNodeType: unsigned {
   Array,
   Table,
   Var,
+  Return,
+  Recurse,
   Print,
   Assert,
   
@@ -52,10 +54,10 @@ enum class ASTNodeType: unsigned {
   For,
   
   Index,
+  Call,
   
   ExprList,
   KeyValuePair,
-  Range,
   Then,
   Function,
   
@@ -133,10 +135,14 @@ struct ASTNode {
   
   //iteration
   struct ExprListIterator {
-    ASTNode* current;
+    ASTNode* current_;
     
     ExprListIterator(ASTNode*);
+    bool operator==(const ExprListIterator&);
     bool operator!=(const ExprListIterator&);
+    bool operator==(nullptr_t);
+    bool operator!=(nullptr_t);
+    ASTNode* get();
     ASTNode* operator*();
     ASTNode* operator->();
     ExprListIterator operator++();

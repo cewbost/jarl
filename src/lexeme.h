@@ -28,6 +28,7 @@ enum class LexemeType: unsigned {
   L30 = 0x30,
   Else,
   Var,
+  Return,
   Print,
   Assert,
   
@@ -93,6 +94,7 @@ enum class LexemeType: unsigned {
   While,
   For,
   Func,
+  Recurse,
   
   LF0 = 0xF0,
   
@@ -136,6 +138,7 @@ inline bool isStopLexeme(const Lexeme& lex){
   case LexemeType::Null:
   case LexemeType::Print:
   case LexemeType::Assert:
+  case LexemeType::Return:
     return true;
   default:
     return false;

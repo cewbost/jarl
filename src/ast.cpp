@@ -65,39 +65,49 @@ ASTNode::~ASTNode(){
 //ExprListIterator
 ASTNode::ExprListIterator::ExprListIterator(ASTNode* c){
   if(c && c->type == ASTNodeType::Nop)
-    this->current = nullptr;
+    this->current_ = nullptr;
   else
-    this->current = c;
+    this->current_ = c;
 }
 
+bool ASTNode::ExprListIterator::operator==(const ExprListIterator& other){
+  return this->current_ == other.current_;
+}
 bool ASTNode::ExprListIterator::operator!=(const ExprListIterator& other){
-  return this->current != other.current;
+  return this->current_ != other.current_;
+}
+bool ASTNode::ExprListIterator::operator==(nullptr_t){
+  return this->current_ == nullptr;
+}
+bool ASTNode::ExprListIterator::operator!=(nullptr_t){
+  return this->current_ != nullptr;
+}
+ASTNode* ASTNode::ExprListIterator::get(){
+  if(this->current_->type == ASTNodeType::ExprList){
+    return this->current_->children.first;
+  }else{
+    return this->current_;
+  }
 }
 ASTNode* ASTNode::ExprListIterator::operator*(){
-  if(this->current->type == ASTNodeType::ExprList)
-    return this->current->children.first;
-  else
-    return this->current;
+  return this->get();
 }
 ASTNode* ASTNode::ExprListIterator::operator->(){
-  if(this->current->type == ASTNodeType::ExprList)
-    return this->current->children.first;
-  else
-    return this->current;
+  return this->get();
 }
 ASTNode::ExprListIterator ASTNode::ExprListIterator::operator++(){
-  if(this->current->type == ASTNodeType::ExprList)
-    this->current = this->current->children.second;
+  if(this->current_->type == ASTNodeType::ExprList)
+    this->current_ = this->current_->children.second;
   else
-    this->current = nullptr;
+    this->current_ = nullptr;
   return *this;
 }
 ASTNode::ExprListIterator ASTNode::ExprListIterator::operator++(int){
   auto temp = *this;
-  if(this->current->type == ASTNodeType::ExprList)
-    this->current = this->current->children.second;
+  if(this->current_->type == ASTNodeType::ExprList)
+    this->current_ = this->current_->children.second;
   else
-    this->current = nullptr;
+    this->current_ = nullptr;
   return temp;
 }
 
@@ -191,6 +201,8 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "for"; break;
   case ASTNodeType::CodeBlock:
     ret += "code block"; break;
+  case ASTNodeType::Call:
+    ret += "call"; break;
   case ASTNodeType::Index:
     ret += "[]"; break;
   case ASTNodeType::ExprList:
@@ -201,12 +213,14 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "array"; break;
   case ASTNodeType::Table:
     ret += "table"; break;
-  case ASTNodeType::Range:
-    ret += "range"; break;
   case ASTNodeType::Function:
     ret += "function"; break;
   case ASTNodeType::Var:
     ret += "var"; break;
+  case ASTNodeType::Return:
+    ret += "return"; break;
+  case ASTNodeType::Recurse:
+    ret += "recurse"; break;
   case ASTNodeType::Print:
     ret += "print"; break;
   case ASTNodeType::Assert:
