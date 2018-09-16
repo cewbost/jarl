@@ -323,20 +323,9 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
         }
         
         "\"" {
-          StringView view(str.c_str(), str.size());
-          String* str;
-          auto it = this->string_table.find(view);
-          if(it == this->string_table.end()){
-            str = this->string_table.insert(
-              std::make_pair(
-                view,
-                rc_ptr<String>(make_new<String>(view.first, view.second))
-              )
-            ).first->second.get();
-          }else{
-            str = it->second.get();
-          }
-          PLACE_LEXEME(str);
+          String* new_str = make_new<String>(str.c_str(), str.c_str() + str.size());
+          this->strings_.emplace_back(new_str);
+          PLACE_LEXEME(new_str);
           continue;
         }
         

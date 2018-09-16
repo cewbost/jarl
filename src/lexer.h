@@ -13,6 +13,7 @@ class Lexer{
   
   const char* mem_;
   
+  std::vector<rc_ptr<String>> strings_;
 public:
   std::unordered_map<StringView, rc_ptr<String>> string_table;
   
