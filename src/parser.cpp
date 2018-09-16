@@ -336,7 +336,8 @@ ASTNode* Parser::led_(const Lexeme& lex, ASTNode* left){
       return new ASTNode(ASTNodeType::Else, left, right, lex.pos);
       
     default:
-      assert(false);
+      D_reportError("Unexpected lexeme");
+      return new ASTNode(ASTNodeType::ParseError, (this->lcurrent_ - 1)->pos);
     }
   }
   
