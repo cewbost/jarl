@@ -101,7 +101,7 @@ void VM::pushFunction_(const Function& func){
   }
   this->frame_.func = &func;
   this->frame_.ip = func.getCode();
-  this->frame_.bp = this->stack_.size() - func.arguments;
+  this->frame_.bp = this->stack_.size() - func.arguments - func.captures;
   
   std::copy(
     func.getVValues().begin(),
@@ -128,6 +128,50 @@ void VM::pushFunction_(const PartiallyApplied& part){
   std::copy(
     part.cbegin(),
     part.cend(),
+    std::back_inserter(stack_)
+  );
+  std::copy(
+    func.getVValues().begin(),
+    func.getVValues().end(),
+    std::back_inserter(stack_)
+  );
+}
+
+void VM::pushFunction_(const PartiallyApplied& part, int args){
+  #ifdef PRINT_OP
+  fprintf(stderr, "entering function %p\n", part.getFunc());
+  #endif
+  
+  assert(part.nargs == args);
+  
+  if(this->frame_.func){
+    this->call_stack_.push_back(std::move(this->frame_));
+  }
+  const Function& func = *part.getFunc();
+  this->frame_.func = &func;
+  this->frame_.ip = func.getCode();
+  this->frame_.bp = this->stack_.size() - args;
+  
+  auto& vals = part.getArgs();
+  if(func.arguments != args){
+    stack_.resize(stack_.size() + func.arguments + func.captures - args);
+    TypedValue
+      *pos1 = &stack_.back() - 1,
+      *pos2 = &stack_.back() - 1 - part.nargs;
+    
+    for(int i = func.arguments; i > 0; --i){
+      if(vals[i].type == TypeTag::None){
+        *pos1 = std::move(*(pos2--));        
+      }else{
+        *pos1 = vals[i];
+      }
+      --pos1;
+    }
+  }
+  
+  std::copy(
+    std::next(vals.begin(), func.arguments),
+    vals.cend(),
     std::back_inserter(stack_)
   );
   std::copy(
@@ -453,6 +497,28 @@ void VM::execute(const Function& func){
         }
         break;
       
+      case Op::CreateClosure:
+        {
+          unsigned captures;
+          if((*this->frame_.ip & (Op::Extended | Op::Int))
+          == (Op::Extended | Op::Int)){
+            captures = *(++this->frame_.ip);
+          }else{
+            captures = 1;
+          }
+          
+          auto& callee = stack_[stack_.size() - captures - 1];
+          assert(callee.type == TypeTag::Func);
+          
+          callee.toPartial();
+          callee.value.partial_v->capture(
+            stack_.data() + stack_.size() - captures,
+            stack_.data() + stack_.size()
+          );
+          stack_.resize(stack_.size() - captures);
+          break;
+        }
+      
       case Op::Call:
         {
           int args;
@@ -466,6 +532,14 @@ void VM::execute(const Function& func){
               D_errorJmp(1, "Wrong number of arguments.");
             }
             this->pushFunction_(*callee.value.func_v);
+            end_it = this->frame_.func->getCode()
+              + this->frame_.func->getCodeSize();
+            goto loop_start;
+          }else if(callee.type == TypeTag::Partial){
+            if(callee.value.partial_v->nargs != args){
+              D_errorJmp(1, "Wrong number of arguments.");
+            }
+            this->pushFunction_(*callee.value.partial_v, args);
             end_it = this->frame_.func->getCode()
               + this->frame_.func->getCodeSize();
             goto loop_start;
@@ -484,6 +558,9 @@ void VM::execute(const Function& func){
           auto callee = this->frame_.func.get();
           if(callee->arguments != args){
             D_errorJmp(1, "Wrong number of arguments.");
+          }
+          for(int i = 0; i < callee->captures; ++i){
+            stack_.emplace_back(stack_[frame_.bp + args + i]);
           }
           this->pushFunction_(*callee);
           end_it = this->frame_.func->getCode()

@@ -34,7 +34,7 @@ class Function: public RcDirectMixin<Function>{
   
 public:
   
-  int arguments;
+  unsigned short arguments, captures;
   
   Function(const Function&) = delete;
   Function(Function&&) = delete;
@@ -43,7 +43,8 @@ public:
     std::vector<OpCodeType>&& code,
     std::vector<TypedValue>&& values,
     std::vector<std::pair<int, int>>&& code_positions,
-    int arguments
+    unsigned short arguments,
+    unsigned short captures
   );
   
   const std::vector<OpCodeType>& getVCode()const{return this->code_;}
@@ -81,13 +82,15 @@ public:
   
   void apply(const TypedValue&, int);
   void apply(TypedValue&&, int);
+  void capture(TypedValue*, TypedValue*);
   
   const Function* getFunc()const{return this->func_.get();}
+  const ArgVectorType& getArgs()const{return this->args_;}
   
-  ArgVectorType::const_iterator cbegin()const{return this->args_.cbegin();}
-  ArgVectorType::const_iterator cend()const{return this->args_.cend();}
   ArgVectorType::iterator begin(){return this->args_.begin();}
   ArgVectorType::iterator end(){return this->args_.end();}
+  ArgVectorType::const_iterator cbegin()const{return this->args_.cbegin();}
+  ArgVectorType::const_iterator cend()const{return this->args_.cend();}
   
   void operator delete(void* ptr){
     ::operator delete(ptr);

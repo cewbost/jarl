@@ -17,16 +17,19 @@ Function::Function(
   std::vector<OpCodeType>&& code,
   std::vector<TypedValue>&& values,
   std::vector<std::pair<int, int>>&& code_positions,
-  int arguments
+  unsigned short arguments,
+  unsigned short captures
+  
 ):
   code_(std::move(code)),
   values_(std::move(values)),
   code_positions_(std::move(code_positions)),
-  arguments(arguments)
+  arguments(arguments),
+  captures(captures)
 {}
 
 PartiallyApplied::PartiallyApplied(const Function* func)
-: func_(func), args_(func->arguments), nargs(func->arguments){}
+: func_(func), args_(func->arguments + func->captures), nargs(func->arguments){}
 
 void PartiallyApplied::apply(const TypedValue& val, int bind_pos){
   assert(this->nargs > 0);
@@ -51,6 +54,12 @@ void PartiallyApplied::apply(TypedValue&& val, int bind_pos){
     }
   }
   --this->nargs;
+}
+void PartiallyApplied::capture(TypedValue* from, TypedValue* to){
+  assert((to - from) == this->func_->captures);
+  for(int bind_pos = this->func_->arguments; from != to; ++from, ++bind_pos){
+    this->args_[bind_pos] = std::move(*from);
+  }
 }
 
 int Function::getLine(const OpCodeType* iit) const {

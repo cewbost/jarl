@@ -63,6 +63,7 @@ struct Op{
     CreateArray,
     CreateTable,
     CreateRange,
+    CreateClosure,
     
     Print,
     Assert,
