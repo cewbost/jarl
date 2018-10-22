@@ -11,8 +11,11 @@
 
 using namespace CodeGenerator;
 
-constexpr OpCodeType stack_pos_local = 0x8000;
-constexpr OpCodeType stack_pos_const = 0x4000;
+constexpr OpCodeType stack_pos_bits     = 0xe000;
+constexpr OpCodeType stack_pos_arg      = 0x0000;
+constexpr OpCodeType stack_pos_local    = 0x8000;
+constexpr OpCodeType stack_pos_const    = 0x4000;
+constexpr OpCodeType stack_pos_capture  = 0x2000;
 
 struct ThreadingContext {
   std::vector<OpCodeType> code;
@@ -22,7 +25,7 @@ struct ThreadingContext {
   VectorSet<TypedValue> constants;
   
   int stack_size;
-  int arguments;
+  unsigned short arguments, captures;
   
   std::vector<std::unique_ptr<char[]>> *errors;
   
@@ -30,13 +33,15 @@ struct ThreadingContext {
     decltype(errors) err,
     decltype(var_allocs) va = nullptr,
     decltype(context_var_allocs) cva = nullptr,
-    int args = 0
+    unsigned short args = 0,
+    unsigned short caps = 0
   )
   : var_allocs(std::move(va)),
     context_var_allocs(cva),
     errors(err),
     stack_size(0),
-    arguments(args) {}
+    arguments(args),
+    captures(caps) {}
   
   void putInstruction(OpCodeType op, int pos);
   
@@ -90,6 +95,9 @@ namespace {
     
     //correct stack positions
     int extended = 0;
+    const int capture_pos = context.arguments;
+    const int const_pos   = capture_pos + context.captures;
+    const int local_pos   = const_pos + context.constants.size();
     for(auto& op: context.code){
       if(extended == 0){
         if(op & Op::Extended){
@@ -100,10 +108,16 @@ namespace {
         extended = 0;
       }else{
         extended = 0;
-        if(op & stack_pos_local){
-          op = (op & ~stack_pos_local) + context.constants.size() + context.arguments;
-        }else if(op & stack_pos_const){
-          op = (op & ~stack_pos_const) + context.arguments;
+        switch(op & stack_pos_bits){
+        case stack_pos_capture:
+          op = (op & ~stack_pos_capture) + capture_pos;
+          break;
+        case stack_pos_const:
+          op = (op & ~stack_pos_const) + const_pos;
+          break;
+        case stack_pos_local:
+          op = (op & ~stack_pos_local) + local_pos;
+          break;
         }
       }
     }
@@ -112,7 +126,8 @@ namespace {
       std::move(context.code),
       std::move(context.constants),
       std::move(context.code_positions),
-      context.arguments
+      context.arguments,
+      context.captures
     );
     
     #ifdef PRINT_CODE
@@ -209,9 +224,9 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
             );
           }
           
-          var_allocs->base()[node->string_value] = arguments;
-          D_putInstruction(arguments);
-          ++arguments;
+          auto pos = (captures++) | stack_pos_capture;
+          var_allocs->base()[node->string_value] = pos;
+          D_putInstruction(pos);
         }else{
           D_putInstruction(it->second);
         }
@@ -524,13 +539,11 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       
     case ASTNodeType::Function:
       {
-        //some checking might be nessecary for the function being well formed
-        
         auto var_alloc = new VarAllocMap(nullptr);
-        OpCodeType std_args = 0;
+        OpCodeType args = 0;
         for(auto it = node->children.first->exprListIterator(); it != nullptr; ++it){
           if(it->type == ASTNodeType::Identifier){
-            (*var_alloc)[it->string_value] = std_args++;
+            (*var_alloc)[it->string_value] = args++;
           }else{
             D_breakError("Invalid function parameter", it);
           }
@@ -550,14 +563,14 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction((OpCodeType)constants.emplace(func) | stack_pos_const);
         ++stack_size;
         
-        if(func->arguments > std_args){
+        if(func->captures > 0){
           auto& base = static_cast<VectorMapBase&>(var_alloc->base());
-          for(int i = std_args; i < func->arguments; ++i){
+          for(int i = 0; i < func->captures; ++i){
             D_putInstruction(Op::Push | Op::Extended);
-            D_putInstruction((*var_allocs)[base[i].first]);
-            D_putInstruction(Op::Apply | Op::Extended | Op::Int);
-            D_putInstruction((OpCodeType)std_args);
+            D_putInstruction((*var_allocs)[base[i + args].first]);
           }
+          D_putInstruction(Op::CreateClosure | Op::Extended | Op::Int);
+          D_putInstruction((OpCodeType)func->captures);
         }
         
         delete var_alloc;

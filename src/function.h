@@ -34,7 +34,7 @@ class Function: public RcDirectMixin<Function>{
   
 public:
   
-  int arguments;
+  unsigned short arguments, captures;
   
   Function(const Function&) = delete;
   Function(Function&&) = delete;
@@ -43,7 +43,8 @@ public:
     std::vector<OpCodeType>&& code,
     std::vector<TypedValue>&& values,
     std::vector<std::pair<int, int>>&& code_positions,
-    int arguments
+    unsigned short arguments,
+    unsigned short captures
   );
   
   const std::vector<OpCodeType>& getVCode()const{return this->code_;}
@@ -81,6 +82,7 @@ public:
   
   void apply(const TypedValue&, int);
   void apply(TypedValue&&, int);
+  void capture(TypedValue*, TypedValue*);
   
   const Function* getFunc()const{return this->func_.get();}
   

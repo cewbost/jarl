@@ -453,6 +453,28 @@ void VM::execute(const Function& func){
         }
         break;
       
+      case Op::CreateClosure:
+        {
+          unsigned captures;
+          if((*this->frame_.ip & (Op::Extended | Op::Int))
+          == (Op::Extended | Op::Int)){
+            captures = *(++this->frame_.ip);
+          }else{
+            captures = 1;
+          }
+          
+          auto& callee = stack_[stack_.size() - captures - 1];
+          assert(callee.type == TypeTag::Func);
+          
+          callee.toPartial();
+          callee.value.partial_v->capture(
+            &stack_[stack_.size() - capture],
+            &stack_.back()
+          );
+          stack_.resize(stack_.size() - captures);
+          break;
+        }
+      
       case Op::Call:
         {
           int args;

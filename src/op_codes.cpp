@@ -40,6 +40,9 @@ std::string opCodeToStrDebug(OpCodeType op){
   case Op::CreateRange:
     ret += "create range"s;
     break;
+  case Op::CreateClosure:
+    ret += "create closure"s;
+    break;
   case Op::Pop:
     ret += "pop"s;
     break;
