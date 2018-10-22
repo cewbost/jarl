@@ -1,0 +1,7 @@
+var x = 3
+var y = 5
+var f = func(a, b) x * a + y * b
+assert f(2, 3) == 21, "capturing variables should work"
+
+f = func(i) if i > 0 do x * i + recurse(i - 1) else 0
+assert f(5) == 45, "recursion with closures should work"

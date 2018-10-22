@@ -101,7 +101,7 @@ void VM::pushFunction_(const Function& func){
   }
   this->frame_.func = &func;
   this->frame_.ip = func.getCode();
-  this->frame_.bp = this->stack_.size() - func.arguments;
+  this->frame_.bp = this->stack_.size() - func.arguments - func.captures;
   
   std::copy(
     func.getVValues().begin(),
@@ -558,6 +558,9 @@ void VM::execute(const Function& func){
           auto callee = this->frame_.func.get();
           if(callee->arguments != args){
             D_errorJmp(1, "Wrong number of arguments.");
+          }
+          for(int i = 0; i < callee->captures; ++i){
+            stack_.emplace_back(stack_[frame_.bp + args + i]);
           }
           this->pushFunction_(*callee);
           end_it = this->frame_.func->getCode()
