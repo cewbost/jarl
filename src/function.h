@@ -85,11 +85,12 @@ public:
   void capture(TypedValue*, TypedValue*);
   
   const Function* getFunc()const{return this->func_.get();}
+  const ArgVectorType& getArgs()const{return this->args_;}
   
-  ArgVectorType::const_iterator cbegin()const{return this->args_.cbegin();}
-  ArgVectorType::const_iterator cend()const{return this->args_.cend();}
   ArgVectorType::iterator begin(){return this->args_.begin();}
   ArgVectorType::iterator end(){return this->args_.end();}
+  ArgVectorType::const_iterator cbegin()const{return this->args_.cbegin();}
+  ArgVectorType::const_iterator cend()const{return this->args_.cend();}
   
   void operator delete(void* ptr){
     ::operator delete(ptr);

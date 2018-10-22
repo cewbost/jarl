@@ -137,6 +137,50 @@ void VM::pushFunction_(const PartiallyApplied& part){
   );
 }
 
+void VM::pushFunction_(const PartiallyApplied& part, int args){
+  #ifdef PRINT_OP
+  fprintf(stderr, "entering function %p\n", part.getFunc());
+  #endif
+  
+  assert(part.nargs == args);
+  
+  if(this->frame_.func){
+    this->call_stack_.push_back(std::move(this->frame_));
+  }
+  const Function& func = *part.getFunc();
+  this->frame_.func = &func;
+  this->frame_.ip = func.getCode();
+  this->frame_.bp = this->stack_.size() - args;
+  
+  auto& vals = part.getArgs();
+  if(func.arguments != args){
+    stack_.resize(stack_.size() + func.arguments + func.captures - args);
+    TypedValue
+      *pos1 = &stack_.back() - 1,
+      *pos2 = &stack_.back() - 1 - part.nargs;
+    
+    for(int i = func.arguments; i > 0; --i){
+      if(vals[i].type == TypeTag::None){
+        *pos1 = std::move(*(pos2--));        
+      }else{
+        *pos1 = vals[i];
+      }
+      --pos1;
+    }
+  }
+  
+  std::copy(
+    std::next(vals.begin(), func.arguments),
+    vals.cend(),
+    std::back_inserter(stack_)
+  );
+  std::copy(
+    func.getVValues().begin(),
+    func.getVValues().end(),
+    std::back_inserter(stack_)
+  );
+}
+
 bool VM::popFunction_(){
   #ifdef PRINT_OP
   fprintf(stderr, "leaving function %p\n", this->frame_.func);
@@ -488,6 +532,14 @@ void VM::execute(const Function& func){
               D_errorJmp(1, "Wrong number of arguments.");
             }
             this->pushFunction_(*callee.value.func_v);
+            end_it = this->frame_.func->getCode()
+              + this->frame_.func->getCodeSize();
+            goto loop_start;
+          }else if(callee.type == TypeTag::Partial){
+            if(callee.value.partial_v->nargs != args){
+              D_errorJmp(1, "Wrong number of arguments.");
+            }
+            this->pushFunction_(*callee.value.partial_v, args);
             end_it = this->frame_.func->getCode()
               + this->frame_.func->getCodeSize();
             goto loop_start;

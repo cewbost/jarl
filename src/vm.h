@@ -50,6 +50,7 @@ private:
   void doCmpOp_(const OpCodeType**, CmpMode);
   void pushFunction_(const Function&);
   void pushFunction_(const PartiallyApplied&);
+  void pushFunction_(const PartiallyApplied&, int);
   bool popFunction_();
   
 public:
