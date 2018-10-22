@@ -468,8 +468,8 @@ void VM::execute(const Function& func){
           
           callee.toPartial();
           callee.value.partial_v->capture(
-            &stack_[stack_.size() - capture],
-            &stack_.back()
+            stack_.data() + stack_.size() - captures,
+            stack_.data() + stack_.size()
           );
           stack_.resize(stack_.size() - captures);
           break;
