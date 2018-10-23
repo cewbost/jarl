@@ -69,13 +69,14 @@ struct Op{
     Assert,
     
     Extended  = 0x8000,
-    Dest      = 0x4000,
-    Int       = 0x2000,
-    Borrowed  = 0x1000,
-    Alt1      = 0x0800,
-    Alt2      = 0x0400,
+    Extended2 = 0x4000,
+    Dest      = 0x2000,
+    Int       = 0x1000,
+    Borrowed  = 0x0800,
+    Alt1      = 0x0400,
+    Alt2      = 0x0200,
     
-    Head      = 0xf800
+    Head      = 0xfe00
   };
 };
 

@@ -17,15 +17,16 @@ Function::Function(
   std::vector<OpCodeType>&& code,
   std::vector<TypedValue>&& values,
   std::vector<std::pair<int, int>>&& code_positions,
-  unsigned short arguments,
-  unsigned short captures
-  
+  unsigned arguments,
+  unsigned captures,
+  unsigned locals
 ):
   code_(std::move(code)),
   values_(std::move(values)),
   code_positions_(std::move(code_positions)),
   arguments(arguments),
-  captures(captures)
+  captures(captures),
+  locals(locals)
 {}
 
 PartiallyApplied::PartiallyApplied(const Function* func)
@@ -87,19 +88,20 @@ std::string Function::opcodesToStrDebug()const{
   
   auto vit = this->values_.begin();
   
-  bool extended = false;
+  unsigned extended = 0;
   int counter = 0;
   for(auto op: this->code_){
-    if(!extended){
+    if(extended == 0){
       snprintf(buffer, sizeof(buffer), "%4d: ", counter);
       ret += buffer;
       ret += opCodeToStrDebug(op);
-      if(op & Op::Extended) extended = true;
-      else ret += "\n"s;
+      if(op & Op::Extended) ++extended;
+      if(op & Op::Extended2) ++extended;
     }else{
-      ret += " "s + std::to_string(op) + "\n"s;
-      extended = false;
+      ret += " "s + std::to_string(op);
+      --extended;
     }
+    if(extended == 0) ret += "\n"s;
     ++counter;
   }
   

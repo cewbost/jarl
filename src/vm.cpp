@@ -108,6 +108,7 @@ void VM::pushFunction_(const Function& func){
     func.getVValues().end(),
     std::back_inserter(stack_)
   );
+  stack_.resize(stack_.size() + func.locals);
 }
 
 void VM::pushFunction_(const PartiallyApplied& part){
@@ -135,6 +136,7 @@ void VM::pushFunction_(const PartiallyApplied& part){
     func.getVValues().end(),
     std::back_inserter(stack_)
   );
+  stack_.resize(stack_.size() + func.locals);
 }
 
 void VM::pushFunction_(const PartiallyApplied& part, int args){
@@ -179,6 +181,7 @@ void VM::pushFunction_(const PartiallyApplied& part, int args){
     func.getVValues().end(),
     std::back_inserter(stack_)
   );
+  stack_.resize(stack_.size() + func.locals);
 }
 
 bool VM::popFunction_(){
@@ -427,21 +430,21 @@ void VM::execute(const Function& func){
       
       case Op::BeginIter:
         stack_.back() = new Iterator(stack_.back());
-        stack_.resize(stack_.size() + 2, TypedValue(nullptr));
+        this->frame_.ip += 2;
         break;
       
       case Op::NextOrJmp:
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
-        if(stack_[stack_.size() - 3].value.iterator_v->ended()){
+        if(stack_.back().value.iterator_v->ended()){
           stack_.resize(stack_.size() - 3);
           this->frame_.ip =
             this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
           goto loop_start;
         }else{
-          auto iter = stack_[stack_.size() - 3].value.iterator_v;
-          stack_[stack_.size() - 2] = iter->getKey();
-          stack_[stack_.size() - 1] = iter->getValue();
+          auto iter = stack_.back().value.iterator_v;
+          stack_[frame_.bp + *(frame_.ip - 3)] = iter->getKey();
+          stack_[frame_.bp + *(frame_.ip - 2)] = iter->getValue();
           iter->advance();
         }
         break;

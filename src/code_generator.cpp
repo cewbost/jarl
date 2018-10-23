@@ -24,8 +24,7 @@ struct ThreadingContext {
   VarAllocMap *var_allocs, *context_var_allocs;
   VectorSet<TypedValue> constants;
   
-  int stack_size;
-  unsigned short arguments, captures;
+  unsigned stack_size, arguments, captures, locals;
   
   std::vector<std::unique_ptr<char[]>> *errors;
   
@@ -33,15 +32,17 @@ struct ThreadingContext {
     decltype(errors) err,
     decltype(var_allocs) va = nullptr,
     decltype(context_var_allocs) cva = nullptr,
-    unsigned short args = 0,
-    unsigned short caps = 0
+    unsigned args = 0,
+    unsigned caps = 0,
+    unsigned locs = 0
   )
   : var_allocs(std::move(va)),
     context_var_allocs(cva),
     errors(err),
     stack_size(0),
     arguments(args),
-    captures(caps) {}
+    captures(caps),
+    locals(locs){}
   
   void putInstruction(OpCodeType op, int pos);
   
@@ -102,12 +103,13 @@ namespace {
       if(extended == 0){
         if(op & Op::Extended){
           if(op & Op::Int) extended = 1;
+          else if(op & Op::Extended2) extended = 4;
           else extended = 2;
         }
       }else if(extended == 1){
         extended = 0;
       }else{
-        extended = 0;
+        extended -= 2;
         switch(op & stack_pos_bits){
         case stack_pos_capture:
           op = (op & ~stack_pos_capture) + capture_pos;
@@ -127,7 +129,8 @@ namespace {
       std::move(context.constants),
       std::move(context.code_positions),
       context.arguments,
-      context.captures
+      context.captures,
+      context.locals
     );
     
     #ifdef PRINT_CODE
@@ -418,17 +421,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       {
         auto guard = this->newScope();
         threadAST(node->children.first, node);
-        
-        auto size = var_allocs->direct().size();
-        if(size > 0){
-          if(size == 1){
-            D_putInstruction(Op::Reduce);
-          }else{
-            D_putInstruction(Op::Reduce | Op::Extended);
-            D_putInstruction(static_cast<OpCodeType>(size));
-          }
-          stack_size -= size;
-        }
       }
       break;
       
@@ -498,17 +490,18 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         auto guard = this->newScope();
         {
           ASTNode* stepper = node->children.first;
+          OpCodeType first_pos = (locals++) | stack_pos_local;
+          OpCodeType second_pos = (locals++) | stack_pos_local;
           if(stepper->type == ASTNodeType::ExprList){
-            var_allocs->direct()[stepper->children.first->string_value] =
-              stack_size + 1 | stack_pos_local;
+            var_allocs->direct()[stepper->children.first->string_value] = first_pos;
             stepper = stepper->children.second;
           }
-          var_allocs->direct()[stepper->children.first->string_value] =
-            stack_size + 2 | stack_pos_local;
+          var_allocs->direct()[stepper->children.first->string_value] = second_pos;
           
           threadAST(stepper->children.second, node);
-          D_putInstruction(Op::BeginIter);
-          stack_size += 2;
+          D_putInstruction(Op::BeginIter | Op::Extended | Op::Extended2);
+          D_putInstruction(first_pos);
+          D_putInstruction(second_pos);
         }
         
         unsigned begin_addr = code.size();
@@ -579,13 +572,15 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         threadAST(subnode->children.second, subnode);
         auto it = var_allocs->direct()
           .find(subnode->children.first->string_value);
-        if(it != var_allocs->direct().end()){
-          D_putInstruction(Op::Write | Op::Extended | Op::Dest);
-          D_putInstruction(it->second);
+        OpCodeType stack_pos;
+        if(it == var_allocs->direct().end()){
+          stack_pos = (locals++) | stack_pos_local;
+          var_allocs->direct()[subnode->children.first->string_value] = stack_pos;
         }else{
-          var_allocs->direct()[subnode->children.first->string_value] =
-            old_stack_size | stack_pos_local;
+          stack_pos = it->second;
         }
+        D_putInstruction(Op::Write | Op::Extended);
+        D_putInstruction(stack_pos);
         D_putInstruction(Op::Push);
         ++stack_size;
       }
