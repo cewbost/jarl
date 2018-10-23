@@ -20,6 +20,12 @@ void SyntaxChecker::expectedKeyValuePairError_(ASTNode* node){
     node->pos.first
   ));
 }
+void SyntaxChecker::expectedIdentifierError_(ASTNode* node){
+  errors_->emplace_back(dynSprintf(
+    "line %d: Expected identifier.",
+    node->pos.first
+  ));
+}
 
 void SyntaxChecker::validateSyntax(ASTNode* node){
   switch(
@@ -127,44 +133,150 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
       }
       break;
     case ASTNodeType::Array:
-      if(node->child->type != ASTNodeType::Nop){
-        for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
-          if(it->type == ASTNodeType::Nop) continue;
-          else if(!it->isValue()) expectedValueError_(it.get());
-        }
+      for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
+        if(it->type == ASTNodeType::Nop) continue;
+        else if(!it->isValue()) expectedValueError_(it.get());
       }
       node->flags = ASTNodeFlags::Value;
       break;
     case ASTNodeType::Table:
-      if(node->child->type != ASTNodeType::Nop){
-        for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
-          if(it->type == ASTNodeType::KeyValuePair){
-            if(!it->children.first->isValue()){
-              expectedValueError_(it->children.first);
-            }
-            if(!it->children.second->isValue()){
-              expectedValueError_(it->children.second);
-            }
-          }else if(it->type == ASTNodeType::Nop) continue;
-          else expectedKeyValuePairError_(it.get());
-        }
+      for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
+        if(it->type == ASTNodeType::KeyValuePair){
+          if(!it->children.first->isValue()){
+            expectedValueError_(it->children.first);
+          }
+          if(!it->children.second->isValue()){
+            expectedValueError_(it->children.second);
+          }
+        }else if(it->type == ASTNodeType::Nop) continue;
+        else expectedKeyValuePairError_(it.get());
       }
       node->flags = ASTNodeFlags::Value;
       break;
     case ASTNodeType::Function:
+      for(auto it = node->children.first->exprListIterator(); it != nullptr; ++it){
+        if(it->type != ASTNodeType::Identifier){
+          expectedIdentifierError_(it.get());
+        }
+      }
+      node->flags = ASTNodeFlags::Value;
+      break;
     case ASTNodeType::Recurse:
+      for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
+        if(!it->isValue()){
+          expectedValueError_(it.get());
+        }
+      }
+      node->flags = ASTNodeFlags::Value;
+      break;
     case ASTNodeType::Call:
+      if(!node->children.first->isValue()){
+        expectedValueError_(node->children.first);
+      }
+      for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
+        if(!it->isValue()){
+          expectedValueError_(it.get());
+        }
+      }
       node->flags = ASTNodeFlags::Value;
       break;
     case ASTNodeType::Index:
+      if(!node->children.first->isValue()){
+        expectedValueError_(node->children.first);
+      }
+      if(node->children.second->type == ASTNodeType::ExprList){
+        if(node->children.second->children.first->type != ASTNodeType::Nop
+        && !node->children.second->children.first->isValue()){
+          expectedValueError_(node->children.second->children.first);
+        }
+        if(node->children.second->children.second->type != ASTNodeType::Nop
+        && !node->children.second->children.second->isValue()){
+          expectedValueError_(node->children.second->children.second);
+        }
+      }else if(!node->children.second->isValue()){
+        expectedValueError_(node->children.second);
+      }
       node->flags = ASTNodeFlags::RValue;
       break;
     case ASTNodeType::While:
-    case ASTNodeType::For:
+      if(!node->children.first->isValue()){
+        expectedValueError_(node->children.first);
+      }
+      node->flags = ASTNodeFlags::None;
+      break;
+    case ASTNodeType::For: {
+        ASTNode* stepper = node->children.first;
+        if(stepper->type == ASTNodeType::ExprList){
+          if(stepper->children.first->type != ASTNodeType::Identifier){
+            expectedIdentifierError_(stepper->children.first);
+          }
+          stepper = stepper->children.second;
+        }
+        if(stepper->type != ASTNodeType::In){
+          errors_->emplace_back(dynSprintf(
+            "line %d: Expected in expression.",
+            stepper
+          ));
+          break;
+        }
+        if(stepper->children.first->type != ASTNodeType::Identifier){
+          expectedIdentifierError_(stepper->children.first);
+        }
+        if(!stepper->children.second->isValue()){
+          expectedValueError_(stepper->children.second);
+        }
+      }
+      node->flags = ASTNodeFlags::None;
+      break;
     case ASTNodeType::Var:
+      if(node->child->type != ASTNodeType::Assign){
+        errors_->emplace_back(dynSprintf(
+          "line %d: Expected assignment expression.",
+          node->child
+        ));
+        break;
+      }
+      if(!node->child->children.first->isRValue()){
+        expectedRValueError_(node->child->children.first);
+      }
+      if(!node->child->children.first->isValue()){
+        expectedValueError_(node->child->children.second);
+      }
+      node->flags = ASTNodeFlags::None;
+      break;
     case ASTNodeType::Return:
+      if(node->child->type != ASTNodeType::Nop
+      && !node->child->isValue()){
+        expectedValueError_(node->child);
+      }
+      node->flags = ASTNodeFlags::None;
+      break;
     case ASTNodeType::Print:
+      for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
+        if(!it->isValue()){
+          expectedValueError_(it.get());
+        }
+      }
+      node->flags = ASTNodeFlags::None;
+      break;
     case ASTNodeType::Assert:
+      if(node->child->type != ASTNodeType::ExprList){
+        errors_->emplace_back(dynSprintf(
+          "line %d: Expected expression list",
+          node->child
+        ));
+        break;
+      }
+      if(node->child->children.first->type == ASTNodeType::ExprList
+      || !node->child->children.first->isValue()){
+        expectedValueError_(node->child->children.first);
+      }
+      if(node->child->children.second->type == ASTNodeType::ExprList
+      || !node->child->children.second->isValue()){
+        expectedValueError_(node->child->children.second);
+      }
+      node->flags = ASTNodeFlags::None;
+      break;
     case ASTNodeType::Nop:
       node->flags = ASTNodeFlags::None;
       break;
