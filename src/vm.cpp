@@ -238,10 +238,18 @@ void VM::execute(const Function& func){
       #ifdef PRINT_OP
       fprintf(stderr, "op%5d: ", this->frame_.ip - this->frame_.func->getCode());
       if(*this->frame_.ip & Op::Extended){
-        fprintf(stderr, "%s %d\n",
-          opCodeToStrDebug(*this->frame_.ip).c_str(),
-          *(this->frame_.ip + 1)
-        );
+        if(*this->frame_.ip & Op::Extended2){
+          fprintf(stderr, "%s %d %d\n",
+            opCodeToStrDebug(*this->frame_.ip).c_str(),
+            *(this->frame_.ip + 1),
+            *(this->frame_.ip + 2)
+          );
+        }else{
+          fprintf(stderr, "%s %d\n",
+            opCodeToStrDebug(*this->frame_.ip).c_str(),
+            *(this->frame_.ip + 1)
+          );
+        }
       }else{
         fprintf(stderr, "%s\n", opCodeToStrDebug(*this->frame_.ip).c_str());
       }
@@ -437,7 +445,7 @@ void VM::execute(const Function& func){
         assert((*this->frame_.ip & Op::Extended) != 0);
         ++this->frame_.ip;
         if(stack_.back().value.iterator_v->ended()){
-          stack_.resize(stack_.size() - 3);
+          stack_.pop_back();
           this->frame_.ip =
             this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
           goto loop_start;
