@@ -480,7 +480,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction((OpCodeType)begin_addr);
         code[end_jmp_addr] = (OpCodeType)code.size();
         
-        D_putInstruction(Op::Push);
         ++stack_size;
       }
       break;
@@ -516,7 +515,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction(Op::Jmp | Op::Extended);
         D_putInstruction((OpCodeType)begin_addr);
         code[end_jmp_addr] = (OpCodeType)code.size();
-        D_putInstruction(Op::Push);
         stack_size -= 2;
       }
       break;
@@ -559,7 +557,9 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       
     case ASTNodeType::Seq:
       threadAST(node->children.first, node);
-      D_putInstruction(Op::Pop);
+      if(node->children.first->isValue()){
+        D_putInstruction(Op::Pop);
+      }
       --stack_size;
       threadAST(node->children.second, node);
       break;
@@ -581,7 +581,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         }
         D_putInstruction(Op::Write | Op::Extended);
         D_putInstruction(stack_pos);
-        D_putInstruction(Op::Push);
         ++stack_size;
       }
       break;
@@ -621,7 +620,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
           D_putInstruction(Op::Print | Op::Extended | Op::Int);
           D_putInstruction((OpCodeType)num);
         }else /*nop*/;
-        D_putInstruction(Op::Push);
       }
       break;
       
@@ -672,8 +670,6 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       break;
       
     case ASTNodeType::Nop:
-      D_putInstruction(Op::Push);
-      ++stack_size;
       break;
       
     default:
