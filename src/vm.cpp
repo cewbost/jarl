@@ -64,7 +64,7 @@ void VM::doArithOp_(
   }else if(*it & Op::Borrowed){
     (this->stack_[this->stack_.size() - 2].value.borrowed_v->*op)
       (this->stack_.back());
-    this->stack_.pop_back();
+    this->stack_.resize(this->stack_.size() - 2);
   }else{
     (this->stack_[this->stack_.size() - 2].*op)(this->stack_.back());
     this->stack_.pop_back();
@@ -308,7 +308,7 @@ void VM::execute(const Function& func){
         case Op::Borrowed:
           *stack_[stack_.size() - 2].value.borrowed_v =
             std::move(stack_.back());
-          stack_.pop_back();
+          stack_.resize(stack_.size() - 2);
           break;
         default:
           assert(false);
