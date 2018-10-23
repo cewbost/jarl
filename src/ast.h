@@ -105,7 +105,7 @@ struct ASTNodeFlags {
   enum {
     None    = 0x0,
     Value   = 0x0001,
-    RValue  = 0x0003
+    LValue  = 0x0003
   };
 };
 
@@ -145,8 +145,8 @@ struct ASTNode {
   bool isValue(){
     return (this->flags & ASTNodeFlags::Value) == ASTNodeFlags::Value;
   }
-  bool isRValue(){
-    return (this->flags & ASTNodeFlags::RValue) == ASTNodeFlags::RValue;
+  bool isLValue(){
+    return (this->flags & ASTNodeFlags::LValue) == ASTNodeFlags::LValue;
   }
   
   //iteration

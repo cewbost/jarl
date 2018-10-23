@@ -499,18 +499,9 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         {
           ASTNode* stepper = node->children.first;
           if(stepper->type == ASTNodeType::ExprList){
-            if(stepper->children.first->type != ASTNodeType::Identifier){
-              D_breakError("Expected identifier", stepper);
-            }
             var_allocs->direct()[stepper->children.first->string_value] =
               stack_size + 1 | stack_pos_local;
             stepper = stepper->children.second;
-          }
-          if(stepper->type != ASTNodeType::In){
-            D_breakError("Expected in expression", stepper);
-          }
-          if(stepper->children.first->type != ASTNodeType::Identifier){
-            D_breakError("Expected identifier", stepper->children.first);
           }
           var_allocs->direct()[stepper->children.first->string_value] =
             stack_size + 2 | stack_pos_local;
@@ -542,11 +533,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         auto var_alloc = new VarAllocMap(nullptr);
         OpCodeType args = 0;
         for(auto it = node->children.first->exprListIterator(); it != nullptr; ++it){
-          if(it->type == ASTNodeType::Identifier){
-            (*var_alloc)[it->string_value] = args++;
-          }else{
-            D_breakError("Invalid function parameter", it);
-          }
+          (*var_alloc)[it->string_value] = args++;
         }
         
         auto func = generate_(
@@ -586,32 +573,21 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     
     case ASTNodeType::Var:
       {
-        switch(node->child->type){
-        case ASTNodeType::Assign:
-          {
-            auto subnode = node->child;
-            if(subnode->children.first->type != ASTNodeType::Identifier){
-              D_breakError("Expected identifier", subnode);
-            }
-            
-            auto old_stack_size = stack_size;
-            threadAST(subnode->children.second, subnode);
-            auto it = var_allocs->direct()
-              .find(subnode->children.first->string_value);
-            if(it != var_allocs->direct().end()){
-              D_putInstruction(Op::Write | Op::Extended | Op::Dest);
-              D_putInstruction(it->second);
-            }else{
-              var_allocs->direct()[subnode->children.first->string_value] =
-                old_stack_size | stack_pos_local;
-            }
-            D_putInstruction(Op::Push);
-            ++stack_size;
-          }
-          break;
-        default:
-          D_breakError("Invalid variable declaration syntax", node);
+        auto subnode = node->child;
+        
+        auto old_stack_size = stack_size;
+        threadAST(subnode->children.second, subnode);
+        auto it = var_allocs->direct()
+          .find(subnode->children.first->string_value);
+        if(it != var_allocs->direct().end()){
+          D_putInstruction(Op::Write | Op::Extended | Op::Dest);
+          D_putInstruction(it->second);
+        }else{
+          var_allocs->direct()[subnode->children.first->string_value] =
+            old_stack_size | stack_pos_local;
         }
+        D_putInstruction(Op::Push);
+        ++stack_size;
       }
       break;
     
@@ -655,37 +631,22 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       break;
       
     case ASTNodeType::Assert:
-      {
-        if(node->child->type == ASTNodeType::ExprList){
-          if(node->child->children.second->type == ASTNodeType::ExprList){
-            goto num_params_error;
-          }
-          threadAST(node->child->children.second, node);
-          threadAST(node->child->children.first, node);
-          D_putInstruction(Op::Assert | Op::Alt1);
-          --stack_size;
-        }else{
-          if(node->child->type == ASTNodeType::Nop){
-            goto num_params_error;
-          }
-          threadAST(node->child, node);
-          D_putInstruction(Op::Assert);
-        }
-        break;
-      
-      num_params_error:
-        D_breakError("Wrong number of parameters to assertion", node);
+      if(node->child->type == ASTNodeType::ExprList){
+        threadAST(node->child->children.second, node);
+        threadAST(node->child->children.first, node);
+        D_putInstruction(Op::Assert | Op::Alt1);
+        --stack_size;
+      }else{
+        threadAST(node->child, node);
+        D_putInstruction(Op::Assert);
       }
+      break;
       
     case ASTNodeType::Index:
       {
         threadAST(node->children.first, node);
         
         if(node->children.second->type == ASTNodeType::ExprList){
-          if(node->children.second->children.first->type == ASTNodeType::ExprList
-          || node->children.second->children.second->type == ASTNodeType::ExprList){
-            D_breakError("Too many parameters in index", node);
-          }
           threadAST(node->children.second->children.first, node);
           threadAST(node->children.second->children.second, node);
           D_putInstruction(Op::Slice);
@@ -748,8 +709,6 @@ void ThreadingContext::threadRexpr(ASTNode* node, ASTNode* prev_node){
     D_putInstruction(Op::Borrow | Op::Borrowed);
     --stack_size;
     break;
-  default:
-    D_breakError("Assignment to rvalue", node);
   }
 }
 
@@ -763,10 +722,6 @@ void ThreadingContext::threadInsRexpr(ASTNode* node, ASTNode* prev_node){
     if(node->type == ASTNodeType::Identifier){
       errors->emplace_back(dynSprintf(
         "line %d: Insertion to variable", node->pos.first
-      ));
-    }else{
-      errors->emplace_back(dynSprintf(
-        "line %d: Insertion to rvalue", node->pos.first
       ));
     }
     D_putInstruction(Op::Nop);

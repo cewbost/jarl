@@ -9,7 +9,7 @@ class SyntaxChecker {
   
   void expectValue_(ASTNode*);
   void expectValueNop_(ASTNode*);
-  void expectRValue_(ASTNode*);
+  void expectLValue_(ASTNode*);
   void expectIdentifier_(ASTNode*);
   void expectValueList_(ASTNode*);
   

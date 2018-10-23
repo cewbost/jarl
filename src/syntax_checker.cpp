@@ -12,10 +12,10 @@ void SyntaxChecker::expectValueNop_(ASTNode* node){
     expectedValueError_(node);
   }
 }
-void SyntaxChecker::expectRValue_(ASTNode* node){
-  if(!node->isRValue()){
+void SyntaxChecker::expectLValue_(ASTNode* node){
+  if(!node->isLValue()){
     errors_->emplace_back(dynSprintf(
-      "line %d: Expected r-value expression.",
+      "line %d: Expected l-value expression.",
       node->pos.first
     ));
   }
@@ -71,7 +71,7 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
   
   case ASTNodeType::Value:
     if(node->type == ASTNodeType::Identifier){
-      node->flags = ASTNodeFlags::RValue;
+      node->flags = ASTNodeFlags::LValue;
     }else{
       node->flags = ASTNodeFlags::Value;
     }
@@ -113,7 +113,7 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
     break;
   
   case ASTNodeType::AssignExpr:
-    expectRValue_(node->children.first);
+    expectLValue_(node->children.first);
     expectValue_(node->children.second);
     node->flags = ASTNodeFlags::None;
     break;
@@ -168,10 +168,16 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
     case ASTNodeType::Index:
       expectValue_(node->children.first);
       if(node->children.second->type == ASTNodeType::ExprList){
+        if(node->children.second->children.first->type == ASTNodeType::ExprList){
+          expectedValueError_(node->children.second->children.first);
+        }
+        if(node->children.second->children.second->type == ASTNodeType::ExprList){
+          expectedValueError_(node->children.second->children.second);
+        }
         expectValueNop_(node->children.second->children.first);
         expectValueNop_(node->children.second->children.second);
       }else expectValue_(node->children.second);
-      node->flags = ASTNodeFlags::RValue;
+      node->flags = ASTNodeFlags::LValue;
       break;
     case ASTNodeType::While:
       expectValue_(node->children.first);
@@ -203,7 +209,7 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
         ));
         break;
       }
-      expectRValue_(node->child->children.first);
+      expectLValue_(node->child->children.first);
       expectValue_(node->child->children.second);
       node->flags = ASTNodeFlags::None;
       break;
