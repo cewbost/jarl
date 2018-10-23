@@ -2,27 +2,47 @@
 
 #include <cassert>
 
+void SyntaxChecker::expectValue_(ASTNode* node){
+  if(!node->isValue()){
+    expectedValueError_(node);
+  }
+}
+void SyntaxChecker::expectValueNop_(ASTNode* node){
+  if(node->type != ASTNodeType::Nop && !node->isValue()){
+    expectedValueError_(node);
+  }
+}
+void SyntaxChecker::expectRValue_(ASTNode* node){
+  if(!node->isRValue()){
+    errors_->emplace_back(dynSprintf(
+      "line %d: Expected r-value expression.",
+      node->pos.first
+    ));
+  }
+}
+void SyntaxChecker::expectIdentifier_(ASTNode* node){
+  if(node->type != ASTNodeType::Identifier){
+    errors_->emplace_back(dynSprintf(
+      "line %d: Expected identifier.",
+      node->pos.first
+    ));
+  }
+}
+void SyntaxChecker::expectValueList_(ASTNode* node){
+  for(auto it = node->exprListIterator(); it != nullptr; ++it){
+    expectValue_(it.get());
+  }
+}
+
 void SyntaxChecker::expectedValueError_(ASTNode* node){
   errors_->emplace_back(dynSprintf(
     "line %d: Expected value expression.",
     node->pos.first
   ));
 }
-void SyntaxChecker::expectedRValueError_(ASTNode* node){
-  errors_->emplace_back(dynSprintf(
-    "line %d: Expected r-value expression.",
-    node->pos.first
-  ));
-}
 void SyntaxChecker::expectedKeyValuePairError_(ASTNode* node){
   errors_->emplace_back(dynSprintf(
     "line %d: Expected key-value-pair.",
-    node->pos.first
-  ));
-}
-void SyntaxChecker::expectedIdentifierError_(ASTNode* node){
-  errors_->emplace_back(dynSprintf(
-    "line %d: Expected identifier.",
     node->pos.first
   ));
 }
@@ -58,21 +78,13 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
     break;
   
   case ASTNodeType::UnaryExpr:
-    if(!node->child->isValue()){
-      expectedValueError_(node->child);
-    }
+    expectValue_(node->child);
     node->flags = ASTNodeFlags::Value;
     break;
   
   case ASTNodeType::BinaryExpr:
-    if(!node->children.first->isValue()){
-      expectedValueError_(node->children.first);
-      break;
-    }
-    if(!node->children.second->isValue()){
-      expectedValueError_(node->children.second);
-      break;
-    }
+    expectValue_(node->children.first);
+    expectValue_(node->children.second);
     node->flags = ASTNodeFlags::Value;
     break;
   
@@ -80,18 +92,12 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
     switch(node->type){
     case ASTNodeType::And:
     case ASTNodeType::Or:
-      if(!node->children.first->isValue()){
-        expectedValueError_(node->children.first);
-      }
-      if(!node->children.second->isValue()){
-        expectedValueError_(node->children.second);
-      }
+      expectValue_(node->children.first);
+      expectValue_(node->children.second);
       node->flags = ASTNodeFlags::Value;
       break;
     case ASTNodeType::If:
-      if(!node->children.first->isValue()){
-        expectedValueError_(node->children.first);
-      }
+      expectValue_(node->children.first);
       if(node->children.second->type == ASTNodeType::Else){
         if(node->children.second->children.first->isValue()
         && node->children.second->children.second->isValue()){
@@ -107,12 +113,8 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
     break;
   
   case ASTNodeType::AssignExpr:
-    if(!node->children.first->isRValue()){
-      expectedRValueError_(node->children.first);
-    }
-    if(!node->children.second->isValue()){
-      expectedValueError_(node->children.second);
-    }
+    expectRValue_(node->children.first);
+    expectValue_(node->children.second);
     node->flags = ASTNodeFlags::None;
     break;
   
@@ -134,20 +136,15 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
       break;
     case ASTNodeType::Array:
       for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
-        if(it->type == ASTNodeType::Nop) continue;
-        else if(!it->isValue()) expectedValueError_(it.get());
+        expectValueNop_(it.get());
       }
       node->flags = ASTNodeFlags::Value;
       break;
     case ASTNodeType::Table:
       for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
         if(it->type == ASTNodeType::KeyValuePair){
-          if(!it->children.first->isValue()){
-            expectedValueError_(it->children.first);
-          }
-          if(!it->children.second->isValue()){
-            expectedValueError_(it->children.second);
-          }
+          expectValue_(it->children.first);
+          expectValue_(it->children.second);
         }else if(it->type == ASTNodeType::Nop) continue;
         else expectedKeyValuePairError_(it.get());
       }
@@ -155,61 +152,35 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
       break;
     case ASTNodeType::Function:
       for(auto it = node->children.first->exprListIterator(); it != nullptr; ++it){
-        if(it->type != ASTNodeType::Identifier){
-          expectedIdentifierError_(it.get());
-        }
+        expectIdentifier_(it.get());
       }
       node->flags = ASTNodeFlags::Value;
       break;
     case ASTNodeType::Recurse:
-      for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
-        if(!it->isValue()){
-          expectedValueError_(it.get());
-        }
-      }
+      expectValueList_(node->child);
       node->flags = ASTNodeFlags::Value;
       break;
     case ASTNodeType::Call:
-      if(!node->children.first->isValue()){
-        expectedValueError_(node->children.first);
-      }
-      for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
-        if(!it->isValue()){
-          expectedValueError_(it.get());
-        }
-      }
+      expectValue_(node->children.first);
+      expectValueList_(node->children.second);
       node->flags = ASTNodeFlags::Value;
       break;
     case ASTNodeType::Index:
-      if(!node->children.first->isValue()){
-        expectedValueError_(node->children.first);
-      }
+      expectValue_(node->children.first);
       if(node->children.second->type == ASTNodeType::ExprList){
-        if(node->children.second->children.first->type != ASTNodeType::Nop
-        && !node->children.second->children.first->isValue()){
-          expectedValueError_(node->children.second->children.first);
-        }
-        if(node->children.second->children.second->type != ASTNodeType::Nop
-        && !node->children.second->children.second->isValue()){
-          expectedValueError_(node->children.second->children.second);
-        }
-      }else if(!node->children.second->isValue()){
-        expectedValueError_(node->children.second);
-      }
+        expectValueNop_(node->children.second->children.first);
+        expectValueNop_(node->children.second->children.second);
+      }else expectValue_(node->children.second);
       node->flags = ASTNodeFlags::RValue;
       break;
     case ASTNodeType::While:
-      if(!node->children.first->isValue()){
-        expectedValueError_(node->children.first);
-      }
+      expectValue_(node->children.first);
       node->flags = ASTNodeFlags::None;
       break;
     case ASTNodeType::For: {
         ASTNode* stepper = node->children.first;
         if(stepper->type == ASTNodeType::ExprList){
-          if(stepper->children.first->type != ASTNodeType::Identifier){
-            expectedIdentifierError_(stepper->children.first);
-          }
+          expectIdentifier_(stepper->children.first);
           stepper = stepper->children.second;
         }
         if(stepper->type != ASTNodeType::In){
@@ -219,12 +190,8 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
           ));
           break;
         }
-        if(stepper->children.first->type != ASTNodeType::Identifier){
-          expectedIdentifierError_(stepper->children.first);
-        }
-        if(!stepper->children.second->isValue()){
-          expectedValueError_(stepper->children.second);
-        }
+        expectIdentifier_(stepper->children.first);
+        expectValue_(stepper->children.second);
       }
       node->flags = ASTNodeFlags::None;
       break;
@@ -236,27 +203,16 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
         ));
         break;
       }
-      if(!node->child->children.first->isRValue()){
-        expectedRValueError_(node->child->children.first);
-      }
-      if(!node->child->children.first->isValue()){
-        expectedValueError_(node->child->children.second);
-      }
+      expectRValue_(node->child->children.first);
+      expectValue_(node->child->children.second);
       node->flags = ASTNodeFlags::None;
       break;
     case ASTNodeType::Return:
-      if(node->child->type != ASTNodeType::Nop
-      && !node->child->isValue()){
-        expectedValueError_(node->child);
-      }
+      expectValueNop_(node->child);
       node->flags = ASTNodeFlags::None;
       break;
     case ASTNodeType::Print:
-      for(auto it = node->child->exprListIterator(); it != nullptr; ++it){
-        if(!it->isValue()){
-          expectedValueError_(it.get());
-        }
-      }
+      expectValueList_(node->child);
       node->flags = ASTNodeFlags::None;
       break;
     case ASTNodeType::Assert:

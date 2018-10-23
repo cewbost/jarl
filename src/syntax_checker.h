@@ -7,10 +7,14 @@ class SyntaxChecker {
   
   std::vector<std::unique_ptr<char[]>>* errors_;
   
+  void expectValue_(ASTNode*);
+  void expectValueNop_(ASTNode*);
+  void expectRValue_(ASTNode*);
+  void expectIdentifier_(ASTNode*);
+  void expectValueList_(ASTNode*);
+  
   void expectedValueError_(ASTNode*);
-  void expectedRValueError_(ASTNode*);
   void expectedKeyValuePairError_(ASTNode*);
-  void expectedIdentifierError_(ASTNode*);
   
 public:
   void validateSyntax(ASTNode*);
