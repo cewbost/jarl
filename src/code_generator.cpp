@@ -670,6 +670,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
       break;
       
     case ASTNodeType::Nop:
+      D_putInstruction(Op::Push);
       break;
       
     default:
