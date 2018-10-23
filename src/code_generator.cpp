@@ -459,7 +459,9 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction((OpCodeType)0);
         
         threadAST(node->children.second, node);
-        D_putInstruction(Op::Pop);
+        if(node->children.second->isValue()){
+          D_putInstruction(Op::Pop);
+        }
         D_putInstruction(Op::Jmp | Op::Extended);
         D_putInstruction((OpCodeType)begin_addr);
         code[end_jmp_addr] = (OpCodeType)code.size();
@@ -491,8 +493,9 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         D_putInstruction((OpCodeType)0);
         
         threadAST(node->children.second, node);
-        
-        D_putInstruction(Op::Pop);
+        if(node->children.second->isValue()){
+          D_putInstruction(Op::Pop);
+        }
         D_putInstruction(Op::Jmp | Op::Extended);
         D_putInstruction((OpCodeType)begin_addr);
         code[end_jmp_addr] = (OpCodeType)code.size();
