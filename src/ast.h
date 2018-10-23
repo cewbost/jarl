@@ -10,7 +10,7 @@
 using jarl::Int;
 using jarl::Float;
 
-enum class ASTNodeType: unsigned {
+enum class ASTNodeType: uint16_t {
   Leaf = 0x0000,
   
   Nop,
@@ -101,9 +101,18 @@ enum class ASTNodeType: unsigned {
   Insert,
 };
 
+struct ASTNodeFlags {
+  enum {
+    None    = 0x0,
+    Value   = 0x0001,
+    RValue  = 0x0003
+  };
+};
+
 struct ASTNode {
   
   ASTNodeType type;
+  uint16_t flags;
   std::pair<uint16_t, uint16_t> pos;
   union{
     ASTNode* child;
@@ -132,6 +141,13 @@ struct ASTNode {
   
   ASTNode(const ASTNode&) = delete;
   ASTNode& operator=(const ASTNode&) = delete;
+  
+  bool isValue(){
+    return (this->flags & ASTNodeFlags::Value) == ASTNodeFlags::Value;
+  }
+  bool isRValue(){
+    return (this->flags & ASTNodeFlags::RValue) == ASTNodeFlags::RValue;
+  }
   
   //iteration
   struct ExprListIterator {
