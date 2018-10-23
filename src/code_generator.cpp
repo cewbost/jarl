@@ -344,14 +344,23 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
         
         if(node->children.second->type == ASTNodeType::Else){
           threadAST(node->children.second->children.first, node);
+          if(!node->isValue() && node->children.second->children.first->isValue()){
+            D_putInstruction(Op::Pop);
+          }
           D_putInstruction(Op::Jmp | Op::Extended);
           code[jmp_addr] = (OpCodeType)code.size() + 1;
           jmp_addr = code.size();
           D_putInstruction((OpCodeType)0);
           threadAST(node->children.second->children.second, node);
+          if(!node->isValue() && node->children.second->children.second->isValue()){
+            D_putInstruction(Op::Pop);
+          }
           code[jmp_addr] = (OpCodeType)code.size();
         }else{
           threadAST(node->children.second, node);
+          if(node->children.second->isValue()){
+            D_putInstruction(Op::Pop);
+          }
           D_putInstruction(Op::Jmp | Op::Extended);
           code[jmp_addr] = (OpCodeType)code.size() + 1;
           jmp_addr = code.size();
