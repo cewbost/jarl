@@ -17,7 +17,7 @@ class VM{
 public:
   struct StackFrame{
     rc_ptr<const Function> func;
-    const OpCodeType* ip;
+    const OpCodes::Type* ip;
     unsigned bp;
     
     StackFrame(): func(nullptr), ip(nullptr), bp(0){}
@@ -46,8 +46,8 @@ private:
   
   StackFrame frame_;
   
-  void doArithOp_(const OpCodeType**, void (TypedValue::*)(const TypedValue&));
-  void doCmpOp_(const OpCodeType**, CmpMode);
+  void doArithOp_(const OpCodes::Type**, void (TypedValue::*)(const TypedValue&));
+  void doCmpOp_(const OpCodes::Type**, CmpMode);
   void pushFunction_(const Function&);
   void pushFunction_(const PartiallyApplied&);
   void pushFunction_(const PartiallyApplied&, int);

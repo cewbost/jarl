@@ -7,11 +7,12 @@
 #include <string>
 #endif
 
-using OpCodeType        = uint16_t;
-using OpCodeSignedType  = int16_t;
-
-struct Op{
-  enum{
+namespace OpCodes {
+  
+  using Type        = uint16_t;
+  using SignedType  = int16_t;
+  
+  enum {
     Return = 0,
     Nop,
     
@@ -67,21 +68,21 @@ struct Op{
     
     Print,
     Assert,
-    
-    Extended  = 0x8000,
-    Extended2 = 0x4000,
-    Dest      = 0x2000,
-    Int       = 0x1000,
-    Borrowed  = 0x0800,
-    Alt1      = 0x0400,
-    Alt2      = 0x0200,
-    
-    Head      = 0xfe00
   };
-};
-
-#ifndef NDEBUG
-std::string opCodeToStrDebug(OpCodeType);
-#endif
+  
+  constexpr Type Extended   = 0x8000;
+  constexpr Type Extended2  = 0x4000;
+  constexpr Type Dest       = 0x2000;
+  constexpr Type Int        = 0x1000;
+  constexpr Type Borrowed   = 0x0800;
+  constexpr Type Alt1       = 0x0400;
+  constexpr Type Alt2       = 0x0200;
+  
+  constexpr Type Head       = 0xfe00;
+  
+  #ifndef NDEBUG
+  std::string opCodeToStrDebug(OpCodes::Type);
+  #endif
+}
 
 #endif

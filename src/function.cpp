@@ -14,7 +14,7 @@ namespace std{
 }
 
 Function::Function(
-  std::vector<OpCodeType>&& code,
+  std::vector<OpCodes::Type>&& code,
   std::vector<TypedValue>&& values,
   std::vector<std::pair<int, int>>&& code_positions,
   unsigned arguments,
@@ -63,7 +63,7 @@ void PartiallyApplied::capture(TypedValue* from, TypedValue* to){
   }
 }
 
-int Function::getLine(const OpCodeType* iit) const {
+int Function::getLine(const OpCodes::Type* iit) const {
   ptrdiff_t pos = iit - this->code_.data();
   auto it = this->code_positions_.begin();
   ptrdiff_t line = it->first;
@@ -94,9 +94,9 @@ std::string Function::opcodesToStrDebug()const{
     if(extended == 0){
       snprintf(buffer, sizeof(buffer), "%4d: ", counter);
       ret += buffer;
-      ret += opCodeToStrDebug(op);
-      if(op & Op::Extended) ++extended;
-      if(op & Op::Extended2) ++extended;
+      ret += OpCodes::opCodeToStrDebug(op);
+      if(op & OpCodes::Extended) ++extended;
+      if(op & OpCodes::Extended2) ++extended;
     }else{
       ret += " "s + std::to_string(op);
       --extended;

@@ -7,155 +7,155 @@
 #endif
 
 #ifndef NDEBUG
-std::string opCodeToStrDebug(OpCodeType op){
+std::string OpCodes::opCodeToStrDebug(OpCodes::Type op){
   using namespace std::string_literals;
   
   std::string ret = "";
   
-  switch(op & ~Op::Head){
-  case Op::Return:
+  switch(op & ~OpCodes::Head){
+  case OpCodes::Return:
     ret += "return"s;
     break;
-  case Op::Nop:
+  case OpCodes::Nop:
     ret += "nop"s;
     break;
-  case Op::Reduce:
+  case OpCodes::Reduce:
     ret += "reduce"s;
     break;
-  case Op::Push:
+  case OpCodes::Push:
     ret += "push"s;
     break;
-  case Op::PushTrue:
+  case OpCodes::PushTrue:
     ret += "push true"s;
     break;
-  case Op::PushFalse:
+  case OpCodes::PushFalse:
     ret += "push false"s;
     break;
-  case Op::CreateArray:
+  case OpCodes::CreateArray:
     ret += "create array"s;
     break;
-  case Op::CreateTable:
+  case OpCodes::CreateTable:
     ret += "create table"s;
     break;
-  case Op::CreateRange:
+  case OpCodes::CreateRange:
     ret += "create range"s;
     break;
-  case Op::CreateClosure:
+  case OpCodes::CreateClosure:
     ret += "create closure"s;
     break;
-  case Op::Pop:
+  case OpCodes::Pop:
     ret += "pop"s;
     break;
-  case Op::Write:
+  case OpCodes::Write:
     ret += "write"s;
     break;
-  case Op::Add:
+  case OpCodes::Add:
     ret += "add"s;
     break;
-  case Op::Sub:
+  case OpCodes::Sub:
     ret += "sub"s;
     break;
-  case Op::Mul:
+  case OpCodes::Mul:
     ret += "mul"s;
     break;
-  case Op::Div:
+  case OpCodes::Div:
     ret += "div"s;
     break;
-  case Op::Mod:
+  case OpCodes::Mod:
     ret += "mod"s;
     break;
-  case Op::Append:
+  case OpCodes::Append:
     ret += "append"s;
     break;
-  case Op::Apply:
+  case OpCodes::Apply:
     ret += "apply"s;
     break;
-  case Op::Neg:
+  case OpCodes::Neg:
     ret += "neg"s;
     break;
-  case Op::Not:
+  case OpCodes::Not:
     ret += "not"s;
     break;
-  case Op::Cmp:
+  case OpCodes::Cmp:
     ret += "cmp"s;
     break;
-  case Op::Eq:
+  case OpCodes::Eq:
     ret += "eq"s;
     break;
-  case Op::Neq:
+  case OpCodes::Neq:
     ret += "neq"s;
     break;
-  case Op::Gt:
+  case OpCodes::Gt:
     ret += "gt"s;
     break;
-  case Op::Lt:
+  case OpCodes::Lt:
     ret += "lt"s;
     break;
-  case Op::Geq:
+  case OpCodes::Geq:
     ret += "geq"s;
     break;
-  case Op::Leq:
+  case OpCodes::Leq:
     ret += "leq"s;
     break;
-  case Op::In:
+  case OpCodes::In:
     ret += "in"s;
     break;
-  case Op::Get:
+  case OpCodes::Get:
     ret += "get"s;
     break;
-  case Op::Slice:
+  case OpCodes::Slice:
     ret += "slice"s;
     break;
-  case Op::Call:
+  case OpCodes::Call:
     ret += "call"s;
     break;
-  case Op::Recurse:
+  case OpCodes::Recurse:
     ret += "recurse"s;
     break;
-  case Op::Borrow:
+  case OpCodes::Borrow:
     ret += "borrow"s;
     break;
-  case Op::BeginIter:
+  case OpCodes::BeginIter:
     ret += "begin iteration"s;
     break;
-  case Op::NextOrJmp:
+  case OpCodes::NextOrJmp:
     ret += "next or jmp"s;
     break;
-  case Op::Jmp:
+  case OpCodes::Jmp:
     ret += "jmp"s;
     break;
-  case Op::Jt:
+  case OpCodes::Jt:
     ret += "jt"s;
     break;
-  case Op::Jf:
+  case OpCodes::Jf:
     ret += "jf"s;
     break;
-  case Op::Jtsc:
+  case OpCodes::Jtsc:
     ret += "jtsc"s;
     break;
-  case Op::Jfsc:
+  case OpCodes::Jfsc:
     ret += "jfsc"s;
     break;
-  case Op::Print:
+  case OpCodes::Print:
     ret += "print"s;
     break;
-  case Op::Assert:
+  case OpCodes::Assert:
     ret += "assert"s;
     break;
   default:
     {
       ret += "unknown op code: "s;
-      std::unique_ptr<char[]> val(dynSprintf("%x", op & ~Op::Head));
+      std::unique_ptr<char[]> val(dynSprintf("%x", op & ~OpCodes::Head));
       ret += val.get();
     }
     break;
   }
   
-  if(op & Op::Dest)     ret += " dest"s;
-  if(op & Op::Int)      ret += " int"s;
-  if(op & Op::Borrowed) ret += " borrowed"s;
-  if(op & Op::Alt1)     ret += " alt1"s;
-  if(op & Op::Alt2)     ret += " alt2"s;
+  if(op & OpCodes::Dest)     ret += " dest"s;
+  if(op & OpCodes::Int)      ret += " int"s;
+  if(op & OpCodes::Borrowed) ret += " borrowed"s;
+  if(op & OpCodes::Alt1)     ret += " alt1"s;
+  if(op & OpCodes::Alt2)     ret += " alt2"s;
   
   return ret;
 }

@@ -28,7 +28,7 @@ class TypedValue;
 
 class Function: public RcDirectMixin<Function>{
   
-  std::vector<OpCodeType> code_;
+  std::vector<OpCodes::Type> code_;
   std::vector<TypedValue> values_;
   std::vector<std::pair<int, int>> code_positions_;
   
@@ -40,7 +40,7 @@ public:
   Function(Function&&) = delete;
   
   Function(
-    std::vector<OpCodeType>&& code,
+    std::vector<OpCodes::Type>&& code,
     std::vector<TypedValue>&& values,
     std::vector<std::pair<int, int>>&& code_positions,
     unsigned arguments,
@@ -48,15 +48,15 @@ public:
     unsigned locals
   );
   
-  const std::vector<OpCodeType>& getVCode()const{return this->code_;}
-  const OpCodeType* getCode()const{return this->code_.data();}
+  const std::vector<OpCodes::Type>& getVCode()const{return this->code_;}
+  const OpCodes::Type* getCode()const{return this->code_.data();}
   size_t getCodeSize()const{return this->code_.size();}
   
   const std::vector<TypedValue>& getVValues()const{return this->values_;}
   const TypedValue* getValues()const{return this->values_.data();}
   size_t getNumValues()const{return this->values_.size();}
   
-  int getLine(const OpCodeType*) const;
+  int getLine(const OpCodes::Type*) const;
   
   void operator delete(void* ptr){
     ::operator delete(ptr);
