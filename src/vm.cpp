@@ -45,40 +45,40 @@ namespace {
 }
 
 void VM::doArithOp_(
-  const OpCodeType** iptr,
+  const OpCodes::Type** iptr,
   void (TypedValue::*op)(const TypedValue&)
 ){
-  const OpCodeType*& it = *iptr;
-  if(*it & Op::Extended){
-    if(*it & Op::Dest){
+  const OpCodes::Type*& it = *iptr;
+  if(*it & OpCodes::Extended){
+    if(*it & OpCodes::Dest){
       ++it;
       (this->stack_[this->frame_.bp + *it].*op)(this->stack_.back());
       this->stack_.pop_back();
-    }else if(*it & Op::Int){
+    }else if(*it & OpCodes::Int){
       ++it;
       (this->stack_.back().*op)(TypedValue(static_cast<Int>(*it)));
     }else{
       ++it;
       (this->stack_.back().*op)(this->stack_[this->frame_.bp + *it]);
     }
-  }else if(*it & Op::Borrowed){
+  }else if(*it & OpCodes::Borrowed){
     (this->stack_[this->stack_.size() - 2].value.borrowed_v->*op)
       (this->stack_.back());
-    this->stack_.pop_back();
+    this->stack_.resize(this->stack_.size() - 2);
   }else{
     (this->stack_[this->stack_.size() - 2].*op)(this->stack_.back());
     this->stack_.pop_back();
   }
 }
 
-void VM::doCmpOp_(const OpCodeType** iptr, CmpMode mode){
-  const OpCodeType*& it = *iptr;
-  if(*it & Op::Extended){
-    if(*it & Op::Dest){
+void VM::doCmpOp_(const OpCodes::Type** iptr, CmpMode mode){
+  const OpCodes::Type*& it = *iptr;
+  if(*it & OpCodes::Extended){
+    if(*it & OpCodes::Dest){
       ++it;
       this->stack_[this->frame_.bp + *it].cmp(this->stack_.back(), mode);
       this->stack_.pop_back();
-    }else if(*it & Op::Int){
+    }else if(*it & OpCodes::Int){
       ++it;
       this->stack_.back().cmp(TypedValue(static_cast<Int>(*it)), mode);
     }else{
@@ -108,6 +108,7 @@ void VM::pushFunction_(const Function& func){
     func.getVValues().end(),
     std::back_inserter(stack_)
   );
+  stack_.resize(stack_.size() + func.locals);
 }
 
 void VM::pushFunction_(const PartiallyApplied& part){
@@ -135,6 +136,7 @@ void VM::pushFunction_(const PartiallyApplied& part){
     func.getVValues().end(),
     std::back_inserter(stack_)
   );
+  stack_.resize(stack_.size() + func.locals);
 }
 
 void VM::pushFunction_(const PartiallyApplied& part, int args){
@@ -179,6 +181,7 @@ void VM::pushFunction_(const PartiallyApplied& part, int args){
     func.getVValues().end(),
     std::back_inserter(stack_)
   );
+  stack_.resize(stack_.size() + func.locals);
 }
 
 bool VM::popFunction_(){
@@ -213,7 +216,7 @@ void VM::execute(const Function& func){
   
   this->pushFunction_(func);
   
-  const OpCodeType* end_it = func.getCode() + func.getCodeSize();
+  const OpCodes::Type* end_it = func.getCode() + func.getCodeSize();
   
   if(setjmp(this->error_jmp_env_) == 0){
     
@@ -234,22 +237,30 @@ void VM::execute(const Function& func){
       #endif
       #ifdef PRINT_OP
       fprintf(stderr, "op%5d: ", this->frame_.ip - this->frame_.func->getCode());
-      if(*this->frame_.ip & Op::Extended){
-        fprintf(stderr, "%s %d\n",
-          opCodeToStrDebug(*this->frame_.ip).c_str(),
-          *(this->frame_.ip + 1)
-        );
+      if(*this->frame_.ip & OpCodes::Extended){
+        if(*this->frame_.ip & OpCodes::Extended2){
+          fprintf(stderr, "%s %d %d\n",
+            OpCodes::opCodeToStrDebug(*this->frame_.ip).c_str(),
+            *(this->frame_.ip + 1),
+            *(this->frame_.ip + 2)
+          );
+        }else{
+          fprintf(stderr, "%s %d\n",
+            OpCodes::opCodeToStrDebug(*this->frame_.ip).c_str(),
+            *(this->frame_.ip + 1)
+          );
+        }
       }else{
-        fprintf(stderr, "%s\n", opCodeToStrDebug(*this->frame_.ip).c_str());
+        fprintf(stderr, "%s\n", OpCodes::opCodeToStrDebug(*this->frame_.ip).c_str());
       }
       #endif
       
-      switch(*this->frame_.ip & ~Op::Head){
-      case Op::Nop:
+      switch(*this->frame_.ip & ~OpCodes::Head){
+      case OpCodes::Nop:
         break;
-      case Op::Push:
-        if(*this->frame_.ip & Op::Extended){
-          if(*this->frame_.ip & Op::Int){
+      case OpCodes::Push:
+        if(*this->frame_.ip & OpCodes::Extended){
+          if(*this->frame_.ip & OpCodes::Int){
             ++this->frame_.ip;
             stack_.emplace_back(static_cast<Int>(*this->frame_.ip));
           }else{
@@ -260,24 +271,24 @@ void VM::execute(const Function& func){
           stack_.emplace_back(nullptr);
         }
         break;
-      case Op::PushTrue:
-        assert((*this->frame_.ip & Op::Extended) == 0);
+      case OpCodes::PushTrue:
+        assert((*this->frame_.ip & OpCodes::Extended) == 0);
         stack_.emplace_back(true);
         break;
-      case Op::PushFalse:
-        assert((*this->frame_.ip & Op::Extended) == 0);
+      case OpCodes::PushFalse:
+        assert((*this->frame_.ip & OpCodes::Extended) == 0);
         stack_.emplace_back(false);
         break;
-      case Op::Pop:
-        if(*this->frame_.ip & Op::Extended){
+      case OpCodes::Pop:
+        if(*this->frame_.ip & OpCodes::Extended){
           ++this->frame_.ip;
           stack_.resize(stack_.size() - *this->frame_.ip);
         }else{
           stack_.pop_back();
         }
         break;
-      case Op::Reduce:
-        if(*this->frame_.ip & Op::Extended){
+      case OpCodes::Reduce:
+        if(*this->frame_.ip & OpCodes::Extended){
           ++this->frame_.ip;
           int num = *this->frame_.ip;
           stack_[stack_.size() - num - 1] = std::move(stack_.back());
@@ -287,81 +298,81 @@ void VM::execute(const Function& func){
           stack_.pop_back();
         }
         break;
-      case Op::Write:
-        switch(*this->frame_.ip & Op::Head){
-        case Op::Extended:
+      case OpCodes::Write:
+        switch(*this->frame_.ip & OpCodes::Head){
+        case OpCodes::Extended:
           ++this->frame_.ip;
           stack_[frame_.bp + *frame_.ip] = std::move(stack_.back());
           stack_.pop_back();
           break;
-        case Op::Borrowed:
+        case OpCodes::Borrowed:
           *stack_[stack_.size() - 2].value.borrowed_v =
             std::move(stack_.back());
-          stack_.pop_back();
+          stack_.resize(stack_.size() - 2);
           break;
         default:
           assert(false);
         }
         break;
       
-      case Op::Add:
+      case OpCodes::Add:
         this->doArithOp_(&this->frame_.ip, &TypedValue::add);
         break;
-      case Op::Sub:
+      case OpCodes::Sub:
         this->doArithOp_(&this->frame_.ip, &TypedValue::sub);
         break;
-      case Op::Mul:
+      case OpCodes::Mul:
         this->doArithOp_(&this->frame_.ip, &TypedValue::mul);
         break;
-      case Op::Div:
+      case OpCodes::Div:
         this->doArithOp_(&this->frame_.ip, &TypedValue::div);
         break;
-      case Op::Mod:
+      case OpCodes::Mod:
         this->doArithOp_(&this->frame_.ip, &TypedValue::mod);
         break;
-      case Op::Append:
+      case OpCodes::Append:
         this->doArithOp_(&this->frame_.ip, &TypedValue::append);
         break;
-      case Op::In:
+      case OpCodes::In:
         this->doArithOp_(&this->frame_.ip, &TypedValue::in);
         break;
       
-      case Op::Neg:
+      case OpCodes::Neg:
         stack_.back().neg();
         break;
-      case Op::Not:
+      case OpCodes::Not:
         stack_.back().boolNot();
         break;
       
-      case Op::Cmp:
+      case OpCodes::Cmp:
         this->doArithOp_(&this->frame_.ip, &TypedValue::cmp);
         break;
       
-      case Op::Eq:
+      case OpCodes::Eq:
         this->doCmpOp_(&this->frame_.ip, CmpMode::Equal);
         break;
-      case Op::Neq:
+      case OpCodes::Neq:
         this->doCmpOp_(&this->frame_.ip, CmpMode::NotEqual);
         break;
-      case Op::Gt:
+      case OpCodes::Gt:
         this->doCmpOp_(&this->frame_.ip, CmpMode::Greater);
         break;
-      case Op::Lt:
+      case OpCodes::Lt:
         this->doCmpOp_(&this->frame_.ip, CmpMode::Less);
         break;
-      case Op::Geq:
+      case OpCodes::Geq:
         this->doCmpOp_(&this->frame_.ip, CmpMode::GreaterEqual);
         break;
-      case Op::Leq:
+      case OpCodes::Leq:
         this->doCmpOp_(&this->frame_.ip, CmpMode::LessEqual);
         break;
       
-      case Op::Get:
+      case OpCodes::Get:
         this->doArithOp_(&this->frame_.ip, &TypedValue::get);
         break;
       
-      case Op::Slice:
-        assert(!(*this->frame_.ip & Op::Extended));
+      case OpCodes::Slice:
+        assert(!(*this->frame_.ip & OpCodes::Extended));
         this->stack_[this->stack_.size() - 3].slice(
           this->stack_[this->stack_.size() - 2],
           this->stack_.back()
@@ -370,90 +381,90 @@ void VM::execute(const Function& func){
         this->stack_.pop_back();
         break;
       
-      case Op::Jmp:
-        assert((*this->frame_.ip & Op::Extended) != 0);
+      case OpCodes::Jmp:
+        assert((*this->frame_.ip & OpCodes::Extended) != 0);
         ++this->frame_.ip;
         this->frame_.ip =
-          this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
+          this->frame_.func->getCode() + (OpCodes::Type)*this->frame_.ip;
         goto loop_start;
-      case Op::Jt:
-        assert((*this->frame_.ip & Op::Extended) != 0);
+      case OpCodes::Jt:
+        assert((*this->frame_.ip & OpCodes::Extended) != 0);
         ++this->frame_.ip;
         stack_.back().toBool();
         if(stack_.back().value.bool_v){
           this->frame_.ip =
-            this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
+            this->frame_.func->getCode() + (OpCodes::Type)*this->frame_.ip;
           stack_.pop_back();
           goto loop_start;
         }
         stack_.pop_back();
         break;
-      case Op::Jf:
-        assert((*this->frame_.ip & Op::Extended) != 0);
+      case OpCodes::Jf:
+        assert((*this->frame_.ip & OpCodes::Extended) != 0);
         ++this->frame_.ip;
         stack_.back().toBool();
         if(!stack_.back().value.bool_v){
           this->frame_.ip =
-            this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
+            this->frame_.func->getCode() + (OpCodes::Type)*this->frame_.ip;
           stack_.pop_back();
           goto loop_start;
         }
         stack_.pop_back();
         break;
-      case Op::Jtsc:
-        assert((*this->frame_.ip & Op::Extended) != 0);
+      case OpCodes::Jtsc:
+        assert((*this->frame_.ip & OpCodes::Extended) != 0);
         ++this->frame_.ip;
         stack_.back().toBool();
         if(stack_.back().value.bool_v){
           this->frame_.ip =
-            this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
+            this->frame_.func->getCode() + (OpCodes::Type)*this->frame_.ip;
           goto loop_start;
         }else{
           stack_.pop_back();
           break;
         }
-      case Op::Jfsc:
-        assert((*this->frame_.ip & Op::Extended) != 0);
+      case OpCodes::Jfsc:
+        assert((*this->frame_.ip & OpCodes::Extended) != 0);
         ++this->frame_.ip;
         stack_.back().toBool();
         if(!stack_.back().value.bool_v){
           this->frame_.ip =
-            this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
+            this->frame_.func->getCode() + (OpCodes::Type)*this->frame_.ip;
           goto loop_start;
         }else{
           stack_.pop_back();
           break;
         }
       
-      case Op::BeginIter:
+      case OpCodes::BeginIter:
         stack_.back() = new Iterator(stack_.back());
-        stack_.resize(stack_.size() + 2, TypedValue(nullptr));
+        this->frame_.ip += 2;
         break;
       
-      case Op::NextOrJmp:
-        assert((*this->frame_.ip & Op::Extended) != 0);
+      case OpCodes::NextOrJmp:
+        assert((*this->frame_.ip & OpCodes::Extended) != 0);
         ++this->frame_.ip;
-        if(stack_[stack_.size() - 3].value.iterator_v->ended()){
-          stack_.resize(stack_.size() - 3);
+        if(stack_.back().value.iterator_v->ended()){
+          stack_.pop_back();
           this->frame_.ip =
-            this->frame_.func->getCode() + (OpCodeType)*this->frame_.ip;
+            this->frame_.func->getCode() + (OpCodes::Type)*this->frame_.ip;
           goto loop_start;
         }else{
-          auto iter = stack_[stack_.size() - 3].value.iterator_v;
-          stack_[stack_.size() - 2] = iter->getKey();
-          stack_[stack_.size() - 1] = iter->getValue();
+          auto iter = stack_.back().value.iterator_v;
+          stack_[frame_.bp + *(frame_.ip - 3)] = iter->getKey();
+          stack_[frame_.bp + *(frame_.ip - 2)] = iter->getValue();
           iter->advance();
         }
         break;
       
-      case Op::Apply:
+      case OpCodes::Apply:
         {
           auto& callee = stack_[stack_.size() - 2];
           int bind_pos = 0;
           
           if(
-            (*this->frame_.ip & (Op::Extended | Op::Int))
-            == (Op::Extended | Op::Int)
+            (*this->frame_.ip & (OpCodes::Extended | OpCodes::Int))
+            == (OpCodes::Extended | OpCodes::Int)
           ){
             bind_pos = *(++this->frame_.ip);
           }
@@ -497,11 +508,11 @@ void VM::execute(const Function& func){
         }
         break;
       
-      case Op::CreateClosure:
+      case OpCodes::CreateClosure:
         {
           unsigned captures;
-          if((*this->frame_.ip & (Op::Extended | Op::Int))
-          == (Op::Extended | Op::Int)){
+          if((*this->frame_.ip & (OpCodes::Extended | OpCodes::Int))
+          == (OpCodes::Extended | OpCodes::Int)){
             captures = *(++this->frame_.ip);
           }else{
             captures = 1;
@@ -519,10 +530,10 @@ void VM::execute(const Function& func){
           break;
         }
       
-      case Op::Call:
+      case OpCodes::Call:
         {
           int args;
-          if(*this->frame_.ip & Op::Extended){
+          if(*this->frame_.ip & OpCodes::Extended){
             args = *(++this->frame_.ip);
           }else args = 0;
           
@@ -548,10 +559,10 @@ void VM::execute(const Function& func){
           }
         }
       
-      case Op::Recurse:
+      case OpCodes::Recurse:
         {
           int args;
-          if(*this->frame_.ip & Op::Extended){
+          if(*this->frame_.ip & OpCodes::Extended){
             args = *(++this->frame_.ip);
           }else args = 0;
           
@@ -568,17 +579,17 @@ void VM::execute(const Function& func){
           goto loop_start;
         }
       
-      case Op::Borrow:
-        switch(*this->frame_.ip & Op::Head){
-        case Op::Extended:
+      case OpCodes::Borrow:
+        switch(*this->frame_.ip & OpCodes::Head){
+        case OpCodes::Extended:
           ++this->frame_.ip;
           stack_.emplace_back(stack_[frame_.bp + *frame_.ip].borrow());
           break;
-        case Op::Borrowed:
+        case OpCodes::Borrowed:
           stack_[stack_.size() - 2].getBorrowed(stack_.back());
           stack_.pop_back();
           break;
-        case Op::Borrowed | Op::Alt1:
+        case OpCodes::Borrowed | OpCodes::Alt1:
           stack_[stack_.size() - 2].getInserted(stack_.back());
           stack_.pop_back();
           break;
@@ -587,9 +598,9 @@ void VM::execute(const Function& func){
         }
         break;
       
-      case Op::CreateArray:
-        if(*this->frame_.ip & Op::Extended){
-          assert((*this->frame_.ip & Op::Int) == Op::Int);
+      case OpCodes::CreateArray:
+        if(*this->frame_.ip & OpCodes::Extended){
+          assert((*this->frame_.ip & OpCodes::Int) == OpCodes::Int);
           Array* arr = new Array;
           
           auto stack_pos = stack_.size() - *(++this->frame_.ip);
@@ -604,9 +615,9 @@ void VM::execute(const Function& func){
         }
         break;
       
-      case Op::CreateTable:
-        if(*this->frame_.ip & Op::Extended){
-          assert((*this->frame_.ip & Op::Int) == Op::Int);
+      case OpCodes::CreateTable:
+        if(*this->frame_.ip & OpCodes::Extended){
+          assert((*this->frame_.ip & OpCodes::Int) == OpCodes::Int);
           Table* tab = new Table;
           auto stack_pos = stack_.size() - 2 * *(++this->frame_.ip);
           
@@ -623,7 +634,7 @@ void VM::execute(const Function& func){
         }
         break;
       
-      case Op::CreateRange:
+      case OpCodes::CreateRange:
         {
           
           Array* arr = new Array;
@@ -658,7 +669,7 @@ void VM::execute(const Function& func){
         }
         break;
       
-      case Op::Return:
+      case OpCodes::Return:
         
         if(this->popFunction_()){
           end_it = this->frame_.ip + 1;
@@ -668,11 +679,11 @@ void VM::execute(const Function& func){
         
         break;
       
-      case Op::Print:
+      case OpCodes::Print:
         {
           int num;
-          if(*this->frame_.ip & Op::Extended){
-            assert(*this->frame_.ip & Op::Int);
+          if(*this->frame_.ip & OpCodes::Extended){
+            assert(*this->frame_.ip & OpCodes::Int);
             ++this->frame_.ip;
             num = *this->frame_.ip;
           }else num = 1;
@@ -691,9 +702,9 @@ void VM::execute(const Function& func){
         }
         break;
         
-      case Op::Assert:
+      case OpCodes::Assert:
         stack_.back().toBool();
-        if(*this->frame_.ip & Op::Alt1){
+        if(*this->frame_.ip & OpCodes::Alt1){
           if(!stack_.back().value.bool_v){
             auto str = stack_[stack_.size() - 2].toCStr();
             VM* vm = VM::getCurrentVM();

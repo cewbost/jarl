@@ -2,6 +2,7 @@
 
 #include "lexer.h"
 #include "parser.h"
+#include "syntax_checker.h"
 #include "vm.h"
 #include "code_generator.h"
 
@@ -34,6 +35,7 @@ void jarl::execute(vm v, const char* code){
   
   std::vector<std::unique_ptr<char[]>> errors;
   
+  //lexer stage
   Lexer lex(code);
   auto lexemes = lex.lex(&errors);
   
@@ -51,6 +53,7 @@ void jarl::execute(vm v, const char* code){
     return;
   }
   
+  //parse stage
   Parser parser(lexemes);
   auto parse_tree = parser.parse(&errors);
   
@@ -66,6 +69,11 @@ void jarl::execute(vm v, const char* code){
     return;
   }
   
+  //syntax validation stage
+  SyntaxChecker syn_checker(&errors);
+  syn_checker.validateSyntax(parse_tree.get());
+  
+  //code generation stage
   #ifdef NO_GENERATE
   return;
   #endif
@@ -80,6 +88,7 @@ void jarl::execute(vm v, const char* code){
     return;
   }
   
+  //execution
   #ifdef NO_EXECUTE
   delete proc;
   #else

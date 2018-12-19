@@ -14,12 +14,6 @@ a = {
 assert a == 8, "codeblocks as expressions should work"
 
 a = {
-  var b = 4
-  a + b;
-}
-assert a == null, "code blocks ending on semicolon should evaluate to null"
-
-a = {
   var b = 3
   var c = {
     var d = b + 2
