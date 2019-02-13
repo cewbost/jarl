@@ -45,6 +45,7 @@ enum class ASTNodeType: uint16_t {
   
   Neg,
   Not,
+  Move,
   
   TwoChildren = 0x2000,
   

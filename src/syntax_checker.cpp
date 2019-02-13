@@ -78,7 +78,11 @@ void SyntaxChecker::validateSyntax(ASTNode* node){
     break;
   
   case ASTNodeType::UnaryExpr:
-    expectValue_(node->child);
+    if(node->type == ASTNodeType::Move){
+      expectLValue_(node->child);
+    }else{
+      expectValue_(node->child);
+    }
     node->flags = ASTNodeFlags::Value;
     break;
   

@@ -259,6 +259,7 @@ std::vector<Lexeme> Lexer::lex(std::vector<std::unique_ptr<char[]>>* errors){
       "print"   {PUT_LEXEME(LexemeType::Print)}
       "assert"  {PUT_LEXEME(LexemeType::Assert)}
       "in"      {PUT_LEXEME(LexemeType::In)}
+      "move"    {PUT_LEXEME(LexemeType::Move)}
       
       "and"   {
         if(lexemes.back().type == LexemeType::Newline){

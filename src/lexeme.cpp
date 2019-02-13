@@ -121,6 +121,8 @@ std::string Lexeme::toStrDebug() const {
   
   case LexemeType::In:            ret += "in"s; break;
   
+  case LexemeType::Move:          ret += "move"s; break;
+  
   case LexemeType::Null:          ret += "null"s; break;
   case LexemeType::If:            ret += "if"s; break;
   case LexemeType::While:         ret += "while"s; break;

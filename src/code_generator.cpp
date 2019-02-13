@@ -251,6 +251,9 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     case ASTNodeType::Not:
       D_putInstruction(OpCodes::Not);
       break;
+    case ASTNodeType::Move:
+      D_putInstruction(OpCodes::Move);
+      break;
     default:
       assert(false);
     }

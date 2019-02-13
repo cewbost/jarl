@@ -49,6 +49,13 @@ ASTNode* Parser::nud_(const Lexeme& lex){
       lex.pos
     );
   
+  case LexemeType::Move:
+    return new ASTNode(
+      ASTNodeType::Move,
+      this->expression_(static_cast<unsigned>(LexemeType::LeftAssocClass) + 1),
+      lex.pos
+    );
+  
   case LexemeType::Semicolon:
   case LexemeType::Newline:
     return new ASTNode(

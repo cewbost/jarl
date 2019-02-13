@@ -84,6 +84,7 @@ enum class LexemeType: unsigned {
   
   LE0 = 0xE0,
   Not,
+  Move,
   Int,
   Float,
   Bool,

@@ -344,6 +344,9 @@ void VM::execute(const Function& func){
         stack_.back().boolNot();
         break;
       
+      case OpCodes::Move:
+        break;
+      
       case OpCodes::Cmp:
         this->doArithOp_(&this->frame_.ip, &TypedValue::cmp);
         break;

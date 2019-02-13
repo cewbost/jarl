@@ -33,6 +33,8 @@ namespace OpCodes {
     Neg,
     Not,
     
+    Move,
+    
     Cmp,
     Eq,
     Neq,
