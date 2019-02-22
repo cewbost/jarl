@@ -1,0 +1,14 @@
+var a = ["foobar"]
+var b = move a
+assert b[0] == "foobar", "move should move the object"
+assert a == null, "move should leave the old variable null"
+
+a = 5
+b = move a
+assert b == 5, "move should move value types also"
+assert a == null, "move should leave the old variable null also for value types"
+
+a = [["foobar"]]
+b = move a[0]
+assert b[0] == "foobar", "move from index should work"
+assert a[0] == null, "move from index should leave index null"

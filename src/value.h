@@ -183,6 +183,7 @@ public:
   void toPartial();
   
   void clone();
+  void steal();
   
   const char* typeStr() const;
   std::unique_ptr<char[]> toCStr() const;

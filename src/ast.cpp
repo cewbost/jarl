@@ -140,6 +140,7 @@ std::string ASTNode::toStrDebug(int indent) const {
   case ASTNodeType::Not:
     ret += "not"; break;
   case ASTNodeType::Move:
+    ret += "move"; break;
   case ASTNodeType::And:
     ret += "and"; break;
   case ASTNodeType::Or:

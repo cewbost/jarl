@@ -243,19 +243,25 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
     break;
     
   case ASTNodeType::UnaryExpr:
-    threadAST(node->child, node);
-    switch(node->type){
-    case ASTNodeType::Neg:
-      D_putInstruction(OpCodes::Neg);
-      break;
-    case ASTNodeType::Not:
-      D_putInstruction(OpCodes::Not);
-      break;
-    case ASTNodeType::Move:
-      D_putInstruction(OpCodes::Move);
-      break;
-    default:
-      assert(false);
+    if(node->type == ASTNodeType::Move){
+      threadRexpr(node->child, node);
+      D_putInstruction(OpCodes::Move | OpCodes::Borrowed);
+    }else{
+      threadAST(node->child, node);
+      switch(node->type){
+      case ASTNodeType::Neg:
+        D_putInstruction(OpCodes::Neg);
+        break;
+      case ASTNodeType::Not:
+        D_putInstruction(OpCodes::Not);
+        break;
+      case ASTNodeType::Move:
+        
+        D_putInstruction(OpCodes::Move);
+        break;
+      default:
+        assert(false);
+      }
     }
     break;
     

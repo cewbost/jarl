@@ -1503,6 +1503,11 @@ void TypedValue::clone(){
   }
 }
 
+void TypedValue::steal(){
+  assert(this->type == TypeTag::Borrow);
+  *this = std::move(*this->value.borrowed_v);
+}
+
 const char* TypedValue::typeStr() const {
   switch(this->type){
   case TypeTag::Null:

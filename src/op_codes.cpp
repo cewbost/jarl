@@ -78,6 +78,7 @@ std::string OpCodes::opCodeToStrDebug(OpCodes::Type op){
     break;
   case OpCodes::Move:
     ret += "move"s;
+    break;
   case OpCodes::Cmp:
     ret += "cmp"s;
     break;

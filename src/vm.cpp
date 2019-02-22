@@ -345,6 +345,8 @@ void VM::execute(const Function& func){
         break;
       
       case OpCodes::Move:
+        assert(*this->frame_.ip & OpCodes::Borrowed);
+        stack_.back().steal();
         break;
       
       case OpCodes::Cmp:
