@@ -91,6 +91,9 @@ namespace {
     context.code_positions.emplace_back(pos, 0);
     context.threadAST(parse_tree.get());
     if(errors->size() > prev_errors) return nullptr;
+    if(!parse_tree->isValue()){
+      context.putInstruction(OpCodes::Push, pos);
+    }
     context.putInstruction(OpCodes::Return, pos);
     
     //correct stack positions
