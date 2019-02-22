@@ -9,7 +9,7 @@
 #include "alloc_monitor.h"
 #include <cstdio>
 #else
-#undef MONITOR_ALL_ALLOCS
+#undef MONITOR_STRING_ALLOCS
 #endif
 
 namespace{
@@ -309,7 +309,7 @@ String* make_new<String, const String*, double>(const String* st, double val){
 #ifndef NDEBUG
 AllocMonitor<String> string_alloc_monitor([](AllocMsg msg, const String* str){
   switch(msg){
-  #ifdef MONITOR_ALL_ALLOCS
+  #ifdef MONITOR_STRING_ALLOCS
   case AllocMsg::Allocation:
     fprintf(stderr, "allocated String at %p\n", str);
     break;

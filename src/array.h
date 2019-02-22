@@ -9,12 +9,24 @@
 #include <iterator>
 
 #ifndef NDEBUG
+# include "alloc_monitor.h"
 # include <string>
 #endif
 
 class TypedValue;
 
-class Array: public std::vector<TypedValue>, public RcDirectMixin<Array>{
+#ifndef NDEBUG
+class Array;
+extern AllocMonitor<Array> array_alloc_monitor;
+#endif
+
+class Array:
+  public std::vector<TypedValue>
+, public RcDirectMixin<Array>
+#ifndef NDEBUG
+, public MonitoredMixin<Array, array_alloc_monitor>
+#endif
+{
 public:
   
   using std::vector<TypedValue>::vector;
