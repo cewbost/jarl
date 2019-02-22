@@ -723,8 +723,7 @@ void VM::execute(const Function& func){
             delete[] msg;
             vm->errorJmp(1);
           }else{
-            stack_[stack_.size() - 2] = std::move(stack_.back());
-            stack_.pop_back();
+            stack_.resize(stack_.size() - 2);
           }
         }else{
           if(!stack_.back().value.bool_v){
@@ -736,6 +735,8 @@ void VM::execute(const Function& func){
             vm->errPrint(msg);
             delete[] msg;
             vm->errorJmp(1);
+          }else{
+            stack_.pop_back();
           }
         }
         break;
