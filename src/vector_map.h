@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <utility>
+#include <functional>
 
 template<class Key, class Val, class Comp = typename std::equal_to<const Key>>
 class VectorMap: public std::vector<std::pair<const Key, Val>>{

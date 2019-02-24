@@ -3,8 +3,10 @@
 #include "lexer.h"
 #include "parser.h"
 #include "syntax_checker.h"
+#include "context.h"
 #include "vm.h"
 #include "code_generator.h"
+#include "common.h"
 
 #ifndef NDEBUG
 #include <cstdio>
@@ -23,6 +25,18 @@
 
 using jarl::vm;
 
+namespace {
+  
+  inline bool printErrors_(vm v, const Errors& errors){
+    if(errors.size() > 0){
+      for(auto& error: errors){
+        v->errPrint(error.get());
+      }
+      return true;
+    }else return false;
+  }
+}
+
 vm jarl::new_vm(){
   return new VM;
 }
@@ -33,7 +47,7 @@ void jarl::destroy_vm(vm v){
 
 void jarl::execute(vm v, const char* code){
   
-  std::vector<std::unique_ptr<char[]>> errors;
+  Errors errors;
   
   //lexer stage
   Lexer lex(code);
@@ -46,12 +60,7 @@ void jarl::execute(vm v, const char* code){
   }
   #endif
   
-  if(errors.size() > 0){
-    for(auto& error: errors){
-      v->errPrint(error.get());
-    }
-    return;
-  }
+  if(printErrors_(v, errors)) return;
   
   //parse stage
   Parser parser(lexemes);
@@ -62,37 +71,29 @@ void jarl::execute(vm v, const char* code){
   fprintf(stderr, "%s\n", parse_tree->toStrDebug().c_str());
   #endif
   
-  if(errors.size() > 0){
-    for(auto& error: errors){
-      v->errPrint(error.get());
-    }
-    return;
-  }
+  if(printErrors_(v, errors)) return;
   
   //syntax validation stage
   SyntaxChecker syn_checker(&errors);
   syn_checker.validateSyntax(parse_tree.get());
+  
+  //context computing stage
+  Context::addContext(parse_tree.get(), &errors);
   
   //code generation stage
   #ifdef NO_GENERATE
   return;
   #endif
   
-  Function* proc = CodeGenerator::generate(std::move(parse_tree), &errors);
+  std::unique_ptr<Function> proc(
+    CodeGenerator::generate(std::move(parse_tree), &errors)
+  );
   
-  if(errors.size() > 0){
-    for(auto& error: errors){
-      v->errPrint(error.get());
-    }
-    delete proc;
-    return;
-  }
+  if(printErrors_(v, errors)) return;
   
   //execution
-  #ifdef NO_EXECUTE
-  delete proc;
-  #else
-  v->execute(*proc);
+  #ifndef NO_EXECUTE
+  v->execute(*proc.release());
   #endif
 }
 

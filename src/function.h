@@ -16,6 +16,7 @@
 #include <cstdint>
 
 #ifndef NDEBUG
+#include "alloc_monitor.h"
 #include <string>
 #endif
 
@@ -26,7 +27,17 @@
 
 class TypedValue;
 
-class Function: public RcDirectMixin<Function>{
+#ifndef NDEBUG
+class Function;
+extern AllocMonitor<Function> function_alloc_monitor;
+#endif
+
+class Function:
+  public RcDirectMixin<Function>
+#ifndef NDEBUG
+, public MonitoredMixin<Function, function_alloc_monitor>
+#endif
+{
   
   std::vector<OpCodes::Type> code_;
   std::vector<TypedValue> values_;

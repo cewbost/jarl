@@ -110,6 +110,10 @@ struct ASTNodeFlags {
   };
 };
 
+namespace Context {
+  class NodeContext;
+}
+
 struct ASTNode {
   
   ASTNodeType type;
@@ -127,6 +131,8 @@ struct ASTNode {
     bool bool_value;
     const char* c_str_value;
   };
+  
+  Context::NodeContext* context = nullptr;
   
   ASTNode(ASTNodeType, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, ASTNode*, std::pair<uint16_t, uint16_t>);

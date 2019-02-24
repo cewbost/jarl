@@ -6,6 +6,12 @@
 #include <limits>
 #include <cassert>
 
+#ifndef NDEBUG
+#include <cstdio>
+#else
+#undef MONITOR_FUNCTION_ALLOCS
+#endif
+
 namespace std{
   template<>
   struct equal_to<String*>{
@@ -123,4 +129,23 @@ std::string PartiallyApplied::toStrDebug()const{
   buffer.reset(dynSprintf("function %p (%s)", this->getFunc(), buffer.get()));
   return buffer.get();
 }
+
+AllocMonitor<Function> function_alloc_monitor([](AllocMsg msg, const Function* arr){
+  switch(msg){
+  #ifdef MONITOR_FUNCTION_ALLOCS
+  case AllocMsg::Allocation:
+    fprintf(stderr, "allocated Function at %p\n", arr);
+    break;
+  case AllocMsg::Deallocation:
+    fprintf(stderr, "deallocated Function at %p\n", arr);
+    break;
+  #endif
+  case AllocMsg::DoubleAllocation:
+    fprintf(stderr, "double allocated Function at %p\n", arr);
+    break;
+  case AllocMsg::InvalidFree:
+    fprintf(stderr, "invalid free of Function at %p\n", arr);
+    break;
+  }
+});
 #endif
