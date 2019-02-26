@@ -2,6 +2,7 @@
 #define AST_H_INCLUDED
 
 #include "string.h"
+#include "context.h"
 
 #include <jarl.h>
 
@@ -110,10 +111,6 @@ struct ASTNodeFlags {
   };
 };
 
-namespace Context {
-  class NodeContext;
-}
-
 struct ASTNode {
   
   ASTNodeType type;
@@ -132,7 +129,7 @@ struct ASTNode {
     const char* c_str_value;
   };
   
-  Context::NodeContext* context = nullptr;
+  std::unique_ptr<Context::AttributeSet> context;
   
   ASTNode(ASTNodeType, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, ASTNode*, std::pair<uint16_t, uint16_t>);

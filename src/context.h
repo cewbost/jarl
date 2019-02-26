@@ -1,34 +1,32 @@
 #ifndef CONTEXT_H_INCLUDED
 #define CONTEXT_H_INCLUDED
 
-#include "ast.h"
-
 #include "vector_map.h"
 #include "pool_allocator.h"
 
 #include <memory>
 
+struct ASTNode;
+
 namespace Context {
   
-  constexpr unsigned NodeContextSize = 24;
-  
-  class NodeContext {
-    
-    struct VariableState {
-      std::unique_ptr<VariableState> next;
-      
-      void* operator new(size_t);
-      void operator delete(void*);
+  struct Attribute {
+    enum class Type: uint8_t {
+      LastRead = 1,
+      LastWrite,
+      NextRead,
+      NextWrite
     };
-    
-    VectorMap<unsigned, VariableState> variable_states;
-    
-    void* operator new(size_t);
-    void operator delete(void*);
-    
+    Type      type;
+    unsigned  var;
+    ASTNode*  node;
+  };
+  
+  class AttributeSet: std::vector<Attribute> {
   public:
-    
-    static const auto variable_state_size = sizeof(VariableState);
+    AttributeSet forVariable(unsigned);
+    void setLastRead(unsigned, ASTNode*);
+    void addNextRead(unsigned, ASTNode*);
   };
   
   void addContext(ASTNode* ast, std::vector<std::unique_ptr<char[]>>* errors);
