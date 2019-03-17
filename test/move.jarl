@@ -12,3 +12,10 @@ a = [["foobar"]]
 b = move a[0]
 assert b[0] == "foobar", "move from index should work"
 assert a[0] == null, "move from index should leave index null"
+
+a = ["foobar"]
+b = a
+var c = move a[0]
+assert c == "foobar", "move from index should work"
+assert a[0] == null, "move from index should leave index null"
+assert b[0] == "foobar", "move should leave copies unmodified"
