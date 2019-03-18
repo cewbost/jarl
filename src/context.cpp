@@ -11,10 +11,13 @@ struct ThreadingContext {
   
   Errors* errors;
   
-  unsigned variables;
+  unsigned locals;
+  VarAllocMap* var_allocs;
+  
   AttributeSet attributes;
   
   void threadAST(ASTNode*);
+  void threadRexpr(ASTNode*);
 };
 
 void ThreadingContext::threadAST(ASTNode* node){
@@ -42,6 +45,31 @@ void ThreadingContext::threadAST(ASTNode* node){
     threadAST(node->children.first);
     break;
   default:
+    switch(node->type){
+    case ASTNodeType::Var:
+      {
+        auto subnode = node->child;
+        threadAST(subnode->children.second);
+        
+        assert(subnode->children.first->type == ASTNodeType::Identifier);
+        auto it = var_allocs->direct()
+          .find(subnode->children.first->string_value);
+        unsigned var;
+        if(it == var_allocs->direct().end()){
+          var = locals++;
+          var_allocs->direct()[subnode->children.first->string_value] = var;
+        }else{
+          var = it->second;
+        }
+        attributes.setLastWrite(var, subnode->children.first);
+        node->children.first->context = std::make_unique<AttributeSet>(
+          this->attributes.forVariable(var)
+        );
+      }
+      break;
+    default:
+      assert(false);
+    }
     break;
   }
 }
@@ -77,16 +105,57 @@ namespace Context {
   }
   
   void AttributeSet::addNextRead(unsigned var, ASTNode* where){
-    assert(
-      std::none_of(this->begin(), this->end(),
-      [=](const Attribute& attrib) -> bool{
-      return
-        attrib.var  == var &&
-        attrib.node == where &&
-        attrib.type == Attribute::Type::NextRead;
-    }));
+    assert(std::none_of(
+      this->begin(), this->end(),
+      [=](const Attribute& attrib)->bool{
+        return
+          attrib.var  == var &&
+          attrib.node == where &&
+          attrib.type == Attribute::Type::NextRead;
+      }
+    ));
     this->push_back(Attribute{
       .type = Attribute::Type::NextRead,
+      .var  = var,
+      .node = where
+    });
+  }
+  
+  void AttributeSet::setLastWrite(unsigned var, ASTNode* where){
+    for(const Attribute& attrib: *this)
+    if(attrib.type == Attribute::Type::LastWrite && attrib.var == var){
+      assert(attrib.node->context != nullptr);
+      attrib.node->context->addNextWrite(var, where);
+    }
+    this->erase(
+      std::remove_if(this->begin(), this->end(), [=](const Attribute& attrib){
+        return
+          attrib.var == var && (
+          attrib.type == Attribute::Type::LastWrite || 
+          attrib.type == Attribute::Type::LastRead
+        );
+      }),
+      this->end()
+    );
+    this->push_back(Attribute{
+      .type = Attribute::Type::LastWrite,
+      .var  = var,
+      .node = where
+    });
+  }
+  
+  void AttributeSet::addNextWrite(unsigned var, ASTNode* where){
+    assert(std::none_of(
+      this->begin(), this->end(),
+      [=](const Attribute& attrib)->bool{
+        return
+          attrib.var  == var &&
+          attrib.node == where &&
+          attrib.type == Attribute::Type::NextWrite;
+      }
+    ));
+    this->push_back(Attribute{
+      .type = Attribute::Type::NextWrite,
       .var  = var,
       .node = where
     });
@@ -95,7 +164,8 @@ namespace Context {
   //global functions
   void addContext(ASTNode* ast, std::vector<std::unique_ptr<char[]>>* errors){
     ThreadingContext context{
-      .errors = errors
+      .errors = errors,
+      .var_allocs = new VarAllocMap(nullptr)
     };
     context.threadAST(ast);
   }
