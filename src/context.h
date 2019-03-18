@@ -32,8 +32,9 @@ namespace Context {
   public:
     AttributeSet forVariable(unsigned);
     void setLastRead(unsigned, ASTNode*);
-    void addNextRead(unsigned, ASTNode*);
     void setLastWrite(unsigned, ASTNode*);
+    void setLastReadWrite(unsigned, ASTNode*);
+    void addNextRead(unsigned, ASTNode*);
     void addNextWrite(unsigned, ASTNode*);
   };
   

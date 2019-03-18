@@ -17,7 +17,7 @@ struct ThreadingContext {
   AttributeSet attributes;
   
   void threadAST(ASTNode*);
-  void threadRexpr(ASTNode*);
+  void threadModifyingExpr(ASTNode*, bool readwrite = false);
 };
 
 void ThreadingContext::threadAST(ASTNode* node){
@@ -43,7 +43,11 @@ void ThreadingContext::threadAST(ASTNode* node){
     }
     break;
   case ASTNodeType::UnaryExpr:
-    threadAST(node->child);
+    if(node->type == ASTNodeType::Move){
+      threadModifyingExpr(node->child, true);
+    }else{
+      threadAST(node->child);
+    }
     break;
   case ASTNodeType::BinaryExpr:
     threadAST(node->children.first);
@@ -83,6 +87,36 @@ void ThreadingContext::threadAST(ASTNode* node){
   }
 }
 
+void ThreadingContext::threadModifyingExpr(ASTNode* node, bool readwrite){
+  switch(node->type){
+  case ASTNodeType::Identifier:
+    if(
+      auto it = var_allocs->find(node->string_value);
+      it == var_allocs->end()
+    ){
+      errors->emplace_back(dynSprintf(
+        "line %d: Undeclared identifier '%s'",
+        node->pos,
+        node->string_value->str()
+      ));
+    }else{
+      auto var = it->second;
+      if(readwrite) attributes.setLastReadWrite(var, node);
+      else attributes.setLastRead(var, node);
+      node->context = std::make_unique<AttributeSet>(
+        this->attributes.forVariable(var)
+      );
+    }
+    break;
+  case ASTNodeType::Index:
+    threadAST(node->children.second);
+    threadModifyingExpr(node->children.first, readwrite);
+    break;
+  default:
+    assert(false);
+  }
+}
+
 namespace Context {
   
   //AttributeSet
@@ -96,7 +130,7 @@ namespace Context {
   
   void AttributeSet::setLastRead(unsigned var, ASTNode* where){
     for(const Attribute& attrib: *this)
-    if(attrib.type == Attribute::Type::LastRead && attrib.var == var){
+    if(attrib.var == var){
       assert(attrib.node->context != nullptr);
       attrib.node->context->addNextRead(var, where);
     }
@@ -106,6 +140,38 @@ namespace Context {
       }),
       this->end()
     );
+    this->push_back(Attribute{
+      .type = Attribute::Type::LastRead,
+      .var  = var,
+      .node = where
+    });
+  }
+  
+  void AttributeSet::setLastWrite(unsigned var, ASTNode* where){
+    for(const Attribute& attrib: *this)
+    if(attrib.var == var){
+      assert(attrib.node->context != nullptr);
+      attrib.node->context->addNextWrite(var, where);
+    }
+    this->erase(
+      std::remove_if(this->begin(), this->end(), [=](const Attribute& attrib){
+        return
+          attrib.var == var && (
+          attrib.type == Attribute::Type::LastWrite || 
+          attrib.type == Attribute::Type::LastRead
+        );
+      }),
+      this->end()
+    );
+    this->push_back(Attribute{
+      .type = Attribute::Type::LastWrite,
+      .var  = var,
+      .node = where
+    });
+  }
+  
+  void AttributeSet::setLastReadWrite(unsigned var, ASTNode* where){
+    this->setLastWrite(var, where);
     this->push_back(Attribute{
       .type = Attribute::Type::LastRead,
       .var  = var,
@@ -125,29 +191,6 @@ namespace Context {
     ));
     this->push_back(Attribute{
       .type = Attribute::Type::NextRead,
-      .var  = var,
-      .node = where
-    });
-  }
-  
-  void AttributeSet::setLastWrite(unsigned var, ASTNode* where){
-    for(const Attribute& attrib: *this)
-    if(attrib.type == Attribute::Type::LastWrite && attrib.var == var){
-      assert(attrib.node->context != nullptr);
-      attrib.node->context->addNextWrite(var, where);
-    }
-    this->erase(
-      std::remove_if(this->begin(), this->end(), [=](const Attribute& attrib){
-        return
-          attrib.var == var && (
-          attrib.type == Attribute::Type::LastWrite || 
-          attrib.type == Attribute::Type::LastRead
-        );
-      }),
-      this->end()
-    );
-    this->push_back(Attribute{
-      .type = Attribute::Type::LastWrite,
       .var  = var,
       .node = where
     });
