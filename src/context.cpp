@@ -42,22 +42,7 @@ void ThreadingContext::threadAST(ASTNode* node){
       );
     }
     break;
-  case ASTNodeType::UnaryExpr:
-    if(node->type == ASTNodeType::Move){
-      threadModifyingExpr(node->child, true);
-    }else{
-      threadAST(node->child);
-    }
-    break;
-  case ASTNodeType::BinaryExpr:
-    threadAST(node->children.first);
-    threadAST(node->children.second);
-    break;
-  case ASTNodeType::AssignExpr:
-    threadAST(node->children.second);
-    threadModifyingExpr(node->children.first, node->type == ASTNodeType::Assign);
-    break;
-  default:
+  case ASTNodeType::OneChild:
     switch(node->type){
     case ASTNodeType::Var:
       {
@@ -81,9 +66,26 @@ void ThreadingContext::threadAST(ASTNode* node){
       }
       break;
     default:
-      assert(false);
+      threadAST(node->child);
     }
     break;
+  case ASTNodeType::UnaryExpr:
+    if(node->type == ASTNodeType::Move){
+      threadModifyingExpr(node->child, true);
+    }else{
+      threadAST(node->child);
+    }
+    break;
+  case ASTNodeType::BinaryExpr:
+    threadAST(node->children.first);
+    threadAST(node->children.second);
+    break;
+  case ASTNodeType::AssignExpr:
+    threadAST(node->children.second);
+    threadModifyingExpr(node->children.first, node->type == ASTNodeType::Assign);
+    break;
+  default:
+    assert(false);
   }
 }
 
