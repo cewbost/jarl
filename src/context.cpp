@@ -91,6 +91,19 @@ void ContextingContext::threadAST(ASTNode* node){
       threadAST(node->children.first);
       threadAST(node->children.second);
       break;
+    case ASTNodeType::While:
+    case ASTNodeType::For:
+      {
+        threadAST(node->children.first);
+        auto cloned_attributes = this->attributes;
+        threadAST(node->children.second);
+        threadAST(node->children.first);
+        this->attributes.merge(cloned_attributes);
+        cloned_attributes = this->attributes;
+        threadAST(node->children.second);
+        this->attributes.merge(cloned_attributes);
+      }
+      break;
     case ASTNodeType::If:
       {
         threadAST(node->children.first);
