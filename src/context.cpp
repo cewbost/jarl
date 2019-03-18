@@ -12,7 +12,7 @@ struct ThreadingContext {
   Errors* errors;
   
   unsigned locals;
-  VarAllocMap* var_allocs;
+  std::unique_ptr<VarAllocMap> var_allocs;
   
   AttributeSet attributes;
   
@@ -26,11 +26,20 @@ void ThreadingContext::threadAST(ASTNode* node){
     assert(false);
   case ASTNodeType::Value:
     if(node->type == ASTNodeType::Identifier){
-      auto var = 0;
+      auto it = var_allocs->find(node->string_value);
+      if(it == var_allocs->end()){
+        errors->emplace_back(dynSprintf(
+          "line %d: Undeclared identifier '%s'",
+          node->pos.first,
+          node->string_value->str()
+        ));
+        return;
+      }
+      auto var = it->second;
+      attributes.setLastRead(var, node);
       node->context = std::make_unique<AttributeSet>(
         this->attributes.forVariable(var)
       );
-      attributes.setLastRead(var, node);
     }
     break;
   case ASTNodeType::UnaryExpr:
@@ -165,7 +174,7 @@ namespace Context {
   void addContext(ASTNode* ast, std::vector<std::unique_ptr<char[]>>* errors){
     ThreadingContext context{
       .errors = errors,
-      .var_allocs = new VarAllocMap(nullptr)
+      .var_allocs = std::make_unique<VarAllocMap>(nullptr)
     };
     context.threadAST(ast);
   }
