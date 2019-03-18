@@ -55,7 +55,7 @@ void ThreadingContext::threadAST(ASTNode* node){
     break;
   case ASTNodeType::AssignExpr:
     threadAST(node->children.second);
-    threadAST(node->children.first);
+    threadModifyingExpr(node->children.first, node->type == ASTNodeType::Assign);
     break;
   default:
     switch(node->type){
