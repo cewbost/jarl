@@ -26,16 +26,22 @@ namespace Context {
     Type      type;
     unsigned  var;
     ASTNode*  node;
+    
+    bool operator==(const Attribute& other)const{
+      return this->type == other.type && this->var == other.var;
+    }
   };
   
   class AttributeSet: std::vector<Attribute> {
   public:
-    AttributeSet forVariable(unsigned);
+    AttributeSet forVariable(unsigned)const;
     void setLastRead(unsigned, ASTNode*);
     void setLastWrite(unsigned, ASTNode*);
     void setLastReadWrite(unsigned, ASTNode*);
     void addNextRead(unsigned, ASTNode*);
     void addNextWrite(unsigned, ASTNode*);
+    
+    void merge(const AttributeSet&);
   };
   
   void addContext(ASTNode* ast, std::vector<std::unique_ptr<char[]>>* errors);

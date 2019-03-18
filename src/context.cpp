@@ -7,7 +7,7 @@
 
 using namespace Context;
 
-struct ThreadingContext {
+struct ContextingContext {
   
   Errors* errors;
   
@@ -20,7 +20,7 @@ struct ThreadingContext {
   void threadModifyingExpr(ASTNode*, bool readwrite = false);
 };
 
-void ThreadingContext::threadAST(ASTNode* node){
+void ContextingContext::threadAST(ASTNode* node){
   switch(static_cast<ASTNodeType>(static_cast<unsigned>(node->type) & ~0xff)){
   case ASTNodeType::Error:
     assert(false);
@@ -84,12 +84,37 @@ void ThreadingContext::threadAST(ASTNode* node){
     threadAST(node->children.second);
     threadModifyingExpr(node->children.first, node->type == ASTNodeType::Assign);
     break;
+  case ASTNodeType::TwoChildren:
+  case ASTNodeType::BranchExpr:
+    switch(node->type){
+    case ASTNodeType::Seq:
+      threadAST(node->children.first);
+      threadAST(node->children.second);
+      break;
+    case ASTNodeType::If:
+      {
+        threadAST(node->children.first);
+        auto cloned_attributes = this->attributes;
+        if(node->children.second->type == ASTNodeType::Else){
+          threadAST(node->children.second->children.first);
+          std::swap(this->attributes, cloned_attributes);
+          threadAST(node->children.second->children.second);
+        }else{
+          threadAST(node->children.second);
+        }
+        this->attributes.merge(cloned_attributes);
+      }
+      break;
+    default:
+      assert(false);
+    }
+    break;
   default:
     assert(false);
   }
 }
 
-void ThreadingContext::threadModifyingExpr(ASTNode* node, bool readwrite){
+void ContextingContext::threadModifyingExpr(ASTNode* node, bool readwrite){
   switch(node->type){
   case ASTNodeType::Identifier:
     if(
@@ -122,7 +147,7 @@ void ThreadingContext::threadModifyingExpr(ASTNode* node, bool readwrite){
 namespace Context {
   
   //AttributeSet
-  AttributeSet AttributeSet::forVariable(unsigned var){
+  AttributeSet AttributeSet::forVariable(unsigned var)const{
     AttributeSet ret;
     for(const Attribute& attrib: *this) if(attrib.var == var){
       ret.push_back(attrib);
@@ -215,9 +240,22 @@ namespace Context {
     });
   }
   
+  void AttributeSet::merge(const AttributeSet& other){
+    auto indexes = std::make_unique<unsigned[]>(other.size());
+    auto stepper = indexes.get();
+    for(int i = 0; i < other.size(); ++i){
+      if(std::any_of(this->begin(), this->end(), [&](const auto& attr){
+        return attr == other[i];
+      })) *(stepper++) = i;
+    }
+    for(auto p = indexes.get(); p < stepper; ++p){
+      this->push_back(other[*p]);
+    }
+  }
+  
   //global functions
   void addContext(ASTNode* ast, std::vector<std::unique_ptr<char[]>>* errors){
-    ThreadingContext context{
+    ContextingContext context{
       .errors = errors,
       .var_allocs = std::make_unique<VarAllocMap>(nullptr)
     };

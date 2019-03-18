@@ -17,7 +17,7 @@ constexpr OpCodes::Type stack_pos_local    = 0x8000;
 constexpr OpCodes::Type stack_pos_const    = 0x4000;
 constexpr OpCodes::Type stack_pos_capture  = 0x2000;
 
-struct ThreadingContext {
+struct CodeGenerationContext {
   std::vector<OpCodes::Type> code;
   std::vector<std::pair<int, int>> code_positions;
   
@@ -28,7 +28,7 @@ struct ThreadingContext {
   
   std::vector<std::unique_ptr<char[]>> *errors;
   
-  ThreadingContext(
+  CodeGenerationContext(
     decltype(errors) err,
     decltype(var_allocs) va = nullptr,
     decltype(context_var_allocs) cva = nullptr,
@@ -79,7 +79,7 @@ namespace {
   ){
     assert(var_allocs != nullptr);
     
-    ThreadingContext context(
+    CodeGenerationContext context(
       errors,
       std::move(var_allocs),
       context_var_allocs,
@@ -144,7 +144,7 @@ namespace {
   }
 }
 
-void ThreadingContext::putInstruction(OpCodes::Type op, int pos){
+void CodeGenerationContext::putInstruction(OpCodes::Type op, int pos){
   if(this->code_positions.back().first != pos){
     this->code_positions.emplace_back(pos, this->code.size());
   }
@@ -169,7 +169,7 @@ void ThreadingContext::putInstruction(OpCodes::Type op, int pos){
   D_putInstruction(OpCodes::Nop); \
   break;
 
-void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
+void CodeGenerationContext::threadAST(ASTNode* node, ASTNode* prev_node){
   
   switch(static_cast<ASTNodeType>(static_cast<unsigned>(node->type) & ~0xff)){
   case ASTNodeType::Error:
@@ -674,7 +674,7 @@ void ThreadingContext::threadAST(ASTNode* node, ASTNode* prev_node){
   }
 }
 
-void ThreadingContext::threadRexpr(ASTNode* node, ASTNode* prev_node){
+void CodeGenerationContext::threadRexpr(ASTNode* node, ASTNode* prev_node){
   switch(node->type){
   case ASTNodeType::Identifier:
     if(
@@ -697,7 +697,7 @@ void ThreadingContext::threadRexpr(ASTNode* node, ASTNode* prev_node){
   }
 }
 
-void ThreadingContext::threadInsRexpr(ASTNode* node, ASTNode* prev_node){
+void CodeGenerationContext::threadInsRexpr(ASTNode* node, ASTNode* prev_node){
   if(node->type == ASTNodeType::Index){
     this->threadRexpr(node->children.first, node);
     this->threadAST(node->children.second, node);
