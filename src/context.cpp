@@ -127,6 +127,10 @@ void ContextingContext::threadAST(ASTNode* node){
         this->attributes.merge(cloned_attributes);
       }
       break;
+    case ASTNodeType::Index:
+    case ASTNodeType::Call:
+      threadAST(node->children.first);
+      threadAST(node->children.second);
     default:
       assert(false);
     }
