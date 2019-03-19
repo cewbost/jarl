@@ -58,7 +58,7 @@ private:
     }
     ~AllocContextGuard(){
       VarAllocMap* old_allocs = alloc_map_;
-      alloc_map_ = alloc_map_->get_delegate();
+      alloc_map_ = alloc_map_->steal_delegate();
       delete old_allocs;
     }
   };

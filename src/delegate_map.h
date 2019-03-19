@@ -18,8 +18,8 @@ public:
   
 private:
   
-  DelegateMap<M, K, V>* delegate_;
-  map_type              map_;
+  DelegateMap*  delegate_;
+  map_type      map_;
   
 public:
   
@@ -27,6 +27,9 @@ public:
   : delegate_(nullptr), map_(){}
   DelegateMap(DelegateMap* del)
   : delegate_(del), map_(){}
+  ~DelegateMap(){
+    delete delegate_;
+  }
   
   mapped_type& operator[](const key_type& key){
     auto it = this->map_.find(key);
@@ -99,10 +102,16 @@ public:
   }
   
   void set_delegate(DelegateMap* del){
+    if(this->delegate_) delete this->delegate_;
     this->delegate_ = del;
   }
   DelegateMap* get_delegate(){
-    return this->delegate_;
+    return this->delegate_.get();
+  }
+  DelegateMap* steal_delegate(){
+    auto delegate = this->delegate_;
+    this->delegate_ = nullptr;
+    return delegate;
   }
   
   typename map_type::iterator begin(){return this->map_.begin();}

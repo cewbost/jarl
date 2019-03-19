@@ -11,13 +11,30 @@ struct ContextingContext {
   
   Errors* errors;
   
-  unsigned locals;
   std::unique_ptr<VarAllocMap> var_allocs;
   
   AttributeSet attributes;
   
   void threadAST(ASTNode*);
   void threadModifyingExpr(ASTNode*, bool readwrite = false);
+  
+private:
+  class AllocContextGuard {
+    std::unique_ptr<VarAllocMap>& alloc_map_;
+  public:
+    AllocContextGuard(std::unique_ptr<VarAllocMap>& alloc_map)
+    : alloc_map_(alloc_map){
+      alloc_map_.reset(new VarAllocMap(alloc_map_.get()));
+    }
+    ~AllocContextGuard(){
+      alloc_map_.reset(alloc_map_->steal_delegate());
+    }
+  };
+  
+public:
+  AllocContextGuard newScope(){
+    return AllocContextGuard(this->var_allocs);
+  }
 };
 
 void ContextingContext::threadAST(ASTNode* node){
@@ -44,6 +61,12 @@ void ContextingContext::threadAST(ASTNode* node){
     break;
   case ASTNodeType::OneChild:
     switch(node->type){
+    case ASTNodeType::CodeBlock:
+      {
+        auto guard = this->newScope();
+        threadAST(node->children.first);
+      }
+      break;
     case ASTNodeType::Var:
       {
         auto subnode = node->child;
@@ -52,9 +75,9 @@ void ContextingContext::threadAST(ASTNode* node){
         assert(subnode->children.first->type == ASTNodeType::Identifier);
         auto it = var_allocs->direct()
           .find(subnode->children.first->string_value);
-        unsigned var;
+        ASTNode* var;
         if(it == var_allocs->direct().end()){
-          var = locals++;
+          var = subnode->children.first;
           var_allocs->direct()[subnode->children.first->string_value] = var;
         }else{
           var = it->second;
@@ -173,7 +196,7 @@ void ContextingContext::threadModifyingExpr(ASTNode* node, bool readwrite){
 namespace Context {
   
   //AttributeSet
-  AttributeSet AttributeSet::forVariable(unsigned var)const{
+  AttributeSet AttributeSet::forVariable(ASTNode* var)const{
     AttributeSet ret;
     for(const Attribute& attrib: *this) if(attrib.var == var){
       ret.push_back(attrib);
@@ -181,7 +204,7 @@ namespace Context {
     return ret;
   }
   
-  void AttributeSet::setLastRead(unsigned var, ASTNode* where){
+  void AttributeSet::setLastRead(ASTNode* var, ASTNode* where){
     for(const Attribute& attrib: *this)
     if(attrib.var == var){
       assert(attrib.node->context != nullptr);
@@ -200,7 +223,7 @@ namespace Context {
     });
   }
   
-  void AttributeSet::setLastWrite(unsigned var, ASTNode* where){
+  void AttributeSet::setLastWrite(ASTNode* var, ASTNode* where){
     for(const Attribute& attrib: *this)
     if(attrib.var == var){
       assert(attrib.node->context != nullptr);
@@ -223,7 +246,7 @@ namespace Context {
     });
   }
   
-  void AttributeSet::setLastReadWrite(unsigned var, ASTNode* where){
+  void AttributeSet::setLastReadWrite(ASTNode* var, ASTNode* where){
     this->setLastWrite(var, where);
     this->push_back(Attribute{
       .type = Attribute::Type::LastRead,
@@ -232,7 +255,7 @@ namespace Context {
     });
   }
   
-  void AttributeSet::addNextRead(unsigned var, ASTNode* where){
+  void AttributeSet::addNextRead(ASTNode* var, ASTNode* where){
     assert(std::none_of(
       this->begin(), this->end(),
       [=](const Attribute& attrib)->bool{
@@ -249,7 +272,7 @@ namespace Context {
     });
   }
   
-  void AttributeSet::addNextWrite(unsigned var, ASTNode* where){
+  void AttributeSet::addNextWrite(ASTNode* var, ASTNode* where){
     assert(std::none_of(
       this->begin(), this->end(),
       [=](const Attribute& attrib)->bool{

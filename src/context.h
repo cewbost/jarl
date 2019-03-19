@@ -14,7 +14,7 @@ namespace Context {
   
   template<class Key, class Val>
   using VectorMapDefault = VectorMap<Key, Val>;
-  using VarAllocMap = DelegateMap<VectorMapDefault, String*, unsigned>;
+  using VarAllocMap = DelegateMap<VectorMapDefault, String*, ASTNode*>;
   
   struct Attribute {
     enum class Type: uint8_t {
@@ -24,7 +24,7 @@ namespace Context {
       NextWrite
     };
     Type      type;
-    unsigned  var;
+    ASTNode*  var;
     ASTNode*  node;
     
     bool operator==(const Attribute& other)const{
@@ -32,14 +32,14 @@ namespace Context {
     }
   };
   
-  class AttributeSet: std::vector<Attribute> {
+  class AttributeSet: public std::vector<Attribute> {
   public:
-    AttributeSet forVariable(unsigned)const;
-    void setLastRead(unsigned, ASTNode*);
-    void setLastWrite(unsigned, ASTNode*);
-    void setLastReadWrite(unsigned, ASTNode*);
-    void addNextRead(unsigned, ASTNode*);
-    void addNextWrite(unsigned, ASTNode*);
+    AttributeSet forVariable(ASTNode*)const;
+    void setLastRead(ASTNode*, ASTNode*);
+    void setLastWrite(ASTNode*, ASTNode*);
+    void setLastReadWrite(ASTNode*, ASTNode*);
+    void addNextRead(ASTNode*, ASTNode*);
+    void addNextWrite(ASTNode*, ASTNode*);
     
     void merge(const AttributeSet&);
   };
