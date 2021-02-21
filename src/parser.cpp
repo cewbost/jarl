@@ -107,7 +107,7 @@ ASTNode* Parser::nud_(const Lexeme& lex){
       }
       return new ASTNode(
         ASTNodeType::Function,
-        cond.release(),
+        new ASTFunctionData(cond.release()),
         this->expression_(def_statement_bindp),
         (this->lcurrent_ - 1)->pos
       );

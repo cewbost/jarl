@@ -61,7 +61,6 @@ enum class ASTNodeType: uint16_t {
   ExprList,
   KeyValuePair,
   Then,
-  Function,
   
   BinaryExpr = 0x2100,
   
@@ -101,6 +100,10 @@ enum class ASTNodeType: uint16_t {
   ModAssign,
   AppendAssign,
   Insert,
+
+  FunctionNode = 0x3000,
+
+  Function,
 };
 
 struct ASTNodeFlags {
@@ -110,6 +113,8 @@ struct ASTNodeFlags {
     LValue  = 0x0003
   };
 };
+
+struct ASTFunctionData;
 
 struct ASTNode {
   
@@ -121,7 +126,12 @@ struct ASTNode {
     struct {
       ASTNode *first, *second;
     } children;
-    
+
+    struct {
+      ASTFunctionData* data;
+      ASTNode* body;
+    } function;
+
     Int int_value;
     Float float_value;
     String* string_value;
@@ -134,6 +144,7 @@ struct ASTNode {
   ASTNode(ASTNodeType, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, ASTNode*, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, ASTNode*, ASTNode*, std::pair<uint16_t, uint16_t>);
+  ASTNode(ASTNodeType, ASTFunctionData*, ASTNode*, std::pair<uint16_t, uint16_t>);
   
   ASTNode(ASTNodeType, Int, std::pair<uint16_t, uint16_t>);
   ASTNode(ASTNodeType, Float, std::pair<uint16_t, uint16_t>);
@@ -180,6 +191,13 @@ struct ASTNode {
   std::string toStrDebug() const;
   std::string toStrDebug(int) const;
   #endif
+};
+
+struct ASTFunctionData {
+  std::unique_ptr<ASTNode> arguments;
+  std::unique_ptr<ASTNode> captures;
+
+  ASTFunctionData(ASTNode* arguments);
 };
 
 #endif

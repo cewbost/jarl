@@ -4,11 +4,13 @@
 
 ASTNode::ASTNode(ASTNodeType type, std::pair<uint16_t, uint16_t> pos)
 : type(type), pos(pos){
+  assert((ASTNodeType)((unsigned)(this->type) & ~0xfff) == ASTNodeType::Leaf);
   this->children.first = nullptr;
   this->children.second = nullptr;
 }
 ASTNode::ASTNode(ASTNodeType type, ASTNode* child, std::pair<uint16_t, uint16_t> pos)
 : type(type), pos(pos){
+  assert((ASTNodeType)((unsigned)(this->type) & ~0xfff) == ASTNodeType::OneChild);
   this->child = child;
 }
 ASTNode::ASTNode(
@@ -17,8 +19,19 @@ ASTNode::ASTNode(
   ASTNode* child2,
   std::pair<uint16_t, uint16_t> pos
 ): type(type), pos(pos){
+  assert((ASTNodeType)((unsigned)(this->type) & ~0xfff) == ASTNodeType::TwoChildren);
   this->children.first = child1;
   this->children.second = child2;
+}
+ASTNode::ASTNode(
+  ASTNodeType type,
+  ASTFunctionData* func_data,
+  ASTNode* body,
+  std::pair<uint16_t, uint16_t> pos
+): type(type), pos(pos){
+  assert((ASTNodeType)((unsigned)(this->type) & ~0xfff) == ASTNodeType::FunctionNode);
+  this->function.data = func_data;
+  this->function.body = body;
 }
 
 ASTNode::ASTNode(ASTNodeType type, Int i, std::pair<uint16_t, uint16_t> pos)
@@ -57,6 +70,9 @@ ASTNode::~ASTNode(){
     delete this->children.first;
     delete this->children.second;
     break;
+  case ASTNodeType::FunctionNode:
+    delete this->function.data;
+    delete this->function.body;
   default:
     assert(false);
   }
@@ -110,6 +126,8 @@ ASTNode::ExprListIterator ASTNode::ExprListIterator::operator++(int){
     this->current_ = nullptr;
   return temp;
 }
+
+ASTFunctionData::ASTFunctionData(ASTNode* arguments): arguments(arguments){}
 
 #ifndef NDEBUG
 std::string ASTNode::toStrDebug() const {
@@ -275,6 +293,14 @@ std::string ASTNode::toStrDebug(int indent) const {
     ret += "\n";
     ret += this->children.first->toStrDebug(indent + 1);
     ret += this->children.second->toStrDebug(indent + 1);
+    break;
+  case ASTNodeType::FunctionNode:
+    ret += "\n";
+    if(this->function.data->arguments)
+      ret += this->function.data->arguments->toStrDebug(indent + 1);
+    if(this->function.data->extra)
+      ret += this->function.data->extra->toStrDebug(indent + 1);
+    ret += this->function.body->toStrDebug(indent + 1);
     break;
   default:
     assert(false);

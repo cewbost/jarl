@@ -7,16 +7,18 @@
 
 using namespace Context;
 
-struct ContextingContext {
+struct FunctionContext {
   
   Errors* errors;
   
   std::unique_ptr<VarAllocMap> var_allocs;
   
   AttributeSet attributes;
+
+  ASTNode* func_node = nullptr;
+  FunctionContext* parentContext = nullptr;
   
   void threadAST(ASTNode*);
-  void threadModifyingExpr(ASTNode*, bool readwrite = false);
   
 private:
   class AllocContextGuard {
@@ -30,6 +32,9 @@ private:
       alloc_map_.reset(alloc_map_->steal_delegate());
     }
   };
+
+  void threadModifyingExpr(ASTNode*, bool readwrite = false);
+  bool captureVariable(String* name);
   
 public:
   AllocContextGuard newScope(){
@@ -37,7 +42,7 @@ public:
   }
 };
 
-void ContextingContext::threadAST(ASTNode* node){
+void FunctionContext::threadAST(ASTNode* node){
   switch(static_cast<ASTNodeType>(static_cast<unsigned>(node->type) & ~0xff)){
   case ASTNodeType::Error:
     assert(false);
@@ -154,6 +159,41 @@ void ContextingContext::threadAST(ASTNode* node){
     case ASTNodeType::Call:
       threadAST(node->children.first);
       threadAST(node->children.second);
+      break;
+    default:
+      assert(false);
+    }
+    break;
+  case ASTNodeType::FunctionNode:
+    switch(node->type){
+    case ASTNodeType::Function:
+      {
+        auto new_alloc_map = std::make_unique<VarAllocMap>(nullptr);
+        for(
+          auto it = node->function.data->arguments->exprListIterator();
+          it != nullptr; ++it
+        ){
+          assert(it->type == ASTNodeType::Identifier);
+          if(new_alloc_map->contains(it->string_value)){
+            errors->emplace_back(dynSprintf(
+              "line %d: Multiple arguments with the same name '%s'",
+              node->pos.first,
+              it->string_value->str()
+            ));
+          }else{
+            new_alloc_map->direct()[it->string_value] = it.get();
+          }
+        }
+
+        FunctionContext context{
+          .errors         = errors,
+          .var_allocs     = std::move(new_alloc_map),
+          .func_node      = node,
+          .parentContext  = this
+        };
+        context.threadAST(node->function.body);
+      }
+      break;
     default:
       assert(false);
     }
@@ -163,7 +203,7 @@ void ContextingContext::threadAST(ASTNode* node){
   }
 }
 
-void ContextingContext::threadModifyingExpr(ASTNode* node, bool readwrite){
+void FunctionContext::threadModifyingExpr(ASTNode* node, bool readwrite){
   switch(node->type){
   case ASTNodeType::Identifier:
     if(
@@ -193,6 +233,37 @@ void ContextingContext::threadModifyingExpr(ASTNode* node, bool readwrite){
   }
 }
 
+ASTNode* FunctionContext::captureVariable(String* name){
+  if(this->parentContext == nullptr) return nullptr;
+
+  auto allocs = this->parentContext->var_allocs.get();
+  
+  if(auto it = allocs->find(name); it == allocs->end()){
+    //todo
+  }else{
+    auto var = it->second;
+    auto new_var = std::make_unique<ASTNode>(
+      ASTNodeType::Identifier,
+      name,
+      this->func_node->pos
+    );
+    auto res = new_var.get();
+    auto& func_data = this->func_node->function.data;
+    if(func_data->captures == nullptr){
+      func_data->captures = std::move(new_var);
+    }else{
+      func_data->captures.reset(new ASTNode(
+        ASTNodeType::ExprList,
+        new_var.release(),
+        func_data->captures.release()
+      ));
+    }
+    return res;
+  }
+
+  return nullptr;
+}
+
 namespace Context {
   
   //AttributeSet
@@ -203,7 +274,7 @@ namespace Context {
     }
     return ret;
   }
-  
+
   void AttributeSet::setLastRead(ASTNode* var, ASTNode* where){
     for(const Attribute& attrib: *this)
     if(attrib.var == var){
@@ -304,7 +375,7 @@ namespace Context {
   
   //global functions
   void addContext(ASTNode* ast, std::vector<std::unique_ptr<char[]>>* errors){
-    ContextingContext context{
+    FunctionContext context{
       .errors = errors,
       .var_allocs = std::make_unique<VarAllocMap>(nullptr)
     };

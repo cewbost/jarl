@@ -82,7 +82,7 @@ public:
     if(it == this->map_.cend()){
       if(this->delegate_){
         auto del_it = ((const DelegateMap*)this)->delegate_->find(key);
-        if(del_it == this->delegate_->cend()){
+        if(del_it == this->delegate_->end()){
           return this->map_.cend();
         }else return del_it;
       }else{
@@ -91,6 +91,10 @@ public:
     }else{
       return it;
     }
+  }
+
+  bool contains(const key_type& key)const{
+    return this->find(key) != this->end();
   }
   
   size_t size()const{
