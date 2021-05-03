@@ -1,7 +1,6 @@
 FROM frolvlad/alpine-gxx
 
 RUN apk update
-RUN apk add make
-RUN apk add cmake
+RUN apk add make cmake re2c
 
 WORKDIR /usr/jarl

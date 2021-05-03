@@ -10,3 +10,8 @@ function build() {
 	cd build
 	make
 }
+
+function build_lexer() {
+	make -C re2c
+	build
+}

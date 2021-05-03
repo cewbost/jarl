@@ -20,6 +20,8 @@ case $1 in
 		run configure ;;
 	build)
 		run build ;;
+	build_lexer)
+		run build_lexer ;;
 	gcc_version)
 		run 'g++ --version' ;;
 esac
