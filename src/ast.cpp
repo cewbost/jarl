@@ -1,6 +1,7 @@
 #include "ast.h"
 
 #include <cassert>
+#include <cstddef>
 
 ASTNode::ASTNode(ASTNodeType type, std::pair<uint16_t, uint16_t> pos)
 : type(type), pos(pos){
@@ -76,10 +77,10 @@ bool ASTNode::ExprListIterator::operator==(const ExprListIterator& other){
 bool ASTNode::ExprListIterator::operator!=(const ExprListIterator& other){
   return this->current_ != other.current_;
 }
-bool ASTNode::ExprListIterator::operator==(nullptr_t){
+bool ASTNode::ExprListIterator::operator==(std::nullptr_t){
   return this->current_ == nullptr;
 }
-bool ASTNode::ExprListIterator::operator!=(nullptr_t){
+bool ASTNode::ExprListIterator::operator!=(std::nullptr_t){
   return this->current_ != nullptr;
 }
 ASTNode* ASTNode::ExprListIterator::get(){

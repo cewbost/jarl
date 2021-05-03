@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include <cstddef>
+
 using jarl::Int;
 using jarl::Float;
 
@@ -157,8 +159,8 @@ struct ASTNode {
     ExprListIterator(ASTNode*);
     bool operator==(const ExprListIterator&);
     bool operator!=(const ExprListIterator&);
-    bool operator==(nullptr_t);
-    bool operator!=(nullptr_t);
+    bool operator==(std::nullptr_t);
+    bool operator!=(std::nullptr_t);
     ASTNode* get();
     ASTNode* operator*();
     ASTNode* operator->();

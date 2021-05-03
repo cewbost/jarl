@@ -9,6 +9,8 @@
 
 #include <functional>
 
+#include <cstddef>
+
 #ifndef NDEBUG
 #include <string>
 #endif
@@ -116,7 +118,7 @@ public:
   Value value;
   
   TypedValue();
-  TypedValue(nullptr_t);
+  TypedValue(std::nullptr_t);
   TypedValue(bool);
   TypedValue(Int);
   TypedValue(Float);
@@ -129,7 +131,7 @@ public:
   TypedValue(TypedValue*);
   TypedValue(const void*);
   
-  TypedValue& operator=(nullptr_t);
+  TypedValue& operator=(std::nullptr_t);
   TypedValue& operator=(bool);
   TypedValue& operator=(Int);
   TypedValue& operator=(Float);

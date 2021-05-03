@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstring>
 #include <cassert>
+#include <cstddef>
 
 namespace{
   
@@ -114,7 +115,7 @@ void TypedValue::copy_(const TypedValue& other)noexcept{
 TypedValue::TypedValue(){
   type = TypeTag::None;
 }
-TypedValue::TypedValue(nullptr_t){
+TypedValue::TypedValue(std::nullptr_t){
   type = TypeTag::Null;
   value.ptr_v = nullptr;
 }
@@ -171,7 +172,7 @@ TypedValue::TypedValue(const void* p){
 
 //assignment
 
-TypedValue& TypedValue::operator=(nullptr_t){
+TypedValue& TypedValue::operator=(std::nullptr_t){
   this->clear_();
   this->type = TypeTag::Null;
   this->value.ptr_v = nullptr;
