@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 project(jarl)
 
 include_directories(bindings)
-file(GLOB SOURCES "src/*.cpp")
+file(GLOB SOURCES "src/jarl/*.cpp")
 
 add_compile_options(-fno-exceptions)
 

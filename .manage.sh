@@ -1,17 +1,17 @@
 #!/bin/bash
 
 function configure() {
-	mkdir build
+	mkdir build &>/dev/null
 	cd build
 	cmake ..
 }
 
 function build() {
 	cd build
-	make
+	cmake --build .
 }
 
 function build_lexer() {
-	make -C re2c
+	make -C src/re2c
 	build
 }

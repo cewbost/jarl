@@ -1,7 +1,7 @@
 basedir = ../
 
 files = $(shell ls | grep .re)
-targets = $(addprefix $(basedir)src/, $(subst .re,.cpp, $(files)))
+targets = $(addprefix $(basedir)jarl/, $(subst .re,.cpp, $(files)))
 
 re2c_flags = -W -d
 
