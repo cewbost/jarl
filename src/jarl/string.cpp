@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <cassert>
+#include <inttypes.h>
 
 #ifndef NDEBUG
 #include "alloc_monitor.h"
@@ -42,7 +43,7 @@ namespace{
     return sprintf(buffer, "%d", val);
   }
   inline int writeNumToBuffer_(char* buffer, int64_t val){
-    return sprintf(buffer, "%lld", val);
+	  return sprintf(buffer, "%" PRId64, val);
   }
   inline int writeNumToBuffer_(char* buffer, float val){
     return sprintf(buffer, "%g", (double)val);
@@ -130,7 +131,7 @@ bool String::toInt32(int32_t* t){
   return sscanf(this->str(), "%d", t) == 1;
 }
 bool String::toInt64(int64_t* t){
-  return sscanf(this->str(), "%lld", t) == 1;
+	return sscanf(this->str(), "%" PRId64, t) == 1;
 }
 bool String::toFloat(float* t){
   return sscanf(this->str(), "%f", t) == 1;
