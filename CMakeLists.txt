@@ -3,9 +3,12 @@ set(CMAKE_CXX_STANDARD 17)
 
 project(jarl)
 
-include_directories(bindings)
-file(GLOB SOURCES "src/jarl/*.cpp")
+include_directories("src/bindings")
+file(GLOB jarl_sources "src/jarl/*.cpp")
+file(GLOB bin_sources "src/bin/*.cpp")
 
 add_compile_options(-fno-exceptions)
 
-add_library(jarl STATIC ${SOURCES})
+add_library(jarl STATIC ${jarl_sources})
+add_executable(jarlbin ${bin_sources})
+target_link_libraries(jarlbin jarl)
