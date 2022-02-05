@@ -8,6 +8,10 @@
 #include <cstdio>
 #include <cstdarg>
 
+#ifndef NDEBUG
+#include <string>
+#endif
+
 /*
   use this instead of new, to allow for overloading where the parameters are passed
   to the allocation function.
