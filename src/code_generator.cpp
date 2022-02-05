@@ -2,6 +2,8 @@
 
 #include "code_generator.h"
 
+#include <limits>
+
 #ifndef NDEBUG
 #include <cstdio>
 //#define PRINT_CODE
