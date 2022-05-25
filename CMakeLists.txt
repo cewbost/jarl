@@ -50,8 +50,11 @@ if(MONITOR_STRING_ALLOCS)
 endif(MONITOR_STRING_ALLOCS)
 
 include_directories(bindings)
-file(GLOB SOURCES "libjarl/*.cpp")
+file(GLOB LIBJARL_SOURCES "libjarl/*.cpp")
+file(GLOB JARL_SOURCES "jarl/*.cpp")
 
 add_compile_options(-fno-exceptions)
 
-add_library(libjarl STATIC ${SOURCES})
+add_library(libjarl STATIC ${LIBJARL_SOURCES})
+
+add_executable(jarl ${JARL_SOURCES} ${LIBJARL_SOURCES})
