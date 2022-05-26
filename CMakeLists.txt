@@ -57,4 +57,5 @@ add_compile_options(-fno-exceptions)
 
 add_library(libjarl STATIC ${LIBJARL_SOURCES})
 
-add_executable(jarl ${JARL_SOURCES} ${LIBJARL_SOURCES})
+add_executable(jarl ${JARL_SOURCES})
+target_link_libraries(jarl libjarl)
